@@ -9,13 +9,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ComplianceTable from "@/components/compliance/compliance-table";
 import ComplianceForm from "@/components/compliance/compliance-form";
+import ComplianceCalendar from "@/components/compliance/compliance-calendar";
+import ComplianceTimeline from "@/components/compliance/compliance-timeline";
 import { Plus, Upload, Download, Mail, Search, Filter, Calendar, List, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
+type ViewMode = "table" | "timeline" | "calendar";
+
 export default function Compliance() {
   const { toast } = useToast();
   const [showNewItemForm, setShowNewItemForm] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [filters, setFilters] = useState({
     search: "",
     customerId: "",
@@ -211,13 +216,31 @@ export default function Compliance() {
                   </Select>
                   
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm" title="Table View" data-testid="button-table-view">
+                    <Button 
+                      variant={viewMode === "table" ? "default" : "outline"} 
+                      size="sm" 
+                      title="Table View" 
+                      onClick={() => setViewMode("table")}
+                      data-testid="button-table-view"
+                    >
                       <List className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" title="Timeline View" data-testid="button-timeline-view">
+                    <Button 
+                      variant={viewMode === "timeline" ? "default" : "outline"} 
+                      size="sm" 
+                      title="Timeline View" 
+                      onClick={() => setViewMode("timeline")}
+                      data-testid="button-timeline-view"
+                    >
                       <BarChart3 className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" title="Calendar View" data-testid="button-calendar-view">
+                    <Button 
+                      variant={viewMode === "calendar" ? "default" : "outline"} 
+                      size="sm" 
+                      title="Calendar View" 
+                      onClick={() => setViewMode("calendar")}
+                      data-testid="button-calendar-view"
+                    >
                       <Calendar className="h-4 w-4" />
                     </Button>
                   </div>
@@ -225,33 +248,53 @@ export default function Compliance() {
               </CardContent>
             </Card>
 
-            {/* Compliance Items Table */}
-            <Card className="mb-6">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Compliance Items</CardTitle>
-                    <CardDescription>
-                      All compliance items across customers - {complianceData?.total || 0} total items
-                    </CardDescription>
+            {/* Compliance Items - Different Views */}
+            {viewMode === "table" && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Compliance Items</CardTitle>
+                      <CardDescription>
+                        All compliance items across customers - {complianceData?.total || 0} total items
+                      </CardDescription>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" onClick={handleExport} data-testid="button-export">
+                        <Download className="h-4 w-4 mr-2" />
+                        Export
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" onClick={handleExport} data-testid="button-export">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ComplianceTable 
-                  data={complianceData?.items || []}
-                  isLoading={isLoading}
-                  onRefresh={refetch}
-                  showCustomerColumn={true}
+                </CardHeader>
+                <CardContent>
+                  <ComplianceTable 
+                    data={complianceData?.items || []}
+                    isLoading={isLoading}
+                    onRefresh={refetch}
+                    showCustomerColumn={true}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {viewMode === "calendar" && (
+              <div className="mb-6">
+                <ComplianceCalendar 
+                  items={complianceData?.items || []}
+                  customers={customers}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            )}
+
+            {viewMode === "timeline" && (
+              <div className="mb-6">
+                <ComplianceTimeline 
+                  items={complianceData?.items || []}
+                  customers={customers}
+                />
+              </div>
+            )}
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
