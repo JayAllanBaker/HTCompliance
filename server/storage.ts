@@ -17,8 +17,10 @@ export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
   
   // Customer methods
   getCustomers(): Promise<Customer[]>;
@@ -79,6 +81,7 @@ export interface IStorage {
   // Import/Export methods
   exportDatabase(): Promise<any>;
   importDatabase(data: any): Promise<void>;
+  resetDatabase(): Promise<void>;
   
   sessionStore: Store;
 }
@@ -116,6 +119,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(asc(users.username));
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   // Customer methods
@@ -485,6 +496,19 @@ export class DatabaseStorage implements IStorage {
     if (data.data.emailAlerts?.length) {
       await db.insert(emailAlerts).values(data.data.emailAlerts).onConflictDoNothing();
     }
+  }
+
+  async resetDatabase(): Promise<void> {
+    // Delete all data from all tables except users
+    // Order matters due to foreign key constraints - delete in reverse order of dependencies
+    await db.delete(emailAlerts);
+    await db.delete(auditLog);
+    await db.delete(evidence);
+    await db.delete(billableEvents);
+    await db.delete(complianceItems);
+    await db.delete(contracts);
+    await db.delete(customers);
+    // Users table is NOT deleted to preserve admin access
   }
 }
 

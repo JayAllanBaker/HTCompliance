@@ -1,6 +1,7 @@
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
 import { 
   LayoutDashboard, 
   FileText, 
@@ -8,7 +9,8 @@ import {
   DollarSign, 
   Shield, 
   Download,
-  Activity
+  Activity,
+  Settings
 } from "lucide-react";
 
 const navigation = [
@@ -46,6 +48,8 @@ const navigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -81,6 +85,25 @@ export default function Sidebar() {
               </li>
             );
           })}
+          
+          {isAdmin && (
+            <li>
+              <Link href="/admin">
+                <Button
+                  variant={isActive("/admin") ? "default" : "ghost"}
+                  className={`w-full justify-start px-4 py-3 ${
+                    isActive("/admin")
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  } transition-colors`}
+                  data-testid="nav-admin"
+                >
+                  <Settings className="mr-3 h-4 w-4" />
+                  Admin
+                </Button>
+              </Link>
+            </li>
+          )}
         </ul>
       </div>
       

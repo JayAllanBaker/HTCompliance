@@ -1,13 +1,21 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertCustomerSchema, insertContractSchema, insertComplianceItemSchema, insertBillableEventSchema, insertEvidenceSchema } from "@shared/schema";
+import { insertCustomerSchema, insertContractSchema, insertComplianceItemSchema, insertBillableEventSchema, insertEvidenceSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import { parseCSV, validateComplianceCSV } from "./services/csv-import";
 import { sendEmailAlert } from "./services/email-service";
 import { exportService } from "./services/export-service";
+
+// Admin-only middleware
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
+}
 
 // Setup multer for file uploads
 const upload = multer({ 
@@ -449,6 +457,119 @@ export function registerRoutes(app: Express): Server {
       res.json({ message: "Database imported successfully" });
     } catch (error) {
       res.status(500).json({ error: "Failed to import database" });
+    }
+  });
+
+  // Admin routes - User management
+  app.get("/api/users", requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      // Remove password hashes from response
+      const sanitized = allUsers.map(({ password, ...user }) => user);
+      res.json(sanitized);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/users", requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertUserSchema.parse(req.body);
+      const user = await storage.createUser(validatedData);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "user",
+        entityId: user.id,
+        newValues: JSON.stringify({ ...user, password: "[REDACTED]" }),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      // Remove password hash from response
+      const { password, ...sanitizedUser } = user;
+      res.status(201).json(sanitizedUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create user" });
+      }
+    }
+  });
+
+  app.patch("/api/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const updatedUser = await storage.updateUser(id, updates);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entityType: "user",
+        entityId: id,
+        newValues: JSON.stringify({ ...updates, password: updates.password ? "[REDACTED]" : undefined }),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      // Remove password hash from response
+      const { password, ...sanitizedUser } = updatedUser;
+      res.json(sanitizedUser);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent self-deletion
+      if (id === req.user?.id) {
+        return res.status(400).json({ error: "Cannot delete your own account" });
+      }
+      
+      await storage.deleteUser(id);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "user",
+        entityId: id,
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
+  // Admin routes - Database reset
+  app.post("/api/admin/reset-database", requireAdmin, async (req, res) => {
+    try {
+      await storage.resetDatabase();
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "RESET",
+        entityType: "database",
+        entityId: "full_reset",
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json({ message: "Database reset successfully. All data cleared except users." });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reset database" });
     }
   });
 
