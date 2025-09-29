@@ -21,7 +21,7 @@ export default function BillableEvents() {
   });
 
   const { data: billableEvents, isLoading, refetch } = useQuery<BillableEvent[]>({
-    queryKey: ["/api/billable-events", filters.customerId],
+    queryKey: ["/api/billable-events", { customerId: filters.customerId }],
   });
 
   const { data: customers } = useQuery<Customer[]>({
@@ -53,13 +53,13 @@ export default function BillableEvents() {
   }) || [];
 
   const totalAmount = filteredEvents.reduce((sum: number, event) => {
-    return sum + parseFloat(event.totalAmount || 0);
+    return sum + parseFloat(event.totalAmount || "0");
   }, 0);
 
   const paidAmount = filteredEvents
     .filter((event) => event.isPaid)
     .reduce((sum: number, event) => {
-      return sum + parseFloat(event.totalAmount || 0);
+      return sum + parseFloat(event.totalAmount || "0");
     }, 0);
 
   const unpaidAmount = totalAmount - paidAmount;
