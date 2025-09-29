@@ -299,11 +299,45 @@ export default function ExportImport() {
 
                 {/* CSV Example */}
                 <div className="mt-6">
-                  <h4 className="font-medium mb-2">Example CSV Format:</h4>
-                  <div className="bg-muted p-3 rounded-lg text-sm font-mono">
-                    <div>Category,Type,Commitment,Description,Responsible Party,Status,Due Date</div>
-                    <div>Billing,Monthly Invoice,Submit monthly invoice,Invoice for services,Jay Baker,pending,2025-01-07</div>
-                    <div>Compliance,Quarterly Review,Submit quarterly report,Compliance review,Laura Gleason,pending,2025-03-31</div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium">Example CSV Format:</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const csvContent = `Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer
+Billing,Monthly Invoice,Submit monthly invoice,Invoice for services rendered,Jay Baker,pending,2025-01-15,CCAH
+Compliance,Quarterly Report,Submit quarterly compliance report,Q1 compliance documentation,Laura Gleason,pending,2025-03-31,CCAH
+Legal,Contract Review,Annual contract review,Review and update all vendor contracts,Legal Team,in_progress,2025-02-28,Health Partners
+Data Security,HIPAA Audit,Complete HIPAA compliance audit,Annual security and privacy audit,IT Security,pending,2025-06-30,CCAH
+Financial,Tax Filing,File quarterly taxes,Q1 tax documents submission,Finance Dept,completed,2024-12-31,All Customers`;
+                        
+                        const blob = new Blob([csvContent], { type: 'text/csv' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'sample-compliance-import.csv';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                        
+                        toast({
+                          title: "Sample Downloaded",
+                          description: "Sample CSV file downloaded successfully.",
+                        });
+                      }}
+                      data-testid="button-download-sample-csv"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Sample CSV
+                    </Button>
+                  </div>
+                  <div className="bg-muted p-3 rounded-lg text-sm font-mono overflow-x-auto">
+                    <div>Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer</div>
+                    <div>Billing,Monthly Invoice,Submit monthly invoice,Invoice for services,Jay Baker,pending,2025-01-15,CCAH</div>
+                    <div>Compliance,Quarterly Report,Submit quarterly report,Compliance review,Laura Gleason,pending,2025-03-31,CCAH</div>
+                    <div>Legal,Contract Review,Annual contract review,Review vendor contracts,Legal Team,in_progress,2025-02-28,Health Partners</div>
                   </div>
                 </div>
               </CardContent>
