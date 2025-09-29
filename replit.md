@@ -63,10 +63,17 @@ Preferred communication style: Simple, everyday language.
 **Session Management**: Server-side sessions stored in PostgreSQL with configurable secrets and security settings (secure cookies in production, trust proxy enabled).
 
 **Authorization Model**: Role-based access control (RBAC) with two roles:
-- Admin: Full system access
+- Admin: Full system access including user management and database operations
 - User: Standard operational access
 
-**Design Rationale**: Session-based auth was chosen over JWT for better security (server-side revocation) and simpler implementation. The two-role model keeps authorization straightforward while meeting current business needs. Future enhancement could add OAuth2 support for Microsoft/Google SSO as indicated in requirements.
+**Admin Functionality**: Admin users have access to a dedicated admin panel (`/admin` route) with:
+- User Management: Create, update, and delete user accounts. All password operations use scrypt hashing with per-user salts. Passwords are never exposed in API responses.
+- Database Reset: Ability to clear all business data (customers, contracts, compliance items, billable events, evidence, audit logs) while preserving user accounts. Requires explicit confirmation due to destructive nature.
+- All admin operations are protected by `requireAdmin` middleware and create audit log entries.
+
+**Session Security**: Sessions use hardened cookie settings including httpOnly, secure (in production), sameSite="lax" for CSRF mitigation, and 7-day expiration. Session secrets are validated at startup.
+
+**Design Rationale**: Session-based auth was chosen over JWT for better security (server-side revocation) and simpler implementation. The two-role model keeps authorization straightforward while meeting current business needs. sameSite cookie attribute provides baseline CSRF protection. Future enhancements could add CSRF tokens for additional protection and OAuth2 support for Microsoft/Google SSO.
 
 ### External Dependencies
 

@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { insertCustomerSchema, insertContractSchema, insertComplianceItemSchema, insertBillableEventSchema, insertEvidenceSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
@@ -475,7 +475,11 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/users", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(validatedData);
+      // Hash password before storing
+      const user = await storage.createUser({
+        ...validatedData,
+        password: await hashPassword(validatedData.password)
+      });
       
       // Audit log
       await storage.createAuditLog({
@@ -503,7 +507,20 @@ export function registerRoutes(app: Express): Server {
   app.patch("/api/users/:id", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const updates = req.body;
+      
+      // Validate input - use partial schema to allow optional fields
+      const updateSchema = insertUserSchema.partial();
+      const validatedUpdates = updateSchema.parse(req.body);
+      const updates: any = { ...validatedUpdates };
+      
+      // Only update password if provided and not empty
+      if (updates.password && updates.password.trim() !== "") {
+        updates.password = await hashPassword(updates.password);
+      } else {
+        // Don't update password if empty
+        delete updates.password;
+      }
+      
       const updatedUser = await storage.updateUser(id, updates);
       
       // Audit log

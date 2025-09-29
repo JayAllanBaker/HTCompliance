@@ -13,6 +13,7 @@ import Compliance from "@/pages/compliance";
 import BillableEvents from "@/pages/billable-events";
 import EvidenceLocker from "@/pages/evidence-locker";
 import ExportImport from "@/pages/export-import";
+import AdminPage from "@/pages/admin";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <ProtectedRoute path="/billable-events" component={BillableEvents} />
       <ProtectedRoute path="/evidence-locker" component={EvidenceLocker} />
       <ProtectedRoute path="/export-import" component={ExportImport} />
+      <ProtectedRoute path="/admin" component={AdminPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
