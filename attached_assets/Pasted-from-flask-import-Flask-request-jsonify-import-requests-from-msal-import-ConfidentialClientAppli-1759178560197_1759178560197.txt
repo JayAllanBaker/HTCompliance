@@ -1,0 +1,65 @@
+from flask import Flask, request, jsonify
+import requests
+from msal import ConfidentialClientApplication
+
+app = Flask(__name__)
+
+# Your Microsoft/Azure AD app registration details
+TENANT_ID = 'd676934a-eb4a-495f-8608-5efe266912ff'
+CLIENT_ID = '3a4ad2ca-55a1-4ceb-a786-2b0fe30f0b2c'
+CLIENT_SECRET = 'WRr8Q~D5VDZzWwQNXf7DiAJwLYqRYMCt3pTbcaGu'
+SENDER_EMAIL = 'noreply@healthtrixss.com'
+
+AUTHORITY = f'https://login.microsoftonline.com/{TENANT_ID}'
+SCOPE = ['https://graph.microsoft.com/.default']
+
+def get_access_token():
+    app = ConfidentialClientApplication(
+        CLIENT_ID,
+        authority=AUTHORITY,
+        client_credential=CLIENT_SECRET
+    )
+    result = app.acquire_token_for_client(scopes=SCOPE)
+    return result.get('access_token')
+
+@app.route('/send-email', methods=['POST'])
+def send_email():
+    data = request.json
+    to = data.get('to')
+    subject = data.get('subject')
+    body = data.get('body')
+
+    if not to or not subject or not body:
+        return jsonify({'error': 'Missing parameters'}), 400
+
+    access_token = get_access_token()
+    if not access_token:
+        return jsonify({'error': 'Could not acquire access token'}), 500
+
+    endpoint = f'https://graph.microsoft.com/v1.0/users/{SENDER_EMAIL}/sendMail'
+    message = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "Text",
+                "content": body
+            },
+            "toRecipients": [
+                {"emailAddress": {"address": to}}
+            ]
+        }
+    }
+
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.post(endpoint, headers=headers, json=message)
+    if response.status_code == 202:
+        return jsonify({'status': 'Email sent successfully!'})
+    else:
+        return jsonify({'error': response.text}), response.status_code
+
+if __name__ == '__main__':
+    app.run(debug=True)

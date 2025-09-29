@@ -1,0 +1,151 @@
+# 📘 Replit Requirement Document
+
+**Project:** BizGov — Compliance + Billing + Contracts Hub
+**Prepared By:** Jay Baker — CEO (Product Owner)
+**Date:** 2025-09-29
+
+---
+
+## 1. Executive Summary
+
+Health Trixss LLC requires a single internal application to manage **compliance tasks, billable events, and contract lifecycle**.
+The app must be **Docker-capable** and deployable in **Replit**, with **Postgres** as the database, **JSON export/restore** for backups, and **RBAC/SSO** for security.
+
+This app will reduce compliance risk, improve audit readiness, and accelerate invoicing cycles.
+
+---
+
+## 2. CPDO Foundation (Stage 0–2)
+
+### Stage 0 — Foundation
+
+* **Problem:** Fragmented compliance tracking, manual invoice prep, and missed contract obligations
+* **Desired Outcome:**
+
+  * Compliance SLA ≥ 95%
+  * Invoice cycle ≤ 5 business days
+  * Zero missed renewals
+
+### Stage 1 — Problem Discovery
+
+* **Personas:**
+
+  * *Finance Ops* → wants faster billing and lower DSO
+  * *Compliance Lead* → needs immutable audit evidence
+  * *Project Manager* → must track milestones and contract obligations
+* **Drivers:** Fragmented tools, no audit trail, weak alerting
+
+### Stage 2 — Roadmap Planning
+
+* **Features:**
+
+  1. Compliance Calendar (YAML-driven)
+  2. Evidence Locker with immutable audit log
+  3. Contract Lifecycle & Milestones
+  4. Billable Events Ledger + Invoice Prep
+  5. Alerts & Dashboards (with MS Graph email alerts support)
+  6. JSON Full-DB Export/Restore
+  7. RBAC + SSO (Google/Microsoft) with support for local authentication (Admin and User roles)
+  8. Table Views, Timelines, and Calendars for compliance events
+  9. Filtering of events and commitments by customer
+* **Sprints:**
+
+  * Sprint 1 → Contracts, SSO, JSON Export
+  * Sprint 2 → Audit Ledger, Evidence, Alerts
+  * Sprint 3 → Billables, Compliance Calendar, Table/Timeline Views, Filtering
+
+---
+
+## 3. CPDO Business Requirements (Stage 4.3)
+
+### KPIs
+
+* **Compliance on-time:** ≥ 95% (weekly measurement)
+* **DSO:** ≤ 45 days (monthly)
+* **Contractual Commitments:** 0 missed contractual obligations (monthly review)
+
+### Business Requirement Cards
+
+**F001 – Contracts & Milestones**
+
+* BR-001: Support renewal/notice windows per contract (Must)
+* BR-002: Emit alerts once per notice period (Must)
+* BR-003: Export renewals to calendar feed (Should)
+* BR-004: Track all contractual commitments, events, and milestones to ensure no requirement is missed (Must)
+* BR-005: Allow import of contract commitments and events from CSV (extracted from contract analysis) for bulk upload (Should)
+
+**F002 – Audit Ledger & Evidence Locker**
+
+* BR-006: Store all evidence with hash + timestamp (Must)
+* BR-007: Prevent deletion of audit events (Must)
+* BR-008: Allow export of evidence log for audits (Should)
+
+**F003 – Billable Events & Invoicing Prep**
+
+* BR-009: Record billable units and rates per contract (Must)
+* BR-010: Associate billables with invoices (Must)
+* BR-011: Export invoices to CSV/JSON (Should)
+
+---
+
+## 4. Technical Requirements (Stage 4.4)
+
+* **Stack:** Node 22 + NestJS API, React 19 UI, Postgres 16, Prisma ORM, Zod validation
+* **Deployment:** Dockerfile for Replit container builds, GitHub Actions for CI/CD
+* **Security:** OIDC SSO, RBAC, AES-256 encryption at rest, TLS 1.3 in transit, append-only audit logs
+* **Performance Targets:**
+
+  * p99 latency < 300 ms
+  * RPO 15m, RTO 30m
+  * 99.9% uptime
+* **Backup/Restore:** JSON export via `/v1/exports/full`, restore via `/v1/exports/restore`
+
+---
+
+## 5. Sprint Bundles (Stage 4.5)
+
+* **Sprint 1 (10 days):**
+
+  * Contracts & Milestones
+  * RBAC/SSO
+  * JSON Export/Restore
+* **Sprint 2 (10 days):**
+
+  * Audit Ledger
+  * Evidence Locker
+  * Alerts & Dashboards
+* **Sprint 3 (10 days):**
+
+  * Billable Events
+  * Compliance Calendar
+
+---
+
+## 6. API Endpoints (Excerpt)
+
+* `GET /v1/contracts` – List contracts
+* `POST /v1/contracts` – Create contract
+* `POST /v1/milestones` – Add milestone
+* `POST /v1/billable-events` – Record billable event
+* `POST /v1/evidence` – Upload evidence
+* `POST /v1/exports/full` – Trigger full DB export
+* `POST /v1/exports/restore` – Restore from export
+* **`POST /v1/contracts/import-csv` – Bulk upload contract commitments/events from CSV**
+
+---
+
+## 7. Acceptance Criteria
+
+* All critical workflows leave **immutable audit events**
+* RBAC enforced for every action
+* JSON export produces **hash-manifested, schema-compliant output**
+* Compliance alerts fire once per threshold window, no duplicates
+* Contract commitments and milestones imported from CSV are validated and linked to contract records
+
+---
+
+## 8. Developer Notes
+
+* Container-first design: **Dockerfile required** for Replit
+* Export entire DB nightly, store in object storage (AES-256)
+* Align audit/event log with SOC 2 Security and HIPAA §164.312(b)
