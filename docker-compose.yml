@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: bizgov-postgres
+    environment:
+      POSTGRES_DB: bizgov
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  app:
+    build: .
+    container_name: bizgov-app
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/bizgov
+      - SESSION_SECRET=your-very-secure-session-secret-change-this-in-production
+      - AZURE_CLIENT_ID=3a4ad2ca-55a1-4ceb-a786-2b0fe30f0b2c
+      - AZURE_CLIENT_SECRET=WRr8Q~D5VDZzWwQNXf7DiAJwLYqRYMCt3pTbcaGu
+      - AZURE_TENANT_ID=d676934a-eb4a-495f-8608-5efe266912ff
+      - SENDER_EMAIL=noreply@healthtrixss.com
+      - DEFAULT_ALERT_EMAIL=admin@healthtrixss.com
+      - APP_URL=http://localhost:5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

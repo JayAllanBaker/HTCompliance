@@ -1,0 +1,491 @@
+import { 
+  users, customers, contracts, complianceItems, billableEvents, evidence, auditLog, emailAlerts,
+  type User, type InsertUser, type Customer, type InsertCustomer, type Contract, type InsertContract,
+  type ComplianceItem, type InsertComplianceItem, type BillableEvent, type InsertBillableEvent,
+  type Evidence, type InsertEvidence, type AuditLog, type InsertAuditLog,
+  type EmailAlert, type InsertEmailAlert
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, asc, and, or, gte, lte, like, count, sql } from "drizzle-orm";
+import session, { Store } from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
+
+const PostgresSessionStore = connectPg(session);
+
+export interface IStorage {
+  // User methods
+  getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<InsertUser>): Promise<User>;
+  
+  // Customer methods
+  getCustomers(): Promise<Customer[]>;
+  getCustomer(id: string): Promise<Customer | undefined>;
+  createCustomer(customer: InsertCustomer): Promise<Customer>;
+  updateCustomer(id: string, updates: Partial<InsertCustomer>): Promise<Customer>;
+  
+  // Contract methods
+  getContracts(customerId?: string): Promise<Contract[]>;
+  getContract(id: string): Promise<Contract | undefined>;
+  createContract(contract: InsertContract): Promise<Contract>;
+  updateContract(id: string, updates: Partial<InsertContract>): Promise<Contract>;
+  
+  // Compliance methods
+  getComplianceItems(filters?: {
+    customerId?: string;
+    category?: string;
+    status?: string;
+    dueDateFrom?: Date;
+    dueDateTo?: Date;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ items: ComplianceItem[]; total: number }>;
+  getComplianceItem(id: string): Promise<ComplianceItem | undefined>;
+  createComplianceItem(item: InsertComplianceItem): Promise<ComplianceItem>;
+  updateComplianceItem(id: string, updates: Partial<InsertComplianceItem>): Promise<ComplianceItem>;
+  deleteComplianceItem(id: string): Promise<void>;
+  getUpcomingComplianceItems(days: number): Promise<ComplianceItem[]>;
+  getOverdueComplianceItems(): Promise<ComplianceItem[]>;
+  getComplianceMetrics(): Promise<{
+    totalItems: number;
+    completedItems: number;
+    overdueItems: number;
+    upcomingItems: number;
+    complianceRate: number;
+  }>;
+  
+  // Billable events methods
+  getBillableEvents(customerId?: string): Promise<BillableEvent[]>;
+  getBillableEvent(id: string): Promise<BillableEvent | undefined>;
+  createBillableEvent(event: InsertBillableEvent): Promise<BillableEvent>;
+  updateBillableEvent(id: string, updates: Partial<InsertBillableEvent>): Promise<BillableEvent>;
+  
+  // Evidence methods
+  getEvidence(complianceItemId?: string, billableEventId?: string): Promise<Evidence[]>;
+  createEvidence(evidence: InsertEvidence): Promise<Evidence>;
+  
+  // Audit log methods
+  createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogs(entityId?: string, limit?: number): Promise<AuditLog[]>;
+  
+  // Email alert methods
+  createEmailAlert(alert: InsertEmailAlert): Promise<EmailAlert>;
+  getPendingEmailAlerts(): Promise<EmailAlert[]>;
+  updateEmailAlertStatus(id: string, status: string, errorMessage?: string): Promise<void>;
+  
+  // Import/Export methods
+  exportDatabase(): Promise<any>;
+  importDatabase(data: any): Promise<void>;
+  
+  sessionStore: Store;
+}
+
+export class DatabaseStorage implements IStorage {
+  sessionStore: Store;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
+    });
+  }
+
+  // User methods
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  async updateUser(id: string, updates: Partial<InsertUser>): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  // Customer methods
+  async getCustomers(): Promise<Customer[]> {
+    return await db.select().from(customers).orderBy(asc(customers.name));
+  }
+
+  async getCustomer(id: string): Promise<Customer | undefined> {
+    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+    return customer;
+  }
+
+  async createCustomer(customer: InsertCustomer): Promise<Customer> {
+    const [newCustomer] = await db.insert(customers).values(customer).returning();
+    return newCustomer;
+  }
+
+  async updateCustomer(id: string, updates: Partial<InsertCustomer>): Promise<Customer> {
+    const [updatedCustomer] = await db
+      .update(customers)
+      .set(updates)
+      .where(eq(customers.id, id))
+      .returning();
+    return updatedCustomer;
+  }
+
+  // Contract methods
+  async getContracts(customerId?: string): Promise<Contract[]> {
+    if (customerId) {
+      return await db.select().from(contracts)
+        .where(eq(contracts.customerId, customerId))
+        .orderBy(desc(contracts.createdAt));
+    }
+    return await db.select().from(contracts).orderBy(desc(contracts.createdAt));
+  }
+
+  async getContract(id: string): Promise<Contract | undefined> {
+    const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
+    return contract;
+  }
+
+  async createContract(contract: InsertContract): Promise<Contract> {
+    const [newContract] = await db.insert(contracts).values(contract).returning();
+    return newContract;
+  }
+
+  async updateContract(id: string, updates: Partial<InsertContract>): Promise<Contract> {
+    const [updatedContract] = await db
+      .update(contracts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(contracts.id, id))
+      .returning();
+    return updatedContract;
+  }
+
+  // Compliance methods
+  async getComplianceItems(filters: {
+    customerId?: string;
+    category?: string;
+    status?: string;
+    dueDateFrom?: Date;
+    dueDateTo?: Date;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<{ items: ComplianceItem[]; total: number }> {
+    let whereConditions: any[] = [];
+
+    if (filters.customerId) {
+      whereConditions.push(eq(complianceItems.customerId, filters.customerId));
+    }
+    if (filters.category) {
+      whereConditions.push(eq(complianceItems.category, filters.category as any));
+    }
+    if (filters.status) {
+      whereConditions.push(eq(complianceItems.status, filters.status as any));
+    }
+    if (filters.dueDateFrom) {
+      whereConditions.push(gte(complianceItems.dueDate, filters.dueDateFrom));
+    }
+    if (filters.dueDateTo) {
+      whereConditions.push(lte(complianceItems.dueDate, filters.dueDateTo));
+    }
+    if (filters.search) {
+      whereConditions.push(
+        or(
+          like(complianceItems.commitment, `%${filters.search}%`),
+          like(complianceItems.description, `%${filters.search}%`),
+          like(complianceItems.responsibleParty, `%${filters.search}%`)
+        )
+      );
+    }
+
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+    // Get total count
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(complianceItems)
+      .where(whereClause);
+
+    // Get items
+    let query = db.select().from(complianceItems).where(whereClause).orderBy(asc(complianceItems.dueDate));
+    
+    if (filters.limit !== undefined) {
+      query = query.limit(filters.limit);
+    }
+    if (filters.offset !== undefined) {
+      query = query.offset(filters.offset);
+    }
+
+    const items = await query;
+
+    return { items, total };
+  }
+
+  async getComplianceItem(id: string): Promise<ComplianceItem | undefined> {
+    const [item] = await db.select().from(complianceItems).where(eq(complianceItems.id, id));
+    return item;
+  }
+
+  async createComplianceItem(item: InsertComplianceItem): Promise<ComplianceItem> {
+    const [newItem] = await db.insert(complianceItems).values(item).returning();
+    return newItem;
+  }
+
+  async updateComplianceItem(id: string, updates: Partial<InsertComplianceItem>): Promise<ComplianceItem> {
+    const [updatedItem] = await db
+      .update(complianceItems)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(complianceItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteComplianceItem(id: string): Promise<void> {
+    await db.delete(complianceItems).where(eq(complianceItems.id, id));
+  }
+
+  async getUpcomingComplianceItems(days: number): Promise<ComplianceItem[]> {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + days);
+
+    return await db
+      .select()
+      .from(complianceItems)
+      .where(
+        and(
+          eq(complianceItems.status, "pending"),
+          gte(complianceItems.dueDate, new Date()),
+          lte(complianceItems.dueDate, endDate)
+        )
+      )
+      .orderBy(asc(complianceItems.dueDate));
+  }
+
+  async getOverdueComplianceItems(): Promise<ComplianceItem[]> {
+    return await db
+      .select()
+      .from(complianceItems)
+      .where(
+        and(
+          eq(complianceItems.status, "pending"),
+          lte(complianceItems.dueDate, new Date())
+        )
+      )
+      .orderBy(asc(complianceItems.dueDate));
+  }
+
+  async getComplianceMetrics(): Promise<{
+    totalItems: number;
+    completedItems: number;
+    overdueItems: number;
+    upcomingItems: number;
+    complianceRate: number;
+  }> {
+    const now = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    const [total] = await db.select({ count: count() }).from(complianceItems);
+    const [completed] = await db
+      .select({ count: count() })
+      .from(complianceItems)
+      .where(eq(complianceItems.status, "complete"));
+    const [overdue] = await db
+      .select({ count: count() })
+      .from(complianceItems)
+      .where(
+        and(
+          eq(complianceItems.status, "pending"),
+          lte(complianceItems.dueDate, now)
+        )
+      );
+    const [upcoming] = await db
+      .select({ count: count() })
+      .from(complianceItems)
+      .where(
+        and(
+          eq(complianceItems.status, "pending"),
+          gte(complianceItems.dueDate, now),
+          lte(complianceItems.dueDate, nextWeek)
+        )
+      );
+
+    const totalItems = total.count;
+    const completedItems = completed.count;
+    const overdueItems = overdue.count;
+    const upcomingItems = upcoming.count;
+    const complianceRate = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+
+    return {
+      totalItems,
+      completedItems,
+      overdueItems,
+      upcomingItems,
+      complianceRate,
+    };
+  }
+
+  // Billable events methods
+  async getBillableEvents(customerId?: string): Promise<BillableEvent[]> {
+    if (customerId) {
+      return await db.select().from(billableEvents)
+        .where(eq(billableEvents.customerId, customerId))
+        .orderBy(desc(billableEvents.billingDate));
+    }
+    return await db.select().from(billableEvents).orderBy(desc(billableEvents.billingDate));
+  }
+
+  async getBillableEvent(id: string): Promise<BillableEvent | undefined> {
+    const [event] = await db.select().from(billableEvents).where(eq(billableEvents.id, id));
+    return event;
+  }
+
+  async createBillableEvent(event: InsertBillableEvent): Promise<BillableEvent> {
+    const [newEvent] = await db.insert(billableEvents).values(event).returning();
+    return newEvent;
+  }
+
+  async updateBillableEvent(id: string, updates: Partial<InsertBillableEvent>): Promise<BillableEvent> {
+    const [updatedEvent] = await db
+      .update(billableEvents)
+      .set(updates)
+      .where(eq(billableEvents.id, id))
+      .returning();
+    return updatedEvent;
+  }
+
+  // Evidence methods
+  async getEvidence(complianceItemId?: string, billableEventId?: string): Promise<Evidence[]> {
+    let whereConditions: any[] = [];
+    
+    if (complianceItemId) {
+      whereConditions.push(eq(evidence.complianceItemId, complianceItemId));
+    }
+    if (billableEventId) {
+      whereConditions.push(eq(evidence.billableEventId, billableEventId));
+    }
+
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+    return await db
+      .select()
+      .from(evidence)
+      .where(whereClause)
+      .orderBy(desc(evidence.createdAt));
+  }
+
+  async createEvidence(evidenceData: InsertEvidence): Promise<Evidence> {
+    const [newEvidence] = await db.insert(evidence).values(evidenceData).returning();
+    return newEvidence;
+  }
+
+  // Audit log methods
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [newLog] = await db.insert(auditLog).values(log).returning();
+    return newLog;
+  }
+
+  async getAuditLogs(entityId?: string, limit: number = 100): Promise<AuditLog[]> {
+    if (entityId) {
+      return await db.select().from(auditLog)
+        .where(eq(auditLog.entityId, entityId))
+        .orderBy(desc(auditLog.timestamp))
+        .limit(limit);
+    }
+    return await db.select().from(auditLog).orderBy(desc(auditLog.timestamp)).limit(limit);
+  }
+
+  // Email alert methods
+  async createEmailAlert(alert: InsertEmailAlert): Promise<EmailAlert> {
+    const [newAlert] = await db.insert(emailAlerts).values(alert).returning();
+    return newAlert;
+  }
+
+  async getPendingEmailAlerts(): Promise<EmailAlert[]> {
+    return await db
+      .select()
+      .from(emailAlerts)
+      .where(eq(emailAlerts.status, "pending"))
+      .orderBy(asc(emailAlerts.createdAt));
+  }
+
+  async updateEmailAlertStatus(id: string, status: string, errorMessage?: string): Promise<void> {
+    const updates: any = { status };
+    if (status === "sent") {
+      updates.sentAt = new Date();
+    }
+    if (errorMessage) {
+      updates.errorMessage = errorMessage;
+    }
+    
+    await db
+      .update(emailAlerts)
+      .set(updates)
+      .where(eq(emailAlerts.id, id));
+  }
+
+  // Import/Export methods
+  async exportDatabase(): Promise<any> {
+    const allUsers = await db.select().from(users);
+    const allCustomers = await db.select().from(customers);
+    const allContracts = await db.select().from(contracts);
+    const allComplianceItems = await db.select().from(complianceItems);
+    const allBillableEvents = await db.select().from(billableEvents);
+    const allEvidence = await db.select().from(evidence);
+    const allAuditLogs = await db.select().from(auditLog);
+    const allEmailAlerts = await db.select().from(emailAlerts);
+
+    return {
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      data: {
+        users: allUsers,
+        customers: allCustomers,
+        contracts: allContracts,
+        complianceItems: allComplianceItems,
+        billableEvents: allBillableEvents,
+        evidence: allEvidence,
+        auditLogs: allAuditLogs,
+        emailAlerts: allEmailAlerts,
+      }
+    };
+  }
+
+  async importDatabase(data: any): Promise<void> {
+    // This is a simplified import - in production you'd want more robust error handling
+    if (data.data.users?.length) {
+      await db.insert(users).values(data.data.users).onConflictDoNothing();
+    }
+    if (data.data.customers?.length) {
+      await db.insert(customers).values(data.data.customers).onConflictDoNothing();
+    }
+    if (data.data.contracts?.length) {
+      await db.insert(contracts).values(data.data.contracts).onConflictDoNothing();
+    }
+    if (data.data.complianceItems?.length) {
+      await db.insert(complianceItems).values(data.data.complianceItems).onConflictDoNothing();
+    }
+    if (data.data.billableEvents?.length) {
+      await db.insert(billableEvents).values(data.data.billableEvents).onConflictDoNothing();
+    }
+    if (data.data.evidence?.length) {
+      await db.insert(evidence).values(data.data.evidence).onConflictDoNothing();
+    }
+    if (data.data.emailAlerts?.length) {
+      await db.insert(emailAlerts).values(data.data.emailAlerts).onConflictDoNothing();
+    }
+  }
+}
+
+export const storage = new DatabaseStorage();
