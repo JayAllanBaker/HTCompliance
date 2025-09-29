@@ -10,7 +10,8 @@ import {
   Shield, 
   Download,
   Activity,
-  Settings
+  Settings,
+  Building2
 } from "lucide-react";
 
 const navigation = [
@@ -18,6 +19,11 @@ const navigation = [
     name: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
+  },
+  {
+    name: "Organization Mgt",
+    href: "/organizations",
+    icon: Building2,
   },
   {
     name: "Contracts",

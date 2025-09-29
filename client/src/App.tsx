@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
+import Organizations from "@/pages/organizations";
 import Contracts from "@/pages/contracts";
 import Compliance from "@/pages/compliance";
 import BillableEvents from "@/pages/billable-events";
@@ -19,6 +20,7 @@ function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/organizations" component={Organizations} />
       <ProtectedRoute path="/contracts" component={Contracts} />
       <ProtectedRoute path="/compliance" component={Compliance} />
       <ProtectedRoute path="/billable-events" component={BillableEvents} />

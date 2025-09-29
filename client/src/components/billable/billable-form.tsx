@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Customer, Contract, ComplianceItem, BillableEvent } from "@shared/schema";
+import type { Organization, Contract, ComplianceItem, BillableEvent } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
-  customerId: z.string().min(1, "Customer is required"),
+  customerId: z.string().min(1, "Organization is required"),
   contractId: z.string().optional(),
   complianceItemId: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -54,17 +54,17 @@ export default function BillableForm({ onClose, onSuccess, event }: BillableForm
     },
   });
 
-  const { data: customers } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+  const { data: organizations } = useQuery<Organization[]>({
+    queryKey: ["/api/organizations"],
   });
 
   const { data: contracts } = useQuery<Contract[]>({
-    queryKey: ["/api/contracts", { customerId: form.watch("customerId") }],
+    queryKey: ["/api/contracts", { organizationId: form.watch("customerId") }],
     enabled: !!form.watch("customerId"),
   });
 
   const { data: complianceItems } = useQuery<{ items: ComplianceItem[]; total: number }>({
-    queryKey: ["/api/compliance-items", { customerId: form.watch("customerId"), limit: 100 }],
+    queryKey: ["/api/compliance-items", { organizationId: form.watch("customerId"), limit: 100 }],
     enabled: !!form.watch("customerId"),
   });
 
@@ -132,17 +132,17 @@ export default function BillableForm({ onClose, onSuccess, event }: BillableForm
               name="customerId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer</FormLabel>
+                  <FormLabel>Organization</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger data-testid="select-customer">
-                        <SelectValue placeholder="Select customer..." />
+                      <SelectTrigger data-testid="select-organization">
+                        <SelectValue placeholder="Select organization..." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {customers?.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}
+                      {organizations?.map((org) => (
+                        <SelectItem key={org.id} value={org.id}>
+                          {org.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

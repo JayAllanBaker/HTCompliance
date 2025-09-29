@@ -1,6 +1,6 @@
 import { 
-  users, customers, contracts, complianceItems, billableEvents, evidence, auditLog, emailAlerts,
-  type User, type InsertUser, type Customer, type InsertCustomer, type Contract, type InsertContract,
+  users, organizations, contracts, complianceItems, billableEvents, evidence, auditLog, emailAlerts,
+  type User, type InsertUser, type Organization, type InsertOrganization, type Contract, type InsertContract,
   type ComplianceItem, type InsertComplianceItem, type BillableEvent, type InsertBillableEvent,
   type Evidence, type InsertEvidence, type AuditLog, type InsertAuditLog,
   type EmailAlert, type InsertEmailAlert
@@ -22,21 +22,22 @@ export interface IStorage {
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User>;
   deleteUser(id: string): Promise<void>;
   
-  // Customer methods
-  getCustomers(): Promise<Customer[]>;
-  getCustomer(id: string): Promise<Customer | undefined>;
-  createCustomer(customer: InsertCustomer): Promise<Customer>;
-  updateCustomer(id: string, updates: Partial<InsertCustomer>): Promise<Customer>;
+  // Organization methods
+  getOrganizations(): Promise<Organization[]>;
+  getOrganization(id: string): Promise<Organization | undefined>;
+  createOrganization(organization: InsertOrganization): Promise<Organization>;
+  updateOrganization(id: string, updates: Partial<InsertOrganization>): Promise<Organization>;
+  deleteOrganization(id: string): Promise<void>;
   
   // Contract methods
-  getContracts(customerId?: string): Promise<Contract[]>;
+  getContracts(organizationId?: string): Promise<Contract[]>;
   getContract(id: string): Promise<Contract | undefined>;
   createContract(contract: InsertContract): Promise<Contract>;
   updateContract(id: string, updates: Partial<InsertContract>): Promise<Contract>;
   
   // Compliance methods
   getComplianceItems(filters?: {
-    customerId?: string;
+    organizationId?: string;
     category?: string;
     status?: string;
     dueDateFrom?: Date;
@@ -60,7 +61,7 @@ export interface IStorage {
   }>;
   
   // Billable events methods
-  getBillableEvents(customerId?: string): Promise<BillableEvent[]>;
+  getBillableEvents(organizationId?: string): Promise<BillableEvent[]>;
   getBillableEvent(id: string): Promise<BillableEvent | undefined>;
   createBillableEvent(event: InsertBillableEvent): Promise<BillableEvent>;
   updateBillableEvent(id: string, updates: Partial<InsertBillableEvent>): Promise<BillableEvent>;
@@ -129,35 +130,39 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, id));
   }
 
-  // Customer methods
-  async getCustomers(): Promise<Customer[]> {
-    return await db.select().from(customers).orderBy(asc(customers.name));
+  // Organization methods
+  async getOrganizations(): Promise<Organization[]> {
+    return await db.select().from(organizations).orderBy(asc(organizations.name));
   }
 
-  async getCustomer(id: string): Promise<Customer | undefined> {
-    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
-    return customer;
+  async getOrganization(id: string): Promise<Organization | undefined> {
+    const [organization] = await db.select().from(organizations).where(eq(organizations.id, id));
+    return organization;
   }
 
-  async createCustomer(customer: InsertCustomer): Promise<Customer> {
-    const [newCustomer] = await db.insert(customers).values(customer).returning();
-    return newCustomer;
+  async createOrganization(organization: InsertOrganization): Promise<Organization> {
+    const [newOrganization] = await db.insert(organizations).values(organization).returning();
+    return newOrganization;
   }
 
-  async updateCustomer(id: string, updates: Partial<InsertCustomer>): Promise<Customer> {
-    const [updatedCustomer] = await db
-      .update(customers)
+  async updateOrganization(id: string, updates: Partial<InsertOrganization>): Promise<Organization> {
+    const [updatedOrganization] = await db
+      .update(organizations)
       .set(updates)
-      .where(eq(customers.id, id))
+      .where(eq(organizations.id, id))
       .returning();
-    return updatedCustomer;
+    return updatedOrganization;
+  }
+
+  async deleteOrganization(id: string): Promise<void> {
+    await db.delete(organizations).where(eq(organizations.id, id));
   }
 
   // Contract methods
-  async getContracts(customerId?: string): Promise<Contract[]> {
-    if (customerId) {
+  async getContracts(organizationId?: string): Promise<Contract[]> {
+    if (organizationId) {
       return await db.select().from(contracts)
-        .where(eq(contracts.customerId, customerId))
+        .where(eq(contracts.customerId, organizationId))
         .orderBy(desc(contracts.createdAt));
     }
     return await db.select().from(contracts).orderBy(desc(contracts.createdAt));
@@ -184,7 +189,7 @@ export class DatabaseStorage implements IStorage {
 
   // Compliance methods
   async getComplianceItems(filters: {
-    customerId?: string;
+    organizationId?: string;
     category?: string;
     status?: string;
     dueDateFrom?: Date;
@@ -195,8 +200,8 @@ export class DatabaseStorage implements IStorage {
   } = {}): Promise<{ items: ComplianceItem[]; total: number }> {
     let whereConditions: any[] = [];
 
-    if (filters.customerId) {
-      whereConditions.push(eq(complianceItems.customerId, filters.customerId));
+    if (filters.organizationId) {
+      whereConditions.push(eq(complianceItems.customerId, filters.organizationId));
     }
     if (filters.category) {
       whereConditions.push(eq(complianceItems.category, filters.category as any));
@@ -348,10 +353,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Billable events methods
-  async getBillableEvents(customerId?: string): Promise<BillableEvent[]> {
-    if (customerId) {
+  async getBillableEvents(organizationId?: string): Promise<BillableEvent[]> {
+    if (organizationId) {
       return await db.select().from(billableEvents)
-        .where(eq(billableEvents.customerId, customerId))
+        .where(eq(billableEvents.customerId, organizationId))
         .orderBy(desc(billableEvents.billingDate));
     }
     return await db.select().from(billableEvents).orderBy(desc(billableEvents.billingDate));
@@ -449,7 +454,7 @@ export class DatabaseStorage implements IStorage {
   // Import/Export methods
   async exportDatabase(): Promise<any> {
     const allUsers = await db.select().from(users);
-    const allCustomers = await db.select().from(customers);
+    const allOrganizations = await db.select().from(organizations);
     const allContracts = await db.select().from(contracts);
     const allComplianceItems = await db.select().from(complianceItems);
     const allBillableEvents = await db.select().from(billableEvents);
@@ -462,7 +467,7 @@ export class DatabaseStorage implements IStorage {
       timestamp: new Date().toISOString(),
       data: {
         users: allUsers,
-        customers: allCustomers,
+        organizations: allOrganizations,
         contracts: allContracts,
         complianceItems: allComplianceItems,
         billableEvents: allBillableEvents,
@@ -478,8 +483,8 @@ export class DatabaseStorage implements IStorage {
     if (data.data.users?.length) {
       await db.insert(users).values(data.data.users).onConflictDoNothing();
     }
-    if (data.data.customers?.length) {
-      await db.insert(customers).values(data.data.customers).onConflictDoNothing();
+    if (data.data.organizations?.length) {
+      await db.insert(organizations).values(data.data.organizations).onConflictDoNothing();
     }
     if (data.data.contracts?.length) {
       await db.insert(contracts).values(data.data.contracts).onConflictDoNothing();
@@ -507,7 +512,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(billableEvents);
     await db.delete(complianceItems);
     await db.delete(contracts);
-    await db.delete(customers);
+    await db.delete(organizations);
     // Users table is NOT deleted to preserve admin access
   }
 }

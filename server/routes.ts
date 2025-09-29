@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
-import { insertCustomerSchema, insertContractSchema, insertComplianceItemSchema, insertBillableEventSchema, insertEvidenceSchema, insertUserSchema } from "@shared/schema";
+import { insertOrganizationSchema, insertContractSchema, insertComplianceItemSchema, insertBillableEventSchema, insertEvidenceSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import { parseCSV, validateComplianceCSV } from "./services/csv-import";
@@ -27,47 +27,103 @@ export function registerRoutes(app: Express): Server {
   // Setup authentication routes
   setupAuth(app);
 
-  // Customer routes
-  app.get("/api/customers", async (req, res) => {
+  // Organization routes (admin protected for mutations)
+  app.get("/api/organizations", async (req, res) => {
     try {
-      const customers = await storage.getCustomers();
-      res.json(customers);
+      const organizations = await storage.getOrganizations();
+      res.json(organizations);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch customers" });
+      res.status(500).json({ error: "Failed to fetch organizations" });
     }
   });
 
-  app.post("/api/customers", async (req, res) => {
+  app.post("/api/organizations", async (req, res) => {
     try {
-      const validatedData = insertCustomerSchema.parse(req.body);
-      const customer = await storage.createCustomer(validatedData);
+      const validatedData = insertOrganizationSchema.parse(req.body);
+      const organization = await storage.createOrganization(validatedData);
       
       // Audit log
       await storage.createAuditLog({
         userId: req.user?.id,
         action: "CREATE",
-        entityType: "customer",
-        entityId: customer.id,
-        newValues: JSON.stringify(customer),
+        entityType: "organization",
+        entityId: organization.id,
+        newValues: JSON.stringify(organization),
         ipAddress: req.ip,
         userAgent: req.get("User-Agent"),
       });
       
-      res.status(201).json(customer);
+      res.status(201).json(organization);
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Invalid input", details: error.errors });
       } else {
-        res.status(500).json({ error: "Failed to create customer" });
+        res.status(500).json({ error: "Failed to create organization" });
       }
+    }
+  });
+
+  app.patch("/api/organizations/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertOrganizationSchema.partial().parse(req.body);
+      const organization = await storage.updateOrganization(id, validatedData);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entityType: "organization",
+        entityId: organization.id,
+        newValues: JSON.stringify(organization),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json(organization);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update organization" });
+      }
+    }
+  });
+
+  app.delete("/api/organizations/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const organization = await storage.getOrganization(id);
+      
+      if (!organization) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+      
+      // Audit log before deletion
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "organization",
+        entityId: id,
+        oldValues: JSON.stringify(organization),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      // Delete organization
+      await storage.deleteOrganization(id);
+      
+      res.json({ message: "Organization deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete organization" });
     }
   });
 
   // Contract routes
   app.get("/api/contracts", async (req, res) => {
     try {
-      const customerId = req.query.customerId as string;
-      const contracts = await storage.getContracts(customerId);
+      const organizationId = req.query.organizationId as string;
+      const contracts = await storage.getContracts(organizationId);
       res.json(contracts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch contracts" });
@@ -110,7 +166,7 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/compliance-items", async (req, res) => {
     try {
       const filters: {
-        customerId?: string;
+        organizationId?: string;
         category?: string;
         status?: string;
         search?: string;
@@ -119,7 +175,7 @@ export function registerRoutes(app: Express): Server {
         dueDateFrom?: Date;
         dueDateTo?: Date;
       } = {
-        customerId: req.query.customerId as string,
+        organizationId: req.query.organizationId as string,
         category: req.query.category as string,
         status: req.query.status as string,
         search: req.query.search as string,
@@ -282,8 +338,8 @@ export function registerRoutes(app: Express): Server {
   // Billable events routes
   app.get("/api/billable-events", async (req, res) => {
     try {
-      const customerId = req.query.customerId as string;
-      const events = await storage.getBillableEvents(customerId);
+      const organizationId = req.query.organizationId as string;
+      const events = await storage.getBillableEvents(organizationId);
       res.json(events);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch billable events" });

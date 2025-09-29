@@ -21,8 +21,8 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
-// Customers table
-export const customers = pgTable("customers", {
+// Organizations table (database table name: customers)
+export const organizations = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
@@ -34,7 +34,7 @@ export const customers = pgTable("customers", {
 // Contracts table
 export const contracts = pgTable("contracts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  customerId: varchar("customer_id").notNull().references(() => customers.id),
+  customerId: varchar("customer_id").notNull().references(() => organizations.id),
   title: text("title").notNull(),
   description: text("description"),
   startDate: timestamp("start_date").notNull(),
@@ -48,7 +48,7 @@ export const contracts = pgTable("contracts", {
 // Compliance Items table
 export const complianceItems = pgTable("compliance_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  customerId: varchar("customer_id").notNull().references(() => customers.id),
+  customerId: varchar("customer_id").notNull().references(() => organizations.id),
   contractId: varchar("contract_id").references(() => contracts.id),
   category: categoryEnum("category").notNull(),
   type: text("type").notNull(),
@@ -66,7 +66,7 @@ export const complianceItems = pgTable("compliance_items", {
 // Billable Events table
 export const billableEvents = pgTable("billable_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  customerId: varchar("customer_id").notNull().references(() => customers.id),
+  customerId: varchar("customer_id").notNull().references(() => organizations.id),
   contractId: varchar("contract_id").references(() => contracts.id),
   complianceItemId: varchar("compliance_item_id").references(() => complianceItems.id),
   description: text("description").notNull(),
@@ -127,25 +127,25 @@ export const usersRelations = relations(users, ({ many }) => ({
   auditLog: many(auditLog),
 }));
 
-export const customersRelations = relations(customers, ({ many }) => ({
+export const organizationsRelations = relations(organizations, ({ many }) => ({
   contracts: many(contracts),
   complianceItems: many(complianceItems),
   billableEvents: many(billableEvents),
 }));
 
 export const contractsRelations = relations(contracts, ({ one, many }) => ({
-  customer: one(customers, {
+  organization: one(organizations, {
     fields: [contracts.customerId],
-    references: [customers.id],
+    references: [organizations.id],
   }),
   complianceItems: many(complianceItems),
   billableEvents: many(billableEvents),
 }));
 
 export const complianceItemsRelations = relations(complianceItems, ({ one, many }) => ({
-  customer: one(customers, {
+  organization: one(organizations, {
     fields: [complianceItems.customerId],
-    references: [customers.id],
+    references: [organizations.id],
   }),
   contract: one(contracts, {
     fields: [complianceItems.contractId],
@@ -157,9 +157,9 @@ export const complianceItemsRelations = relations(complianceItems, ({ one, many 
 }));
 
 export const billableEventsRelations = relations(billableEvents, ({ one, many }) => ({
-  customer: one(customers, {
+  organization: one(organizations, {
     fields: [billableEvents.customerId],
-    references: [customers.id],
+    references: [organizations.id],
   }),
   contract: one(contracts, {
     fields: [billableEvents.contractId],
@@ -201,7 +201,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
-export const insertCustomerSchema = createInsertSchema(customers).omit({
+export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   id: true,
   createdAt: true,
 });
@@ -241,8 +241,8 @@ export const insertEmailAlertSchema = createInsertSchema(emailAlerts).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type Customer = typeof customers.$inferSelect;
-export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;
 export type ComplianceItem = typeof complianceItems.$inferSelect;
