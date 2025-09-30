@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import * as Papa from 'papaparse';
+import Papa from 'papaparse';
 import { InsertComplianceItem } from '@shared/schema';
 import { storage } from '../storage';
 
@@ -39,10 +39,10 @@ export async function validateComplianceCSV(csvData: CSVRow[]): Promise<InsertCo
   const validatedItems: InsertComplianceItem[] = [];
   const errors: string[] = [];
   
-  // Get all customers to validate customer references
-  const customers = await storage.getCustomers();
-  const customerMap = new Map(customers.map(c => [c.name.toLowerCase(), c.id]));
-  const customerCodes = new Map(customers.map(c => [c.code.toLowerCase(), c.id]));
+  // Get all organizations to validate customer references
+  const organizations = await storage.getOrganizations();
+  const organizationMap = new Map(organizations.map(org => [org.name.toLowerCase(), org.id]));
+  const organizationCodes = new Map(organizations.map(org => [org.code.toLowerCase(), org.id]));
   
   for (let i = 0; i < csvData.length; i++) {
     const row = csvData[i];
@@ -107,31 +107,31 @@ export async function validateComplianceCSV(csvData: CSVRow[]): Promise<InsertCo
         dueDate = parsedDate;
       }
       
-      // Find customer ID
+      // Find organization ID (customer field in CSV)
       let customerId: string;
       const customerName = row.Customer || 'CCAH'; // Default to CCAH if not specified
       
-      // Try to find customer by name first, then by code
-      const customerIdByName = customerMap.get(customerName.toLowerCase());
-      const customerIdByCode = customerCodes.get(customerName.toLowerCase());
+      // Try to find organization by name first, then by code
+      const orgIdByName = organizationMap.get(customerName.toLowerCase());
+      const orgIdByCode = organizationCodes.get(customerName.toLowerCase());
       
-      if (customerIdByName) {
-        customerId = customerIdByName;
-      } else if (customerIdByCode) {
-        customerId = customerIdByCode;
+      if (orgIdByName) {
+        customerId = orgIdByName;
+      } else if (orgIdByCode) {
+        customerId = orgIdByCode;
       } else {
-        // Create new customer if it doesn't exist
+        // Create new organization if it doesn't exist
         try {
-          const newCustomer = await storage.createCustomer({
+          const newOrg = await storage.createOrganization({
             name: customerName,
             code: customerName.replace(/\s+/g, '_').toUpperCase(),
             isActive: true,
           });
-          customerId = newCustomer.id;
-          customerMap.set(customerName.toLowerCase(), customerId);
+          customerId = newOrg.id;
+          organizationMap.set(customerName.toLowerCase(), customerId);
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error';
-          errors.push(`Row ${rowNumber}: Failed to create customer "${customerName}": ${message}`);
+          errors.push(`Row ${rowNumber}: Failed to create organization "${customerName}": ${message}`);
           continue;
         }
       }
