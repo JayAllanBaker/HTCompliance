@@ -247,7 +247,12 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Compliance item not found" });
       }
 
-      const validatedData = insertComplianceItemSchema.partial().parse(req.body);
+      // Convert date strings to Date objects before validation
+      const data = {
+        ...req.body,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+      };
+      const validatedData = insertComplianceItemSchema.partial().parse(data);
       const updatedItem = await storage.updateComplianceItem(req.params.id, validatedData);
       
       // Audit log
