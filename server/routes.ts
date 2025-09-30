@@ -247,11 +247,16 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Compliance item not found" });
       }
 
+      console.log("Update request body:", JSON.stringify(req.body, null, 2));
+      
       // Convert date strings to Date objects before validation
       const data = {
         ...req.body,
-        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+        completedAt: req.body.completedAt ? new Date(req.body.completedAt) : null,
       };
+      
+      console.log("Data after date conversion:", JSON.stringify(data, null, 2));
       const validatedData = insertComplianceItemSchema.partial().parse(data);
       const updatedItem = await storage.updateComplianceItem(req.params.id, validatedData);
       
