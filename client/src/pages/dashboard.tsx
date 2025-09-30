@@ -13,14 +13,19 @@ import Sidebar from "@/components/layout/sidebar";
 import KPICards from "@/components/compliance/kpi-cards";
 import ComplianceTable from "@/components/compliance/compliance-table";
 import ComplianceForm from "@/components/compliance/compliance-form";
+import ComplianceCalendar from "@/components/compliance/compliance-calendar";
+import ComplianceTimeline from "@/components/compliance/compliance-timeline";
 import { Upload, Download, Mail, Calendar, List, BarChart3, Plus, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+
+type ViewMode = "table" | "timeline" | "calendar";
 
 export default function Dashboard() {
   const { toast } = useToast();
   const [showNewItemForm, setShowNewItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [filters, setFilters] = useState({
     search: "",
     customerId: "",
@@ -197,13 +202,31 @@ export default function Dashboard() {
                   </Select>
                   
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm" title="Table View" data-testid="button-table-view">
+                    <Button 
+                      variant={viewMode === "table" ? "default" : "outline"} 
+                      size="sm" 
+                      title="Table View" 
+                      onClick={() => setViewMode("table")}
+                      data-testid="button-table-view"
+                    >
                       <List className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" title="Timeline View" data-testid="button-timeline-view">
+                    <Button 
+                      variant={viewMode === "timeline" ? "default" : "outline"} 
+                      size="sm" 
+                      title="Timeline View"
+                      onClick={() => setViewMode("timeline")}
+                      data-testid="button-timeline-view"
+                    >
                       <BarChart3 className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" title="Calendar View" data-testid="button-calendar-view">
+                    <Button 
+                      variant={viewMode === "calendar" ? "default" : "outline"} 
+                      size="sm" 
+                      title="Calendar View"
+                      onClick={() => setViewMode("calendar")}
+                      data-testid="button-calendar-view"
+                    >
                       <Calendar className="h-4 w-4" />
                     </Button>
                   </div>
@@ -211,21 +234,43 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Compliance Items Table */}
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle>Upcoming Compliance Items</CardTitle>
-                <CardDescription>Next 30 days</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ComplianceTable 
-                  data={complianceData?.items || []}
-                  isLoading={complianceLoading}
-                  onRefresh={refetch}
-                  onEdit={setEditingItem}
+            {/* Compliance Items - Table View */}
+            {viewMode === "table" && (
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle>Upcoming Compliance Items</CardTitle>
+                  <CardDescription>Next 30 days</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ComplianceTable 
+                    data={complianceData?.items || []}
+                    isLoading={complianceLoading}
+                    onRefresh={refetch}
+                    onEdit={setEditingItem}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Compliance Items - Calendar View */}
+            {viewMode === "calendar" && (
+              <div className="mb-8">
+                <ComplianceCalendar 
+                  items={complianceData?.items || []}
+                  customers={organizations}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            )}
+
+            {/* Compliance Items - Timeline View */}
+            {viewMode === "timeline" && (
+              <div className="mb-8">
+                <ComplianceTimeline 
+                  items={complianceData?.items || []}
+                  customers={organizations}
+                />
+              </div>
+            )}
 
             {/* Quick Actions and Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
