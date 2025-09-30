@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Customer, Contract } from "@shared/schema";
+import type { Organization, Contract } from "@shared/schema";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,18 +13,20 @@ import { format } from "date-fns";
 
 export default function Contracts() {
   const [showNewContractForm, setShowNewContractForm] = useState(false);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [viewingContract, setViewingContract] = useState<Contract | null>(null);
 
   const { data: contracts, isLoading, refetch } = useQuery<Contract[]>({
     queryKey: ["/api/contracts"],
   });
 
-  const { data: customers } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+  const { data: organizations } = useQuery<Organization[]>({
+    queryKey: ["/api/organizations"],
   });
 
-  const getCustomerName = (customerId: string) => {
-    const customer = customers?.find((c) => c.id === customerId);
-    return customer?.name || "Unknown Customer";
+  const getOrganizationName = (customerId: string) => {
+    const organization = organizations?.find((org) => org.id === customerId);
+    return organization?.name || "Unknown Organization";
   };
 
   const formatCurrency = (amount: string | null) => {
@@ -100,7 +102,7 @@ export default function Contracts() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Contract Title</TableHead>
-                          <TableHead>Customer</TableHead>
+                          <TableHead>Organization</TableHead>
                           <TableHead>Start Date</TableHead>
                           <TableHead>End Date</TableHead>
                           <TableHead>Max Amount</TableHead>
@@ -115,7 +117,7 @@ export default function Contracts() {
                               {contract.title}
                             </TableCell>
                             <TableCell>
-                              {getCustomerName(contract.customerId)}
+                              {getOrganizationName(contract.customerId)}
                             </TableCell>
                             <TableCell>
                               {contract.startDate ? format(new Date(contract.startDate), 'MMM dd, yyyy') : 'N/A'}
@@ -136,6 +138,7 @@ export default function Contracts() {
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
+                                  onClick={() => setViewingContract(contract)}
                                   data-testid={`button-view-${contract.id}`}
                                 >
                                   <Eye className="h-4 w-4" />
@@ -143,6 +146,7 @@ export default function Contracts() {
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
+                                  onClick={() => setEditingContract(contract)}
                                   data-testid={`button-edit-${contract.id}`}
                                 >
                                   <Edit className="h-4 w-4" />
@@ -221,6 +225,28 @@ export default function Contracts() {
           onClose={() => setShowNewContractForm(false)}
           onSuccess={() => {
             setShowNewContractForm(false);
+            refetch();
+          }}
+        />
+      )}
+      
+      {editingContract && (
+        <ContractForm 
+          contract={editingContract}
+          onClose={() => setEditingContract(null)}
+          onSuccess={() => {
+            setEditingContract(null);
+            refetch();
+          }}
+        />
+      )}
+      
+      {viewingContract && (
+        <ContractForm 
+          contract={viewingContract}
+          onClose={() => setViewingContract(null)}
+          onSuccess={() => {
+            setViewingContract(null);
             refetch();
           }}
         />
