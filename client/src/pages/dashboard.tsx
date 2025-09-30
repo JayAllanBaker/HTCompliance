@@ -48,7 +48,7 @@ export default function Dashboard() {
   });
 
   const { data: complianceData, isLoading: complianceLoading, refetch } = useQuery<{ items: ComplianceItem[]; total: number }>({
-    queryKey: ["/api/compliance-items", { ...filters, limit: 10 }],
+    queryKey: ["/api/compliance-items", { ...filters, limit: 1000 }],
   });
 
   const handleSendAlerts = async () => {
