@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Customer, ComplianceItem } from "@shared/schema";
+import type { Organization, ComplianceItem } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
-  customerId: z.string().min(1, "Customer is required"),
+  customerId: z.string().min(1, "Organization is required"),
   category: z.enum(["Marketing Agreement", "Billing", "Deliverable", "Compliance", "End-of-Term"]),
   type: z.string().min(1, "Type is required"),
   commitment: z.string().min(1, "Commitment is required"),
@@ -56,8 +56,8 @@ export default function ComplianceForm({ onClose, onSuccess, item }: ComplianceF
     },
   });
 
-  const { data: customers } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+  const { data: organizations } = useQuery<Organization[]>({
+    queryKey: ["/api/organizations"],
   });
 
   const createMutation = useMutation({
@@ -117,17 +117,17 @@ export default function ComplianceForm({ onClose, onSuccess, item }: ComplianceF
                 name="customerId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Customer</FormLabel>
+                    <FormLabel>Organization</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-customer">
-                          <SelectValue placeholder="Select customer..." />
+                        <SelectTrigger data-testid="select-organization">
+                          <SelectValue placeholder="Select organization..." />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {customers?.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name}
+                        {organizations?.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
