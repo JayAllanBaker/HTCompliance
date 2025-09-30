@@ -67,12 +67,17 @@ export default function ComplianceForm({ onClose, onSuccess, item }: ComplianceF
         dueDate: data.dueDate?.toISOString() || null,
       };
       
-      if (isEditing) {
-        const response = await apiRequest("PUT", `/api/compliance-items/${item.id}`, payload);
-        return response.json();
-      } else {
-        const response = await apiRequest("POST", "/api/compliance-items", payload);
-        return response.json();
+      try {
+        if (isEditing) {
+          const response = await apiRequest("PUT", `/api/compliance-items/${item.id}`, payload);
+          return response.json();
+        } else {
+          const response = await apiRequest("POST", "/api/compliance-items", payload);
+          return response.json();
+        }
+      } catch (err: any) {
+        console.error("API Request error:", err);
+        throw err;
       }
     },
     onSuccess: () => {
@@ -86,7 +91,16 @@ export default function ComplianceForm({ onClose, onSuccess, item }: ComplianceF
     },
     onError: (error: any) => {
       console.error("Form submission error:", error);
-      const errorMessage = error?.message || error?.error || `Failed to ${isEditing ? "update" : "create"} compliance item.`;
+      let errorMessage = `Failed to ${isEditing ? "update" : "create"} compliance item.`;
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: isEditing ? "Update Failed" : "Creation Failed",
         description: errorMessage,
