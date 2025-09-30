@@ -354,6 +354,7 @@ export function registerRoutes(app: Express): Server {
         ...req.body,
         billingDate: req.body.billingDate ? new Date(req.body.billingDate) : undefined,
       };
+      console.log("Creating billable event with data:", JSON.stringify(data, null, 2));
       const validatedData = insertBillableEventSchema.parse(data);
       const event = await storage.createBillableEvent(validatedData);
       
@@ -370,10 +371,12 @@ export function registerRoutes(app: Express): Server {
       
       res.status(201).json(event);
     } catch (error) {
+      console.error("Error creating billable event:", error);
       if (error instanceof z.ZodError) {
+        console.error("Validation errors:", JSON.stringify(error.errors, null, 2));
         res.status(400).json({ error: "Invalid input", details: error.errors });
       } else {
-        res.status(500).json({ error: "Failed to create billable event" });
+        res.status(500).json({ error: "Failed to create billable event", message: error instanceof Error ? error.message : "Unknown error" });
       }
     }
   });
