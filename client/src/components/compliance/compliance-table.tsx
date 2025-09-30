@@ -14,6 +14,7 @@ interface ComplianceTableProps {
   data: ComplianceItem[];
   isLoading?: boolean;
   onRefresh?: () => void;
+  onEdit?: (item: ComplianceItem) => void;
   showCustomerColumn?: boolean;
 }
 
@@ -21,6 +22,7 @@ export default function ComplianceTable({
   data, 
   isLoading, 
   onRefresh,
+  onEdit,
   showCustomerColumn = false 
 }: ComplianceTableProps) {
   const { toast } = useToast();
@@ -229,6 +231,7 @@ export default function ComplianceTable({
                   <Button 
                     variant="ghost" 
                     size="sm"
+                    onClick={() => onEdit?.(item)}
                     data-testid={`button-edit-${item.id}`}
                   >
                     <Edit className="h-4 w-4 text-primary" />

@@ -20,6 +20,7 @@ import { apiRequest } from "@/lib/queryClient";
 export default function Dashboard() {
   const { toast } = useToast();
   const [showNewItemForm, setShowNewItemForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
   const [filters, setFilters] = useState({
     search: "",
     customerId: "",
@@ -221,6 +222,7 @@ export default function Dashboard() {
                   data={complianceData?.items || []}
                   isLoading={complianceLoading}
                   onRefresh={refetch}
+                  onEdit={setEditingItem}
                 />
               </CardContent>
             </Card>
@@ -299,6 +301,17 @@ export default function Dashboard() {
           onClose={() => setShowNewItemForm(false)}
           onSuccess={() => {
             setShowNewItemForm(false);
+            refetch();
+          }}
+        />
+      )}
+      
+      {editingItem && (
+        <ComplianceForm 
+          item={editingItem}
+          onClose={() => setEditingItem(null)}
+          onSuccess={() => {
+            setEditingItem(null);
             refetch();
           }}
         />
