@@ -89,7 +89,7 @@ export default function ComplianceTable({
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "Marketing Agreement":
-        return "bg-accent/10 text-accent dark:bg-accent/20";
+        return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-400";
       case "Billing":
         return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
       case "Deliverable":
