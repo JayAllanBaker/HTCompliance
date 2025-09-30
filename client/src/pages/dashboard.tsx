@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Customer, ComplianceItem } from "@shared/schema";
+import type { Organization, ComplianceItem} from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,8 +37,8 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard/metrics"],
   });
 
-  const { data: customers } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+  const { data: organizations } = useQuery<Organization[]>({
+    queryKey: ["/api/organizations"],
   });
 
   const { data: complianceData, isLoading: complianceLoading, refetch } = useQuery<{ items: ComplianceItem[]; total: number }>({
@@ -155,14 +155,14 @@ export default function Dashboard() {
                   </div>
                   
                   <Select value={filters.customerId || "__all__"} onValueChange={(value) => setFilters(prev => ({ ...prev, customerId: value === "__all__" ? "" : value }))}>
-                    <SelectTrigger className="w-48" data-testid="select-customer-filter">
-                      <SelectValue placeholder="All Customers" />
+                    <SelectTrigger className="w-48" data-testid="select-organization-filter">
+                      <SelectValue placeholder="All Organizations" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__all__">All Customers</SelectItem>
-                      {customers?.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}
+                      <SelectItem value="__all__">All Organizations</SelectItem>
+                      {organizations?.map((org) => (
+                        <SelectItem key={org.id} value={org.id}>
+                          {org.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

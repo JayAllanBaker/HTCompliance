@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Customer, ComplianceItem } from "@shared/schema";
+import type { Organization, ComplianceItem } from "@shared/schema";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,8 +26,8 @@ export default function ComplianceTable({
   const { toast } = useToast();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
 
-  const { data: customers } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+  const { data: organizations } = useQuery<Organization[]>({
+    queryKey: ["/api/organizations"],
   });
 
   const updateStatusMutation = useMutation({
@@ -64,9 +64,9 @@ export default function ComplianceTable({
     },
   });
 
-  const getCustomerName = (customerId: string) => {
-    const customer = customers?.find((c) => c.id === customerId);
-    return customer?.name || "Unknown";
+  const getOrganizationName = (customerId: string) => {
+    const organization = organizations?.find((org) => org.id === customerId);
+    return organization?.name || "Unknown";
   };
 
   const getStatusColor = (status: string) => {
@@ -167,7 +167,7 @@ export default function ComplianceTable({
             <TableHead>Due Date</TableHead>
             <TableHead>Commitment</TableHead>
             <TableHead>Category</TableHead>
-            {showCustomerColumn && <TableHead>Customer</TableHead>}
+            {showCustomerColumn && <TableHead>Organization</TableHead>}
             <TableHead>Responsible</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -210,7 +210,7 @@ export default function ComplianceTable({
               </TableCell>
               {showCustomerColumn && (
                 <TableCell className="whitespace-nowrap text-sm text-foreground">
-                  {getCustomerName(item.customerId)}
+                  {getOrganizationName(item.customerId)}
                 </TableCell>
               )}
               <TableCell className="whitespace-nowrap text-sm text-foreground">
