@@ -20,6 +20,7 @@ type ViewMode = "table" | "timeline" | "calendar";
 export default function Compliance() {
   const { toast } = useToast();
   const [showNewItemForm, setShowNewItemForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [filters, setFilters] = useState({
     search: "",
@@ -272,6 +273,7 @@ export default function Compliance() {
                     data={complianceData?.items || []}
                     isLoading={isLoading}
                     onRefresh={refetch}
+                    onEdit={setEditingItem}
                     showCustomerColumn={true}
                   />
                 </CardContent>
@@ -371,6 +373,17 @@ export default function Compliance() {
           onClose={() => setShowNewItemForm(false)}
           onSuccess={() => {
             setShowNewItemForm(false);
+            refetch();
+          }}
+        />
+      )}
+
+      {editingItem && (
+        <ComplianceForm 
+          item={editingItem}
+          onClose={() => setEditingItem(null)}
+          onSuccess={() => {
+            setEditingItem(null);
             refetch();
           }}
         />
