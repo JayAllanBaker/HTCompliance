@@ -264,10 +264,11 @@ export function registerRoutes(app: Express): Server {
       
       res.json(updatedItem);
     } catch (error) {
+      console.error("Error updating compliance item:", error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Invalid input", details: error.errors });
       } else {
-        res.status(500).json({ error: "Failed to update compliance item" });
+        res.status(500).json({ error: "Failed to update compliance item", message: error instanceof Error ? error.message : "Unknown error" });
       }
     }
   });

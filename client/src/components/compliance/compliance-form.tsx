@@ -84,10 +84,12 @@ export default function ComplianceForm({ onClose, onSuccess, item }: ComplianceF
       });
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Form submission error:", error);
+      const errorMessage = error?.message || error?.error || `Failed to ${isEditing ? "update" : "create"} compliance item.`;
       toast({
         title: isEditing ? "Update Failed" : "Creation Failed",
-        description: `Failed to ${isEditing ? "update" : "create"} compliance item.`,
+        description: errorMessage,
         variant: "destructive",
       });
     },
