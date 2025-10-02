@@ -35,7 +35,9 @@ export default function EvidenceLocker() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
   const [filters, setFilters] = useState({
     type: "",
     search: "",
@@ -102,8 +104,73 @@ export default function EvidenceLocker() {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await apiRequest("POST", "/api/evidence/import", formData);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/evidence"] });
+      toast({
+        title: "Import Successful",
+        description: `Imported ${data.imported} evidence items${data.errors ? ` with ${data.errors} errors` : ''}.`,
+      });
+      setShowImportDialog(false);
+      setImportFile(null);
+    },
+    onError: () => {
+      toast({
+        title: "Import Failed",
+        description: "Failed to import evidence from ZIP file.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: EvidenceFormData) => {
     uploadMutation.mutate({ ...data, file: selectedFile || undefined });
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/evidence/export', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to export evidence');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evidence-export-${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export Successful",
+        description: "Evidence locker exported successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export evidence locker.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImport = () => {
+    if (importFile) {
+      importMutation.mutate(importFile);
+    }
   };
 
   const handleDownload = async (evidenceId: string) => {
@@ -198,14 +265,32 @@ export default function EvidenceLocker() {
                 </p>
               </div>
               
-              <Button 
-                onClick={() => setShowUploadForm(true)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-                data-testid="button-upload-evidence"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Evidence
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowImportDialog(true)}
+                  data-testid="button-import-evidence"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleExport}
+                  data-testid="button-export-evidence"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+                <Button 
+                  onClick={() => setShowUploadForm(true)}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  data-testid="button-upload-evidence"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Evidence
+                </Button>
+              </div>
             </div>
 
             {/* Summary Cards */}
@@ -599,6 +684,64 @@ export default function EvidenceLocker() {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Evidence Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle data-testid="dialog-import-title">Import Evidence</DialogTitle>
+            <DialogDescription>
+              Upload a ZIP file containing evidence files and manifest to restore evidence items with their reference IDs.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select ZIP File</label>
+              <Input 
+                type="file"
+                accept=".zip"
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                data-testid="input-import-file"
+              />
+              {importFile && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {importFile.name}
+                </p>
+              )}
+            </div>
+            
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                The ZIP file should contain a manifest.json file and a files/ directory with evidence files.
+                Evidence items will be restored with their original reference IDs to compliance items and billable events.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowImportDialog(false);
+                  setImportFile(null);
+                }}
+                data-testid="button-cancel-import"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleImport}
+                disabled={!importFile || importMutation.isPending}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                data-testid="button-confirm-import"
+              >
+                {importMutation.isPending ? "Importing..." : "Import Evidence"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
