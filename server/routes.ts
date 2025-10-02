@@ -753,11 +753,15 @@ export function registerRoutes(app: Express): Server {
       }
       
       console.log("Starting database import from file:", req.file.path);
-      const fileContent = require('fs').readFileSync(req.file.path, 'utf8');
+      const fs = await import("fs");
+      const fileContent = fs.readFileSync(req.file.path, 'utf8');
       const importData = JSON.parse(fileContent);
       
       console.log("Parsed import data, version:", importData.version);
       await storage.importDatabase(importData);
+      
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
       
       // Audit log
       await storage.createAuditLog({
