@@ -752,9 +752,11 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: "No file uploaded" });
       }
       
+      console.log("Starting database import from file:", req.file.path);
       const fileContent = require('fs').readFileSync(req.file.path, 'utf8');
       const importData = JSON.parse(fileContent);
       
+      console.log("Parsed import data, version:", importData.version);
       await storage.importDatabase(importData);
       
       // Audit log
@@ -767,8 +769,14 @@ export function registerRoutes(app: Express): Server {
         userAgent: req.get("User-Agent"),
       });
       
+      console.log("Database import completed successfully");
       res.json({ message: "Database imported successfully" });
     } catch (error) {
+      console.error("Database import error:", error);
+      console.error("Error details:", error instanceof Error ? error.message : String(error));
+      if (error instanceof Error && error.stack) {
+        console.error("Stack trace:", error.stack);
+      }
       res.status(500).json({ error: "Failed to import database" });
     }
   });
