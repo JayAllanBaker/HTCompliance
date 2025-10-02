@@ -414,6 +414,8 @@ export function registerRoutes(app: Express): Server {
         mimeType: req.file?.mimetype,
       };
       
+      console.log("Evidence data before validation:", evidenceData);
+      
       const validatedData = insertEvidenceSchema.parse(evidenceData);
       const evidence = await storage.createEvidence(validatedData);
       
@@ -430,9 +432,12 @@ export function registerRoutes(app: Express): Server {
       
       res.status(201).json(evidence);
     } catch (error) {
+      console.error("Error creating evidence:", error);
       if (error instanceof z.ZodError) {
+        console.error("Zod validation errors:", JSON.stringify(error.errors, null, 2));
         res.status(400).json({ error: "Invalid input", details: error.errors });
       } else {
+        console.error("Non-Zod error:", error instanceof Error ? error.message : error);
         res.status(500).json({ error: "Failed to create evidence" });
       }
     }
