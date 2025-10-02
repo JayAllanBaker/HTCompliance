@@ -221,6 +221,10 @@ export const insertComplianceItemSchema = createInsertSchema(complianceItems).om
 export const insertBillableEventSchema = createInsertSchema(billableEvents).omit({
   id: true,
   createdAt: true,
+}).extend({
+  rate: z.coerce.string(),
+  units: z.coerce.string(),
+  totalAmount: z.coerce.string(),
 });
 
 export const insertEvidenceSchema = createInsertSchema(evidence).omit({
