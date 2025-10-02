@@ -108,7 +108,7 @@ export default function EvidenceLocker() {
 
   const handleDownload = async (evidenceId: string) => {
     try {
-      const response = await fetch(`/api/evidence/${evidenceId}/download`, {
+      const response = await fetch(`/api/evidence/${evidenceId}/download?download=true`, {
         credentials: 'include',
       });
       
@@ -134,26 +134,9 @@ export default function EvidenceLocker() {
     }
   };
 
-  const handleView = async (evidenceId: string) => {
-    try {
-      const response = await fetch(`/api/evidence/${evidenceId}/download`, {
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to view file');
-      }
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    } catch (error) {
-      toast({
-        title: "View Failed",
-        description: "Failed to view the evidence file.",
-        variant: "destructive",
-      });
-    }
+  const handleView = (evidenceId: string) => {
+    // Open file in new tab for inline viewing (works for PDFs, images, etc.)
+    window.open(`/api/evidence/${evidenceId}/download`, '_blank');
   };
 
   const getEvidenceTypeColor = (type: string) => {

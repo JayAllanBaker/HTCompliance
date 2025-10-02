@@ -449,15 +449,32 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "No file attached to this evidence" });
       }
       
-      // Send the file
-      res.download(evidence.filePath, (err) => {
-        if (err) {
-          console.error("Error downloading file:", err);
-          res.status(500).json({ error: "Failed to download file" });
-        }
-      });
+      const isDownload = req.query.download === 'true';
+      
+      if (isDownload) {
+        // Force download
+        res.download(evidence.filePath, (err) => {
+          if (err) {
+            console.error("Error downloading file:", err);
+            if (!res.headersSent) {
+              res.status(500).json({ error: "Failed to download file" });
+            }
+          }
+        });
+      } else {
+        // View inline (for PDFs, images, etc.)
+        res.sendFile(evidence.filePath, { root: '/' }, (err) => {
+          if (err) {
+            console.error("Error viewing file:", err);
+            if (!res.headersSent) {
+              res.status(500).json({ error: "Failed to view file" });
+            }
+          }
+        });
+      }
     } catch (error) {
-      res.status(500).json({ error: "Failed to download evidence file" });
+      console.error("Error accessing evidence file:", error);
+      res.status(500).json({ error: "Failed to access evidence file" });
     }
   });
 
