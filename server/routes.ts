@@ -549,15 +549,26 @@ export function registerRoutes(app: Express): Server {
       archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
       
       // Add all files
+      let filesAdded = 0;
       for (const evidence of evidenceList) {
-        if (evidence.filePath && evidence.originalFilename) {
+        if (evidence.filePath) {
           const absolutePath = path.resolve(evidence.filePath);
+          console.log(`Checking file for evidence ${evidence.id}: ${absolutePath}, exists: ${fs.existsSync(absolutePath)}`);
           if (fs.existsSync(absolutePath)) {
-            // Use evidence ID in filename to ensure uniqueness
-            archive.file(absolutePath, { name: `files/${evidence.id}-${evidence.originalFilename}` });
+            // Use original filename if available, otherwise create from evidence type
+            const filename = evidence.originalFilename || 
+                           `${evidence.title.replace(/[^a-z0-9]/gi, '_')}.${evidence.evidenceType}`;
+            archive.file(absolutePath, { name: `files/${evidence.id}-${filename}` });
+            filesAdded++;
+            console.log(`Added file to archive: files/${evidence.id}-${filename}`);
+          } else {
+            console.log(`File not found: ${absolutePath}`);
           }
+        } else {
+          console.log(`Evidence ${evidence.id} has no filePath`);
         }
       }
+      console.log(`Export complete: ${evidenceList.length} evidence items, ${filesAdded} files added to archive`);
       
       // Audit log
       await storage.createAuditLog({
