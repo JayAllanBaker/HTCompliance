@@ -436,6 +436,31 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get("/api/evidence/:id/download", async (req, res) => {
+    try {
+      const evidenceList = await storage.getEvidence();
+      const evidence = evidenceList.find(e => e.id === req.params.id);
+      
+      if (!evidence) {
+        return res.status(404).json({ error: "Evidence not found" });
+      }
+      
+      if (!evidence.filePath) {
+        return res.status(404).json({ error: "No file attached to this evidence" });
+      }
+      
+      // Send the file
+      res.download(evidence.filePath, (err) => {
+        if (err) {
+          console.error("Error downloading file:", err);
+          res.status(500).json({ error: "Failed to download file" });
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to download evidence file" });
+    }
+  });
+
   // Dashboard metrics
   app.get("/api/dashboard/metrics", async (req, res) => {
     try {

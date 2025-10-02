@@ -106,6 +106,56 @@ export default function EvidenceLocker() {
     uploadMutation.mutate({ ...data, file: selectedFile || undefined });
   };
 
+  const handleDownload = async (evidenceId: string) => {
+    try {
+      const response = await fetch(`/api/evidence/${evidenceId}/download`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evidence-${evidenceId}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download the evidence file.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleView = async (evidenceId: string) => {
+    try {
+      const response = await fetch(`/api/evidence/${evidenceId}/download`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to view file');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (error) {
+      toast({
+        title: "View Failed",
+        description: "Failed to view the evidence file.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getEvidenceTypeColor = (type: string) => {
     switch (type) {
       case "document":
@@ -365,21 +415,30 @@ export default function EvidenceLocker() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end space-x-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  data-testid={`button-view-${item.id}`}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
                                 {item.filePath && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    data-testid={`button-download-${item.id}`}
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
+                                  <>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => handleView(item.id)}
+                                      title="View file"
+                                      data-testid={`button-view-${item.id}`}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => handleDownload(item.id)}
+                                      title="Download file"
+                                      data-testid={`button-download-${item.id}`}
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                                {!item.filePath && (
+                                  <span className="text-sm text-muted-foreground">No file</span>
                                 )}
                               </div>
                             </TableCell>
