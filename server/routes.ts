@@ -450,30 +450,50 @@ export function registerRoutes(app: Express): Server {
       }
       
       const path = await import("path");
+      const fs = await import("fs");
       const absolutePath = path.resolve(evidence.filePath);
+      
+      // Check if file exists
+      if (!fs.existsSync(absolutePath)) {
+        return res.status(404).json({ error: "File not found on disk" });
+      }
+      
       const isDownload = req.query.download === 'true';
       
-      if (isDownload) {
-        // Force download
-        res.download(absolutePath, (err) => {
-          if (err) {
-            console.error("Error downloading file:", err);
-            if (!res.headersSent) {
-              res.status(500).json({ error: "Failed to download file" });
-            }
-          }
-        });
-      } else {
-        // View inline (for PDFs, images, etc.)
-        res.sendFile(absolutePath, (err) => {
-          if (err) {
-            console.error("Error viewing file:", err);
-            if (!res.headersSent) {
-              res.status(500).json({ error: "Failed to view file" });
-            }
-          }
-        });
+      // Set content type based on evidence type or default to PDF
+      let contentType = 'application/pdf';
+      if (evidence.evidenceType === 'screenshot') {
+        contentType = 'image/png';
+      } else if (evidence.evidenceType === 'email') {
+        contentType = 'text/plain';
       }
+      
+      // Create a safe filename from the title
+      const safeFilename = evidence.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const extension = contentType === 'application/pdf' ? 'pdf' : 
+                        contentType === 'image/png' ? 'png' : 'txt';
+      const filename = `${safeFilename}.${extension}`;
+      
+      res.setHeader('Content-Type', contentType);
+      
+      if (isDownload) {
+        // Force download with proper filename
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      } else {
+        // View inline in browser
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      }
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(absolutePath);
+      fileStream.pipe(res);
+      
+      fileStream.on('error', (err) => {
+        console.error("Error streaming file:", err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Failed to serve file" });
+        }
+      });
     } catch (error) {
       console.error("Error accessing evidence file:", error);
       res.status(500).json({ error: "Failed to access evidence file" });
