@@ -510,6 +510,164 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Evidence export - creates a ZIP with all files and manifest
+  app.get("/api/evidence/export", async (req, res) => {
+    try {
+      const archiver = (await import("archiver")).default;
+      const path = await import("path");
+      const fs = await import("fs");
+      
+      const evidenceList = await storage.getEvidence();
+      
+      // Create manifest with all evidence metadata
+      const manifest = evidenceList.map(e => ({
+        id: e.id,
+        complianceItemId: e.complianceItemId,
+        billableEventId: e.billableEventId,
+        title: e.title,
+        description: e.description,
+        evidenceType: e.evidenceType,
+        originalFilename: e.originalFilename,
+        mimeType: e.mimeType,
+        uploadedBy: e.uploadedBy,
+        createdAt: e.createdAt?.toISOString(),
+      }));
+      
+      // Create archive
+      const archive = archiver('zip', {
+        zlib: { level: 9 }
+      });
+      
+      // Set response headers
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="evidence-export-${Date.now()}.zip"`);
+      
+      // Pipe archive to response
+      archive.pipe(res);
+      
+      // Add manifest
+      archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
+      
+      // Add all files
+      for (const evidence of evidenceList) {
+        if (evidence.filePath && evidence.originalFilename) {
+          const absolutePath = path.resolve(evidence.filePath);
+          if (fs.existsSync(absolutePath)) {
+            // Use evidence ID in filename to ensure uniqueness
+            archive.file(absolutePath, { name: `files/${evidence.id}-${evidence.originalFilename}` });
+          }
+        }
+      }
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "EXPORT",
+        entityType: "evidence",
+        entityId: "all",
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      archive.finalize();
+    } catch (error) {
+      console.error("Error exporting evidence:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to export evidence" });
+      }
+    }
+  });
+
+  // Evidence import - accepts ZIP with files and manifest
+  app.post("/api/evidence/import", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      const AdmZip = (await import("adm-zip")).default;
+      const path = await import("path");
+      const fs = await import("fs");
+      
+      const zip = new AdmZip(req.file.path);
+      const zipEntries = zip.getEntries();
+      
+      // Find and parse manifest
+      const manifestEntry = zipEntries.find((entry: any) => entry.entryName === 'manifest.json');
+      if (!manifestEntry) {
+        return res.status(400).json({ error: "Invalid import file: manifest.json not found" });
+      }
+      
+      const manifest = JSON.parse(manifestEntry.getData().toString('utf8'));
+      
+      const importedEvidence = [];
+      const errors = [];
+      
+      for (const item of manifest) {
+        try {
+          // Find the corresponding file in the ZIP
+          const fileEntry = zipEntries.find((entry: any) => 
+            entry.entryName === `files/${item.id}-${item.originalFilename}`
+          );
+          
+          let filePath: string | undefined;
+          
+          if (fileEntry) {
+            // Extract file to uploads directory
+            const filename = `${Date.now()}-${item.originalFilename}`;
+            filePath = path.join('uploads', filename);
+            fs.writeFileSync(filePath, fileEntry.getData());
+          }
+          
+          // Create evidence record (use original reference IDs)
+          const evidenceData = {
+            complianceItemId: item.complianceItemId || null,
+            billableEventId: item.billableEventId || null,
+            title: item.title,
+            description: item.description,
+            evidenceType: item.evidenceType,
+            filePath: filePath,
+            fileHash: "imported",
+            originalFilename: item.originalFilename,
+            mimeType: item.mimeType,
+            uploadedBy: req.user?.id,
+          };
+          
+          const validatedData = insertEvidenceSchema.parse(evidenceData);
+          const evidence = await storage.createEvidence(validatedData);
+          importedEvidence.push(evidence);
+        } catch (error) {
+          errors.push({
+            item: item.title,
+            error: error instanceof Error ? error.message : "Unknown error"
+          });
+        }
+      }
+      
+      // Clean up uploaded ZIP
+      fs.unlinkSync(req.file.path);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "IMPORT",
+        entityType: "evidence",
+        entityId: `imported_${importedEvidence.length}_items`,
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json({
+        imported: importedEvidence.length,
+        errors: errors.length,
+        details: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      console.error("Error importing evidence:", error);
+      res.status(500).json({ error: "Failed to import evidence" });
+    }
+  });
+
   // Dashboard metrics
   app.get("/api/dashboard/metrics", async (req, res) => {
     try {
