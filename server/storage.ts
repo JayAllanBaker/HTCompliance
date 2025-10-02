@@ -207,7 +207,17 @@ export class DatabaseStorage implements IStorage {
       whereConditions.push(eq(complianceItems.category, filters.category as any));
     }
     if (filters.status) {
-      whereConditions.push(eq(complianceItems.status, filters.status as any));
+      // Special handling for "overdue" status - it's actually pending items with past due dates
+      if (filters.status === "overdue") {
+        whereConditions.push(
+          and(
+            eq(complianceItems.status, "pending"),
+            lte(complianceItems.dueDate, new Date())
+          )
+        );
+      } else {
+        whereConditions.push(eq(complianceItems.status, filters.status as any));
+      }
     }
     if (filters.dueDateFrom) {
       whereConditions.push(gte(complianceItems.dueDate, filters.dueDateFrom));
@@ -234,7 +244,7 @@ export class DatabaseStorage implements IStorage {
       .where(whereClause);
 
     // Get items
-    let query = db.select().from(complianceItems).where(whereClause).orderBy(asc(complianceItems.dueDate));
+    let query = db.select().from(complianceItems).where(whereClause).orderBy(asc(complianceItems.dueDate)) as any;
     
     if (filters.limit !== undefined) {
       query = query.limit(filters.limit);
