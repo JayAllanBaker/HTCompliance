@@ -410,6 +410,8 @@ export function registerRoutes(app: Express): Server {
         uploadedBy: req.user?.id,
         filePath: req.file?.path,
         fileHash: req.file ? "hash_placeholder" : undefined, // In production, calculate actual hash
+        originalFilename: req.file?.originalname,
+        mimeType: req.file?.mimetype,
       };
       
       const validatedData = insertEvidenceSchema.parse(evidenceData);
@@ -460,19 +462,22 @@ export function registerRoutes(app: Express): Server {
       
       const isDownload = req.query.download === 'true';
       
-      // Set content type based on evidence type or default to PDF
-      let contentType = 'application/pdf';
-      if (evidence.evidenceType === 'screenshot') {
-        contentType = 'image/png';
-      } else if (evidence.evidenceType === 'email') {
-        contentType = 'text/plain';
-      }
+      // Use stored MIME type or fallback to default
+      const contentType = evidence.mimeType || 'application/octet-stream';
       
-      // Create a safe filename from the title
-      const safeFilename = evidence.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      const extension = contentType === 'application/pdf' ? 'pdf' : 
-                        contentType === 'image/png' ? 'png' : 'txt';
-      const filename = `${safeFilename}.${extension}`;
+      // Use original filename if available, otherwise create one from title
+      let filename: string;
+      if (evidence.originalFilename) {
+        filename = evidence.originalFilename;
+      } else {
+        // Fallback: create filename from title with generic extension
+        const safeFilename = evidence.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const extension = contentType.includes('pdf') ? 'pdf' : 
+                          contentType.includes('image') ? 'png' : 
+                          contentType.includes('word') ? 'docx' :
+                          contentType.includes('excel') ? 'xlsx' : 'bin';
+        filename = `${safeFilename}.${extension}`;
+      }
       
       res.setHeader('Content-Type', contentType);
       

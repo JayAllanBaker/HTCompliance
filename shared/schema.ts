@@ -90,6 +90,8 @@ export const evidence = pgTable("evidence", {
   evidenceType: evidenceTypeEnum("evidence_type").notNull(),
   filePath: text("file_path"),
   fileHash: text("file_hash"),
+  originalFilename: text("original_filename"),
+  mimeType: text("mime_type"),
   uploadedBy: varchar("uploaded_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
