@@ -758,7 +758,7 @@ export function registerRoutes(app: Express): Server {
       const importData = JSON.parse(fileContent);
       
       console.log("Parsed import data, version:", importData.version);
-      await storage.importDatabase(importData);
+      const result = await storage.importDatabase(importData);
       
       // Clean up uploaded file
       fs.unlinkSync(req.file.path);
@@ -774,7 +774,10 @@ export function registerRoutes(app: Express): Server {
       });
       
       console.log("Database import completed successfully");
-      res.json({ message: "Database imported successfully" });
+      res.json({ 
+        message: "Database imported successfully",
+        ...result
+      });
     } catch (error) {
       console.error("Database import error:", error);
       console.error("Error details:", error instanceof Error ? error.message : String(error));

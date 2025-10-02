@@ -55,9 +55,23 @@ export default function ExportImport() {
       return response.json();
     },
     onSuccess: (result) => {
+      const importDetails = [];
+      if (result.imported) {
+        if (result.imported.organizations > 0) importDetails.push(`${result.imported.organizations} organizations`);
+        if (result.imported.contracts > 0) importDetails.push(`${result.imported.contracts} contracts`);
+        if (result.imported.complianceItems > 0) importDetails.push(`${result.imported.complianceItems} compliance items`);
+        if (result.imported.billableEvents > 0) importDetails.push(`${result.imported.billableEvents} billable events`);
+        if (result.imported.evidence > 0) importDetails.push(`${result.imported.evidence} evidence items`);
+        if (result.imported.users > 0) importDetails.push(`${result.imported.users} users`);
+      }
+      
+      const description = result.total > 0 
+        ? `Successfully imported ${result.total} records: ${importDetails.join(', ')}`
+        : "No new records were imported. All records already exist in the database.";
+      
       toast({
         title: "Import Complete",
-        description: result.message,
+        description,
       });
       setSelectedFile(null);
     },

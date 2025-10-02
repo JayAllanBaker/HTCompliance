@@ -81,7 +81,18 @@ export interface IStorage {
   
   // Import/Export methods
   exportDatabase(): Promise<any>;
-  importDatabase(data: any): Promise<void>;
+  importDatabase(data: any): Promise<{
+    imported: {
+      users: number;
+      organizations: number;
+      contracts: number;
+      complianceItems: number;
+      billableEvents: number;
+      evidence: number;
+      emailAlerts: number;
+    };
+    total: number;
+  }>;
   resetDatabase(): Promise<void>;
   
   sessionStore: Store;
@@ -488,29 +499,85 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async importDatabase(data: any): Promise<void> {
-    // This is a simplified import - in production you'd want more robust error handling
-    if (data.data.users?.length) {
-      await db.insert(users).values(data.data.users).onConflictDoNothing();
+  async importDatabase(data: any): Promise<{
+    imported: {
+      users: number;
+      organizations: number;
+      contracts: number;
+      complianceItems: number;
+      billableEvents: number;
+      evidence: number;
+      emailAlerts: number;
+    };
+    total: number;
+  }> {
+    const imported = {
+      users: 0,
+      organizations: 0,
+      contracts: 0,
+      complianceItems: 0,
+      billableEvents: 0,
+      evidence: 0,
+      emailAlerts: 0,
+    };
+
+    console.log("Starting database import...");
+    console.log("Import data structure:", Object.keys(data));
+    console.log("Import data.data structure:", data.data ? Object.keys(data.data) : 'no data key');
+
+    if (data.data?.users?.length) {
+      console.log(`Importing ${data.data.users.length} users...`);
+      const result = await db.insert(users).values(data.data.users).onConflictDoNothing().returning();
+      imported.users = result.length;
+      console.log(`Imported ${imported.users} users (skipped ${data.data.users.length - imported.users} duplicates)`);
     }
-    if (data.data.organizations?.length) {
-      await db.insert(organizations).values(data.data.organizations).onConflictDoNothing();
+    
+    if (data.data?.organizations?.length) {
+      console.log(`Importing ${data.data.organizations.length} organizations...`);
+      const result = await db.insert(organizations).values(data.data.organizations).onConflictDoNothing().returning();
+      imported.organizations = result.length;
+      console.log(`Imported ${imported.organizations} organizations (skipped ${data.data.organizations.length - imported.organizations} duplicates)`);
     }
-    if (data.data.contracts?.length) {
-      await db.insert(contracts).values(data.data.contracts).onConflictDoNothing();
+    
+    if (data.data?.contracts?.length) {
+      console.log(`Importing ${data.data.contracts.length} contracts...`);
+      const result = await db.insert(contracts).values(data.data.contracts).onConflictDoNothing().returning();
+      imported.contracts = result.length;
+      console.log(`Imported ${imported.contracts} contracts (skipped ${data.data.contracts.length - imported.contracts} duplicates)`);
     }
-    if (data.data.complianceItems?.length) {
-      await db.insert(complianceItems).values(data.data.complianceItems).onConflictDoNothing();
+    
+    if (data.data?.complianceItems?.length) {
+      console.log(`Importing ${data.data.complianceItems.length} compliance items...`);
+      const result = await db.insert(complianceItems).values(data.data.complianceItems).onConflictDoNothing().returning();
+      imported.complianceItems = result.length;
+      console.log(`Imported ${imported.complianceItems} compliance items (skipped ${data.data.complianceItems.length - imported.complianceItems} duplicates)`);
     }
-    if (data.data.billableEvents?.length) {
-      await db.insert(billableEvents).values(data.data.billableEvents).onConflictDoNothing();
+    
+    if (data.data?.billableEvents?.length) {
+      console.log(`Importing ${data.data.billableEvents.length} billable events...`);
+      const result = await db.insert(billableEvents).values(data.data.billableEvents).onConflictDoNothing().returning();
+      imported.billableEvents = result.length;
+      console.log(`Imported ${imported.billableEvents} billable events (skipped ${data.data.billableEvents.length - imported.billableEvents} duplicates)`);
     }
-    if (data.data.evidence?.length) {
-      await db.insert(evidence).values(data.data.evidence).onConflictDoNothing();
+    
+    if (data.data?.evidence?.length) {
+      console.log(`Importing ${data.data.evidence.length} evidence items...`);
+      const result = await db.insert(evidence).values(data.data.evidence).onConflictDoNothing().returning();
+      imported.evidence = result.length;
+      console.log(`Imported ${imported.evidence} evidence items (skipped ${data.data.evidence.length - imported.evidence} duplicates)`);
     }
-    if (data.data.emailAlerts?.length) {
-      await db.insert(emailAlerts).values(data.data.emailAlerts).onConflictDoNothing();
+    
+    if (data.data?.emailAlerts?.length) {
+      console.log(`Importing ${data.data.emailAlerts.length} email alerts...`);
+      const result = await db.insert(emailAlerts).values(data.data.emailAlerts).onConflictDoNothing().returning();
+      imported.emailAlerts = result.length;
+      console.log(`Imported ${imported.emailAlerts} email alerts (skipped ${data.data.emailAlerts.length - imported.emailAlerts} duplicates)`);
     }
+
+    const total = Object.values(imported).reduce((sum, count) => sum + count, 0);
+    console.log(`Database import complete. Total records imported: ${total}`);
+
+    return { imported, total };
   }
 
   async resetDatabase(): Promise<void> {
