@@ -784,7 +784,10 @@ export function registerRoutes(app: Express): Server {
       if (error instanceof Error && error.stack) {
         console.error("Stack trace:", error.stack);
       }
-      res.status(500).json({ error: "Failed to import database" });
+      
+      // Send specific error message to user
+      const errorMessage = error instanceof Error ? error.message : "Failed to import database";
+      res.status(500).json({ error: errorMessage });
     }
   });
 

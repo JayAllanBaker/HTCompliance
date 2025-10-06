@@ -1,0 +1,15 @@
+{
+  "organizations": [
+    {
+      "id": "org-1",
+      "name": "Test Org"
+    }
+  ],
+  "contracts": [],
+  "complianceItems": [],
+  "billableEvents": [],
+  "evidence": [],
+  "emailAlerts": [],
+  "users": [],
+  "auditLogs": []
+}

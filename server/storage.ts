@@ -499,6 +499,21 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  private convertDatesToObjects(records: any[]): any[] {
+    return records.map(record => {
+      const converted: any = {};
+      for (const [key, value] of Object.entries(record)) {
+        // Convert ISO date strings to Date objects
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+          converted[key] = new Date(value);
+        } else {
+          converted[key] = value;
+        }
+      }
+      return converted;
+    });
+  }
+
   async importDatabase(data: any): Promise<{
     imported: {
       users: number;
@@ -525,51 +540,92 @@ export class DatabaseStorage implements IStorage {
     console.log("Import data structure:", Object.keys(data));
     console.log("Import data.data structure:", data.data ? Object.keys(data.data) : 'no data key');
 
+    // Validate backup format
+    if (!data.data) {
+      throw new Error("Invalid backup format: missing 'data' property");
+    }
+
+    // Check if this is a BizGov backup by looking for expected tables
+    const expectedTables = ['organizations', 'contracts', 'complianceItems', 'billableEvents'];
+    const actualTables = Object.keys(data.data);
+    const hasBizGovTables = expectedTables.some(table => actualTables.includes(table));
+
+    if (!hasBizGovTables) {
+      const wrongAppTables = ['companies', 'equityHoldings', 'stakeholders', 'userRoles'];
+      const hasWrongAppTables = wrongAppTables.some(table => actualTables.includes(table));
+      
+      if (hasWrongAppTables) {
+        throw new Error(
+          "This backup file is from a different application and cannot be imported into BizGov. " +
+          "Please use a backup file exported from BizGov."
+        );
+      } else {
+        throw new Error(
+          "Invalid backup format: expected BizGov backup with tables like 'organizations', 'contracts', " +
+          "'complianceItems', and 'billableEvents'."
+        );
+      }
+    }
+
+    // Import users with date conversion
     if (data.data?.users?.length) {
       console.log(`Importing ${data.data.users.length} users...`);
-      const result = await db.insert(users).values(data.data.users).onConflictDoNothing().returning();
+      const convertedUsers = this.convertDatesToObjects(data.data.users);
+      const result = await db.insert(users).values(convertedUsers).onConflictDoNothing().returning();
       imported.users = result.length;
       console.log(`Imported ${imported.users} users (skipped ${data.data.users.length - imported.users} duplicates)`);
     }
     
+    // Import organizations with date conversion
     if (data.data?.organizations?.length) {
       console.log(`Importing ${data.data.organizations.length} organizations...`);
-      const result = await db.insert(organizations).values(data.data.organizations).onConflictDoNothing().returning();
+      const convertedOrgs = this.convertDatesToObjects(data.data.organizations);
+      const result = await db.insert(organizations).values(convertedOrgs).onConflictDoNothing().returning();
       imported.organizations = result.length;
       console.log(`Imported ${imported.organizations} organizations (skipped ${data.data.organizations.length - imported.organizations} duplicates)`);
     }
     
+    // Import contracts with date conversion
     if (data.data?.contracts?.length) {
       console.log(`Importing ${data.data.contracts.length} contracts...`);
-      const result = await db.insert(contracts).values(data.data.contracts).onConflictDoNothing().returning();
+      const convertedContracts = this.convertDatesToObjects(data.data.contracts);
+      const result = await db.insert(contracts).values(convertedContracts).onConflictDoNothing().returning();
       imported.contracts = result.length;
       console.log(`Imported ${imported.contracts} contracts (skipped ${data.data.contracts.length - imported.contracts} duplicates)`);
     }
     
+    // Import compliance items with date conversion
     if (data.data?.complianceItems?.length) {
       console.log(`Importing ${data.data.complianceItems.length} compliance items...`);
-      const result = await db.insert(complianceItems).values(data.data.complianceItems).onConflictDoNothing().returning();
+      const convertedItems = this.convertDatesToObjects(data.data.complianceItems);
+      const result = await db.insert(complianceItems).values(convertedItems).onConflictDoNothing().returning();
       imported.complianceItems = result.length;
       console.log(`Imported ${imported.complianceItems} compliance items (skipped ${data.data.complianceItems.length - imported.complianceItems} duplicates)`);
     }
     
+    // Import billable events with date conversion
     if (data.data?.billableEvents?.length) {
       console.log(`Importing ${data.data.billableEvents.length} billable events...`);
-      const result = await db.insert(billableEvents).values(data.data.billableEvents).onConflictDoNothing().returning();
+      const convertedEvents = this.convertDatesToObjects(data.data.billableEvents);
+      const result = await db.insert(billableEvents).values(convertedEvents).onConflictDoNothing().returning();
       imported.billableEvents = result.length;
       console.log(`Imported ${imported.billableEvents} billable events (skipped ${data.data.billableEvents.length - imported.billableEvents} duplicates)`);
     }
     
+    // Import evidence with date conversion
     if (data.data?.evidence?.length) {
       console.log(`Importing ${data.data.evidence.length} evidence items...`);
-      const result = await db.insert(evidence).values(data.data.evidence).onConflictDoNothing().returning();
+      const convertedEvidence = this.convertDatesToObjects(data.data.evidence);
+      const result = await db.insert(evidence).values(convertedEvidence).onConflictDoNothing().returning();
       imported.evidence = result.length;
       console.log(`Imported ${imported.evidence} evidence items (skipped ${data.data.evidence.length - imported.evidence} duplicates)`);
     }
     
+    // Import email alerts with date conversion
     if (data.data?.emailAlerts?.length) {
       console.log(`Importing ${data.data.emailAlerts.length} email alerts...`);
-      const result = await db.insert(emailAlerts).values(data.data.emailAlerts).onConflictDoNothing().returning();
+      const convertedAlerts = this.convertDatesToObjects(data.data.emailAlerts);
+      const result = await db.insert(emailAlerts).values(convertedAlerts).onConflictDoNothing().returning();
       imported.emailAlerts = result.length;
       console.log(`Imported ${imported.emailAlerts} email alerts (skipped ${data.data.emailAlerts.length - imported.emailAlerts} duplicates)`);
     }

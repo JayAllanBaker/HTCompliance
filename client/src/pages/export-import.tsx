@@ -75,10 +75,29 @@ export default function ExportImport() {
       });
       setSelectedFile(null);
     },
-    onError: () => {
+    onError: (error: any) => {
+      let errorMessage = "Failed to import database.";
+      
+      // Extract error message from Error thrown by apiRequest
+      if (error?.message) {
+        // Error format is "500: {\"error\":\"message\"}" from throwIfResNotOk
+        const match = error.message.match(/\d+:\s*({.*})/);
+        if (match) {
+          try {
+            const errorData = JSON.parse(match[1]);
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            // If JSON parse fails, use the full error message
+            errorMessage = error.message.replace(/^\d+:\s*/, '');
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Import Failed",
-        description: "Failed to import database.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
