@@ -484,6 +484,8 @@ export class DatabaseStorage implements IStorage {
     const allEmailAlerts = await db.select().from(emailAlerts);
 
     return {
+      appName: "BizGov",
+      appVersion: "1.0",
       version: "1.0",
       timestamp: new Date().toISOString(),
       data: {
@@ -545,26 +547,36 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Invalid backup format: missing 'data' property");
     }
 
-    // Check if this is a BizGov backup by looking for expected tables
-    const expectedTables = ['organizations', 'contracts', 'complianceItems', 'billableEvents'];
-    const actualTables = Object.keys(data.data);
-    const hasBizGovTables = expectedTables.some(table => actualTables.includes(table));
-
-    if (!hasBizGovTables) {
-      const wrongAppTables = ['companies', 'equityHoldings', 'stakeholders', 'userRoles'];
-      const hasWrongAppTables = wrongAppTables.some(table => actualTables.includes(table));
+    // Check if this is a BizGov backup by checking the appName identifier
+    if (data.appName !== "BizGov") {
+      const actualTables = Object.keys(data.data);
+      const capTableTables = ['companies', 'equityHoldings', 'stakeholders', 'securityTypes', 'userCompanies'];
+      const hasCapTableTables = capTableTables.some(table => actualTables.includes(table));
       
-      if (hasWrongAppTables) {
+      if (hasCapTableTables) {
         throw new Error(
-          "This backup file is from a different application and cannot be imported into BizGov. " +
-          "Please use a backup file exported from BizGov."
+          "This backup file is from a Cap Table application and cannot be imported into BizGov. " +
+          "BizGov is a compliance and billing management system, not a cap table manager. " +
+          "Please export data from BizGov using the Export Database button on this page."
         );
       } else {
         throw new Error(
-          "Invalid backup format: expected BizGov backup with tables like 'organizations', 'contracts', " +
-          "'complianceItems', and 'billableEvents'."
+          "This backup file is not from BizGov (missing 'appName: BizGov' identifier). " +
+          "Please use a backup file exported from BizGov's Export/Import page."
         );
       }
+    }
+
+    // Validate BizGov backup has required tables
+    const requiredTables = ['users', 'organizations'];
+    const actualTables = Object.keys(data.data);
+    const missingTables = requiredTables.filter(table => !actualTables.includes(table));
+    
+    if (missingTables.length > 0) {
+      throw new Error(
+        `Invalid BizGov backup: missing required tables: ${missingTables.join(', ')}. ` +
+        "The backup file may be corrupted."
+      );
     }
 
     // Import users with date conversion
