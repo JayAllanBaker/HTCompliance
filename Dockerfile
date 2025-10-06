@@ -29,6 +29,9 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
+# Install postgresql-client for pg_isready command
+RUN apk add --no-cache postgresql-client
+
 ENV NODE_ENV=production
 
 # Create a non-root user
@@ -38,10 +41,23 @@ RUN adduser --system --uid 1001 nextjs
 # Copy the built application and necessary runtime files
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/shared ./shared
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy drizzle-kit from builder (it's in devDependencies)
+COPY --from=builder /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
+COPY --from=builder /app/node_modules/.bin/drizzle-kit ./node_modules/.bin/drizzle-kit
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # Create uploads directory
 RUN mkdir -p uploads && chown -R nextjs:nodejs uploads
+
+# Fix permissions for entrypoint
+RUN chown nextjs:nodejs /docker-entrypoint.sh
 
 USER nextjs
 
@@ -54,5 +70,5 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/api/user', (r) => {process.exit(r.statusCode === 401 || r.statusCode === 200 ? 0 : 1)})"
 
-# Start the application
-CMD ["node", "dist/index.js"]
+# Use entrypoint script to initialize database and start application
+ENTRYPOINT ["/docker-entrypoint.sh"]
