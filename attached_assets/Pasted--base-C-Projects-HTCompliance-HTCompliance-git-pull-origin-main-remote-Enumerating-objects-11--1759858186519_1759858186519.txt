@@ -1,0 +1,185 @@
+(base) C:\Projects\HTCompliance\HTCompliance>git pull origin main
+remote: Enumerating objects: 11, done.
+remote: Counting objects: 100% (11/11), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 7 (delta 4), reused 7 (delta 4), pack-reused 0 (from 0)
+Unpacking objects: 100% (7/7), 3.62 KiB | 412.00 KiB/s, done.
+From https://github.com/JayAllanBaker/HTCompliance
+ * branch            main       -> FETCH_HEAD
+   ec90ee8..920fea8  main       -> origin/main
+Updating ec90ee8..920fea8
+Fast-forward
+ .replit                                            |  4 +
+ Dockerfile                                         |  2 +-
+ ...12-21-15-05-00--1759857699844_1759857699844.txt | 87 ++++++++++++++++++++++
+ ...pliance-latest--1759857624109_1759857624109.txt | 79 ++++++++++++++++++++
+ 4 files changed, 171 insertions(+), 1 deletion(-)
+ create mode 100644 attached_assets/Pasted--base-C-Projects-HTCompliance-HTCompliance-docker-compose-up-d-time-2025-10-07T12-21-15-05-00--1759857699844_1759857699844.txt
+ create mode 100644 attached_assets/Pasted--base-C-Projects-HTCompliance-HTCompliance-docker-pull-ghcr-io-jayallanbaker-htcompliance-latest--1759857624109_1759857624109.txt
+
+(base) C:\Projects\HTCompliance\HTCompliance>docker-compose build --no-cache
+time="2025-10-07T12:27:59-05:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:27:59-05:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:27:59-05:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:27:59-05:00" level=warning msg="C:\\Projects\\HTCompliance\\HTCompliance\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Building 19.0s (37/37) FINISHED
+ => [internal] load local bake definitions                                                                                      0.0s
+ => => reading from stdin 556B                                                                                                  0.0s
+ => [internal] load build definition from Dockerfile                                                                            0.0s
+ => => transferring dockerfile: 3.05kB                                                                                          0.0s
+ => [internal] load metadata for docker.io/library/node:22-alpine                                                               0.5s
+ => [auth] library/node:pull token for registry-1.docker.io                                                                     0.0s
+ => [internal] load .dockerignore                                                                                               0.0s
+ => => transferring context: 326B                                                                                               0.0s
+ => [internal] load build context                                                                                               0.0s
+ => => transferring context: 5.48kB                                                                                             0.0s
+ => CACHED [base 1/1] FROM docker.io/library/node:22-alpine@sha256:cb3143549582cc5f74f26f0992cdef4a422b22128cb517f94173a5f910f  0.0s
+ => CACHED [builder 1/9] WORKDIR /app                                                                                           0.0s
+ => [runner  2/16] RUN apk add --no-cache postgresql-client                                                                     1.2s
+ => [deps 1/4] RUN apk add --no-cache libc6-compat                                                                              0.9s
+ => [builder 2/9] COPY package.json package-lock.json* ./                                                                       0.0s
+ => [builder 3/9] RUN npm ci                                                                                                    9.5s
+ => [deps 2/4] WORKDIR /app                                                                                                     0.0s
+ => [deps 3/4] COPY package.json package-lock.json* ./                                                                          0.0s
+ => [deps 4/4] RUN npm ci && npm cache clean --force                                                                            8.8s
+ => [runner  3/16] RUN addgroup --system --gid 1001 nodejs                                                                      0.7s
+ => [runner  4/16] RUN adduser --system --uid 1001 nextjs                                                                       0.7s
+ => [builder 4/9] COPY server ./server                                                                                          0.0s
+ => [builder 5/9] COPY client ./client                                                                                          0.0s
+ => [builder 6/9] COPY shared ./shared                                                                                          0.0s
+ => [builder 7/9] COPY vite.config.ts tsconfig.json drizzle.config.ts tailwind.config.ts postcss.config.js ./                   0.1s
+ => [builder 8/9] COPY docker-entrypoint.sh ./docker-entrypoint.sh                                                              0.0s
+ => [builder 9/9] RUN npm run build                                                                                             3.8s
+ => [runner  5/16] COPY --from=builder /app/dist ./dist                                                                         0.0s
+ => [runner  6/16] COPY --from=builder /app/package.json ./package.json                                                         0.0s
+ => [runner  7/16] COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts                                               0.0s
+ => [runner  8/16] COPY --from=builder /app/shared ./shared                                                                     0.0s
+ => [runner  9/16] COPY --from=deps /app/node_modules ./node_modules                                                            1.1s
+ => [runner 10/16] COPY --from=builder /app/node_modules/drizzle-kit ./node_modules/drizzle-kit                                 0.0s
+ => [runner 11/16] COPY --from=builder /app/node_modules/.bin/drizzle-kit ./node_modules/.bin/drizzle-kit                       0.0s
+ => [runner 12/16] COPY docker-entrypoint.sh /docker-entrypoint.sh                                                              0.0s
+ => [runner 13/16] RUN sed -i 's/\r$//' /docker-entrypoint.sh &&     grep -qxF '#!/bin/sh' /docker-entrypoint.sh || sed -i '1i  0.2s
+ => [runner 14/16] RUN sed -i 's/\r$//' /docker-entrypoint.sh                                                                   0.4s
+ => [runner 15/16] RUN grep -qxF '#!/bin/sh' /docker-entrypoint.sh || sed -i '1i#!/bin/sh' /docker-entrypoint.sh                0.5s
+ => [runner 16/16] RUN chmod +x /docker-entrypoint.sh && chown nextjs:nodejs /docker-entrypoint.sh                              0.5s
+ => exporting to image                                                                                                          1.8s
+ => => exporting layers                                                                                                         1.8s
+ => => writing image sha256:e738320a183c5efc6711d479a41e54977476a0c2c8a5fe773cb64eda9ae32c1f                                    0.0s
+ => => naming to docker.io/library/htcompliance-app                                                                             0.0s
+ => resolving provenance for metadata file                                                                                      0.0s
+[+] Building 1/1
+ ✔ htcompliance-app  Built                                                                                                      0.0s
+
+(base) C:\Projects\HTCompliance\HTCompliance>docker-compose up -d
+time="2025-10-07T12:28:22-05:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:28:22-05:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:28:22-05:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:28:22-05:00" level=warning msg="C:\\Projects\\HTCompliance\\HTCompliance\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Running 2/2
+ ✔ Container bizgov-app       Started                                                                                          11.0s
+ ✔ Container bizgov-postgres  Healthy                                                                                          10.7s
+
+(base) C:\Projects\HTCompliance\HTCompliance>docker-compose logs -f app
+time="2025-10-07T12:28:36-05:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:28:36-05:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:28:36-05:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:28:36-05:00" level=warning msg="C:\\Projects\\HTCompliance\\HTCompliance\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+bizgov-app  | Starting BizGov application...
+bizgov-app  | Waiting for PostgreSQL to be ready...
+bizgov-app  | postgres:5432 - accepting connections
+bizgov-app  | PostgreSQL is ready!
+bizgov-app  | Initializing database schema...
+bizgov-app  | No config path provided, using default 'drizzle.config.ts'
+bizgov-app  | Reading config file '/app/drizzle.config.ts'
+bizgov-app  | Using 'pg' driver for database querying
+bizgov-app  | [⣷] Pulling schema from database...
+[✓] Pulling schema from database...
+bizgov-app  | [✓] Changes applied
+bizgov-app  | npm notice
+bizgov-app  | npm notice New major version of npm available! 10.9.3 -> 11.6.1
+bizgov-app  | npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.1
+bizgov-app  | npm notice To update run: npm install -g npm@11.6.1
+bizgov-app  | npm notice
+bizgov-app  | Starting application server...
+bizgov-app  | 5:28:35 PM [express] serving on port 5000
+bizgov-app  | 5:28:38 PM [express] GET /api/user 401 in 4ms
+bizgov-app  | 5:28:52 PM [express] GET /api/user 401 in 1ms
+bizgov-app  | 5:29:08 PM [express] GET /api/user 401 in 1ms
+bizgov-app  |
+bizgov-app  | file:///app/node_modules/@neondatabase/serverless/index.mjs:1345
+bizgov-app  | o?t(o):n(u)},"cb"),s=new r(function(o,u){n=o,t=u}).catch(o=>{throw Error.captureStackTrace(
+bizgov-app  |                                                                          ^
+bizgov-app  | ErrorEvent {
+bizgov-app  |   [Symbol(kTarget)]: WebSocket {
+bizgov-app  |     _events: [Object: null prototype] {
+bizgov-app  |       error: [Function: onError] {
+bizgov-app  |         [Symbol(kIsForOnEventAttribute)]: false,
+bizgov-app  |         [Symbol(kListener)]: [Function (anonymous)]
+bizgov-app  |       },
+bizgov-app  |       message: [Function: onMessage] {
+bizgov-app  |         [Symbol(kIsForOnEventAttribute)]: false,
+bizgov-app  |         [Symbol(kListener)]: [Function (anonymous)]
+bizgov-app  |       },
+bizgov-app  |       close: [Function: onClose] {
+bizgov-app  |         [Symbol(kIsForOnEventAttribute)]: false,
+bizgov-app  |         [Symbol(kListener)]: [Function (anonymous)]
+bizgov-app  |       },
+bizgov-app  |       open: [Function: onOpen] {
+bizgov-app  |         [Symbol(kIsForOnEventAttribute)]: false,
+bizgov-app  |         [Symbol(kListener)]: [Function: handleWebSocketOpen]
+bizgov-app  |       }
+bizgov-app  |     },
+bizgov-app  |     _eventsCount: 4,
+bizgov-app  |     _maxListeners: undefined,
+bizgov-app  |     _binaryType: 'arraybuffer',
+bizgov-app  |     _closeCode: 1006,
+bizgov-app  |     _closeFrameReceived: false,
+bizgov-app  |     _closeFrameSent: false,
+bizgov-app  |     _closeMessage: Buffer(0) [Uint8Array] [],
+bizgov-app  |     _closeTimer: null,
+bizgov-app  |     _errorEmitted: true,
+bizgov-app  |     _extensions: {},
+bizgov-app  |     _paused: false,
+bizgov-app  |     _protocol: '',
+bizgov-app  |     _readyState: 3,
+bizgov-app  |     _receiver: null,
+bizgov-app  |     _sender: null,
+bizgov-app  |     _socket: null,
+bizgov-app  |     _bufferedAmount: 0,
+bizgov-app  |     _isServer: false,
+bizgov-app  |     _redirects: 0,
+bizgov-app  |     _autoPong: true,
+bizgov-app  |     _url: 'wss://postgres/v2',
+bizgov-app  |     _req: null,
+bizgov-app  |     [Symbol(shapeMode)]: false,
+bizgov-app  |     [Symbol(kCapture)]: false
+bizgov-app  |   },
+bizgov-app  |   [Symbol(kType)]: 'error',
+bizgov-app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.19.0.2:443
+bizgov-app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+bizgov-app  |     errno: -111,
+bizgov-app  |     code: 'ECONNREFUSED',
+bizgov-app  |     syscall: 'connect',
+bizgov-app  |     address: '172.19.0.2',
+bizgov-app  |     port: 443
+bizgov-app  |   },
+bizgov-app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.19.0.2:443'
+bizgov-app  | }
+bizgov-app  |
+bizgov-app  | Node.js v22.20.0
+bizgov-app exited with code 1 (restarting)
+bizgov-app  | Starting BizGov application...
+bizgov-app  | Waiting for PostgreSQL to be ready...
+bizgov-app  | postgres:5432 - accepting connections
+bizgov-app  | PostgreSQL is ready!
+bizgov-app  | Initializing database schema...
+bizgov-app  | No config path provided, using default 'drizzle.config.ts'
+bizgov-app  | Reading config file '/app/drizzle.config.ts'
+bizgov-app  | Using 'pg' driver for database querying
+bizgov-app  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[✓] Pulling schema from database...
+bizgov-app  | [i] No changes detected
+bizgov-app  | Starting application server...
+bizgov-app  | 5:29:26 PM [express] serving on port 5000
+bizgov-app  | 5:29:30 PM [express] GET /api/user 401 in 4ms
