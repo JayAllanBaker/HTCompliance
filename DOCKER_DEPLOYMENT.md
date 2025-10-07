@@ -1,223 +1,454 @@
 # BizGov Compliance Hub - Docker Deployment Guide
 
-## Quick Start
-
-### Prerequisites
+## Prerequisites
 - Docker 20.10+ and Docker Compose 2.0+
 - At least 2GB RAM and 10GB disk space
 
-### Development Deployment
+## Quick Start Commands
 
-1. **Clone the repository** (if not already done)
-
-2. **Configure environment variables**
-   ```bash
-   cp .env.docker.example .env
-   # Edit .env with your production values
-   ```
-
-3. **Build and start services**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Access the application**
-   - Application: http://localhost:5000
-   - Database: localhost:5432
-
-5. **View logs**
-   ```bash
-   docker-compose logs -f app
-   ```
-
-### Production Deployment
-
-#### 1. Environment Configuration
-
-Create a `.env` file with secure production values:
-
+### Initial Setup
 ```bash
-# Database
-POSTGRES_PASSWORD=<strong-random-password>
+# 1. Copy environment template
+cp .env.docker.example .env
 
-# Session Security
-SESSION_SECRET=<generate-with-openssl-rand-base64-32>
+# 2. Edit .env with your configuration (required for production)
+nano .env  # or use your preferred editor
 
-# Microsoft Graph API
-AZURE_CLIENT_ID=<your-azure-app-id>
-AZURE_CLIENT_SECRET=<your-azure-app-secret>
-AZURE_TENANT_ID=<your-azure-tenant-id>
+# 3. Build containers
+docker-compose build
 
-# Email
-SENDER_EMAIL=noreply@yourcompany.com
-DEFAULT_ALERT_EMAIL=admin@yourcompany.com
-```
-
-#### 2. Build Production Image
-
-```bash
-docker-compose build --no-cache
-```
-
-#### 3. Start Services
-
-```bash
+# 4. Start services (database + app)
 docker-compose up -d
+
+# 5. Check status
+docker-compose ps
+
+# 6. View logs
+docker-compose logs -f app
 ```
 
-#### 4. Run Database Migrations
-
+### Daily Operations
 ```bash
-# Migrations are included in the image and run automatically
-# Or run manually if needed:
-docker-compose exec app npm run db:push
+# Start containers
+docker-compose up -d
+
+# Stop containers
+docker-compose down
+
+# Restart containers
+docker-compose restart
+
+# View logs (all services)
+docker-compose logs -f
+
+# View logs (app only)
+docker-compose logs -f app
+
+# View logs (database only)
+docker-compose logs -f postgres
+
+# Check container status
+docker-compose ps
+
+# Check container resource usage
+docker stats bizgov-app bizgov-postgres
 ```
 
-#### 5. Create Admin User
+### Maintenance Commands
+```bash
+# Rebuild after code changes
+docker-compose build --no-cache
+docker-compose up -d
 
-Access the application at http://your-domain.com and register your first admin user through the UI.
+# Stop and remove containers (keeps data)
+docker-compose down
+
+# Stop and remove containers + volumes (DELETES DATA!)
+docker-compose down -v
+
+# Access app container shell
+docker-compose exec app sh
+
+# Access database container shell
+docker-compose exec postgres psql -U postgres -d bizgov
+
+# Run database schema sync manually
+docker-compose exec app npx drizzle-kit push --force
+```
 
 ## Configuration
 
-### Environment Variables
+### Step 1: Environment Variables
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `POSTGRES_DB` | Database name | No | bizgov |
-| `POSTGRES_USER` | Database user | No | postgres |
-| `POSTGRES_PASSWORD` | Database password | Yes (prod) | postgres |
-| `SESSION_SECRET` | Session encryption key | Yes | changeme |
-| `AZURE_CLIENT_ID` | Microsoft Graph client ID | Yes | - |
-| `AZURE_CLIENT_SECRET` | Microsoft Graph secret | Yes | - |
-| `AZURE_TENANT_ID` | Azure AD tenant ID | Yes | - |
-| `APP_PORT` | External port mapping | No | 5000 |
-| `APP_URL` | Public application URL | No | http://localhost:5000 |
+Copy the example file and edit it:
+```bash
+cp .env.docker.example .env
+```
 
-### Volume Management
-
-The application uses two persistent volumes:
-
-- **postgres_data**: Database storage
-- **app_uploads**: Uploaded evidence files and attachments
-
-#### Backup Volumes
+**Required Configuration (Production):**
 
 ```bash
+# Database Security
+POSTGRES_PASSWORD=your_secure_password_here
+
+# Session Security (generate with: openssl rand -base64 32)
+SESSION_SECRET=your_very_long_random_secret_key
+
+# Microsoft Graph API (for email alerts)
+AZURE_CLIENT_ID=your_azure_client_id
+AZURE_CLIENT_SECRET=your_azure_client_secret
+AZURE_TENANT_ID=your_azure_tenant_id
+
+# Email Settings
+SENDER_EMAIL=noreply@healthtrixss.com
+DEFAULT_ALERT_EMAIL=admin@healthtrixss.com
+```
+
+**Optional Configuration:**
+
+```bash
+# Change ports if needed
+APP_PORT=5000
+POSTGRES_PORT=5432
+
+# Database name and user
+POSTGRES_DB=bizgov
+POSTGRES_USER=postgres
+
+# Application URL
+APP_URL=http://localhost:5000
+```
+
+### Step 2: Build and Deploy
+
+```bash
+# Build the Docker images
+docker-compose build
+
+# Start all services in background
+docker-compose up -d
+```
+
+**The deployment automatically:**
+1. Starts PostgreSQL database
+2. Waits for database to be ready
+3. Initializes database schema using Drizzle
+4. Starts the web application on port 5000
+
+### Step 3: Access Application
+
+- **Web Application**: http://localhost:5000
+- **Database**: localhost:5432 (from host machine)
+
+**First Login:**
+1. Navigate to http://localhost:5000
+2. Click "Register" to create first admin user
+3. Fill in username, email, and password
+4. Start using the application
+
+## Architecture
+
+### Services
+
+The deployment includes two containers:
+
+**bizgov-postgres** (Database)
+- PostgreSQL 16 Alpine
+- Persistent storage in `postgres_data` volume
+- Health checks every 10 seconds
+- Auto-restart enabled
+
+**bizgov-app** (Application)
+- Node.js 22 Alpine
+- React frontend + Express backend
+- Persistent uploads in `app_uploads` volume
+- Health checks every 30 seconds
+- Auto-restart enabled
+- Automatic database schema initialization
+
+### Volumes
+
+**postgres_data** - Database files
+- Location: Docker volume (managed by Docker)
+- Contains all PostgreSQL data
+- Persists when containers are stopped
+
+**app_uploads** - Evidence files and attachments
+- Location: Docker volume (managed by Docker)
+- Contains uploaded documents
+- Persists when containers are stopped
+
+### Network
+
+**bizgov-network** - Bridge network
+- Internal communication between app and database
+- App connects to postgres via hostname `postgres:5432`
+
+## Backup and Restore
+
+### Database Backup
+```bash
+# Create SQL dump
+docker-compose exec postgres pg_dump -U postgres bizgov > backup_$(date +%Y%m%d).sql
+
+# Or use the built-in export feature
+# Login to app → Admin Panel → Export/Import → Export Database
+```
+
+### Database Restore
+```bash
+# From SQL dump
+docker-compose exec -T postgres psql -U postgres bizgov < backup_20241007.sql
+
+# Or use the built-in import feature
+# Login to app → Admin Panel → Export/Import → Import Database
+```
+
+### Uploads Backup
+```bash
+# Backup uploads directory
+docker run --rm -v bizgov_app_uploads:/data -v $(pwd):/backup \
+  alpine tar czf /backup/uploads-backup-$(date +%Y%m%d).tar.gz -C /data .
+```
+
+### Uploads Restore
+```bash
+# Restore uploads directory
+docker run --rm -v bizgov_app_uploads:/data -v $(pwd):/backup \
+  alpine tar xzf /backup/uploads-backup-20241007.tar.gz -C /data
+```
+
+### Complete Backup (Database + Uploads)
+```bash
+# Create backup directory
+mkdir -p backups/$(date +%Y%m%d)
+
 # Backup database
-docker-compose exec postgres pg_dump -U postgres bizgov > backup.sql
+docker-compose exec postgres pg_dump -U postgres bizgov > backups/$(date +%Y%m%d)/database.sql
 
 # Backup uploads
-docker run --rm -v bizgov_app_uploads:/data -v $(pwd):/backup \
-  alpine tar czf /backup/uploads-backup.tar.gz -C /data .
-```
+docker run --rm -v bizgov_app_uploads:/data -v $(pwd)/backups/$(date +%Y%m%d):/backup \
+  alpine tar czf /backup/uploads.tar.gz -C /data .
 
-#### Restore Volumes
-
-```bash
-# Restore database
-docker-compose exec -T postgres psql -U postgres bizgov < backup.sql
-
-# Restore uploads
-docker run --rm -v bizgov_app_uploads:/data -v $(pwd):/backup \
-  alpine tar xzf /backup/uploads-backup.tar.gz -C /data
-```
-
-## Health Checks
-
-The application includes built-in health checks:
-
-- **App Health**: Checked every 30s on `/api/user`
-- **DB Health**: Checked every 10s with `pg_isready`
-
-View health status:
-```bash
-docker-compose ps
+echo "Backup complete in: backups/$(date +%Y%m%d)"
 ```
 
 ## Troubleshooting
 
-### Container Fails to Start
-
-1. Check logs:
-   ```bash
-   docker-compose logs app
-   docker-compose logs postgres
-   ```
-
-2. Verify environment variables:
-   ```bash
-   docker-compose config
-   ```
-
-3. Check database connection:
-   ```bash
-   docker-compose exec postgres psql -U postgres -d bizgov -c "SELECT 1;"
-   ```
-
-### Database Connection Issues
-
-1. Ensure PostgreSQL is healthy:
-   ```bash
-   docker-compose ps postgres
-   ```
-
-2. Test connectivity:
-   ```bash
-   docker-compose exec app node -e "require('pg').Client({host:'postgres',port:5432,user:'postgres',password:'postgres',database:'bizgov'}).connect().then(()=>console.log('OK')).catch(console.error)"
-   ```
-
-### Port Already in Use
-
-Change the external port mapping in `.env`:
+### Check Service Status
 ```bash
-APP_PORT=5001  # Change from default 5000
-POSTGRES_PORT=5433  # Change if 5432 is in use
+# View all containers
+docker-compose ps
+
+# Check specific service health
+docker inspect bizgov-app --format='{{.State.Health.Status}}'
+docker inspect bizgov-postgres --format='{{.State.Health.Status}}'
 ```
 
-## Maintenance
-
-### Update Application
-
+### View Logs
 ```bash
-# Pull latest code
-git pull
+# All logs
+docker-compose logs
 
-# Rebuild and restart
+# Follow logs in real-time
+docker-compose logs -f
+
+# Last 100 lines
+docker-compose logs --tail=100
+
+# Specific service
+docker-compose logs -f app
+docker-compose logs -f postgres
+```
+
+### Database Connection Test
+```bash
+# From app container
+docker-compose exec app node -e "console.log(process.env.DATABASE_URL)"
+
+# Test PostgreSQL connection
+docker-compose exec postgres psql -U postgres -d bizgov -c "SELECT version();"
+```
+
+### Common Issues
+
+**Port Already in Use**
+```bash
+# Change port in .env file
+echo "APP_PORT=5001" >> .env
+docker-compose down
+docker-compose up -d
+```
+
+**Database Connection Failed**
+```bash
+# Check if PostgreSQL is running
+docker-compose ps postgres
+
+# Restart database
+docker-compose restart postgres
+
+# Check database logs
+docker-compose logs postgres
+```
+
+**Schema Initialization Failed**
+```bash
+# Run schema push manually
+docker-compose exec app npx drizzle-kit push --force
+
+# Or restart the app container
+docker-compose restart app
+```
+
+**Container Won't Start**
+```bash
+# Check container logs for errors
+docker-compose logs app
+
+# Validate docker-compose configuration
+docker-compose config
+
+# Rebuild from scratch
+docker-compose down
 docker-compose build --no-cache
 docker-compose up -d
 ```
 
-### Scale Services
+## Security Checklist
 
-Docker Compose doesn't natively support scaling with defined container names. For scaling, use Docker Swarm or Kubernetes.
+- [ ] Changed `POSTGRES_PASSWORD` from default
+- [ ] Generated strong `SESSION_SECRET` (min 32 chars)
+- [ ] Configured Azure credentials for email alerts
+- [ ] Using HTTPS in production (reverse proxy)
+- [ ] Regular backups scheduled
+- [ ] Database port not exposed externally (remove ports in docker-compose.yml for production)
+- [ ] Updated Docker images monthly
+- [ ] Firewall configured to allow only necessary ports
 
-### Monitor Resources
+## Production Deployment
 
-```bash
-docker stats bizgov-app bizgov-postgres
+### Reverse Proxy (HTTPS)
+
+**Using Nginx:**
+```nginx
+server {
+    listen 80;
+    server_name bizgov.yourcompany.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name bizgov.yourcompany.com;
+
+    ssl_certificate /etc/ssl/certs/bizgov.crt;
+    ssl_certificate_key /etc/ssl/private/bizgov.key;
+
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
 ```
 
-## Security Best Practices
+### Production Best Practices
 
-1. **Always use strong passwords** in production
-2. **Generate random SESSION_SECRET**: `openssl rand -base64 32`
-3. **Use HTTPS** with a reverse proxy (nginx, Traefik, Caddy)
-4. **Regular backups** of database and uploads
-5. **Keep Docker images updated**
-6. **Restrict database access** to application container only
-7. **Use secrets management** for Azure credentials (e.g., Docker Secrets, Vault)
+1. **Remove External Database Port**
+   - Edit `docker-compose.yml`
+   - Comment out `ports:` section under `postgres` service
+   - Database only accessible from app container
 
-## Production Architecture
+2. **Use Docker Secrets** (Docker Swarm)
+   ```yaml
+   secrets:
+     postgres_password:
+       external: true
+     session_secret:
+       external: true
+   ```
 
-For production deployment, consider:
+3. **Resource Limits**
+   ```yaml
+   services:
+     app:
+       deploy:
+         resources:
+           limits:
+             cpus: '2'
+             memory: 2G
+           reservations:
+             cpus: '1'
+             memory: 1G
+   ```
 
-1. **Reverse Proxy**: Use nginx or Traefik for SSL/TLS termination
-2. **Load Balancer**: Distribute traffic across multiple app containers
-3. **Managed Database**: Use AWS RDS, Azure Database, or similar
-4. **Object Storage**: Move uploads to S3/Azure Blob Storage
-5. **Monitoring**: Add Prometheus + Grafana for metrics
-6. **Logging**: Centralize logs with ELK or Loki stack
+4. **Auto-restart Policy**
+   ```yaml
+   restart: always  # Already configured
+   ```
+
+5. **Monitoring**
+   - Add Prometheus + Grafana
+   - Use container health endpoints
+   - Set up log aggregation (ELK, Loki)
+
+## Update Procedure
+
+```bash
+# 1. Backup current data
+docker-compose exec postgres pg_dump -U postgres bizgov > backup_before_update.sql
+
+# 2. Pull latest code
+git pull origin main
+
+# 3. Rebuild containers
+docker-compose build --no-cache
+
+# 4. Stop current containers
+docker-compose down
+
+# 5. Start updated containers
+docker-compose up -d
+
+# 6. Verify deployment
+docker-compose ps
+docker-compose logs -f app
+
+# 7. Test application
+curl http://localhost:5000/api/user
+```
+
+## Environment Variables Reference
+
+| Variable | Description | Required | Default | Example |
+|----------|-------------|----------|---------|---------|
+| `POSTGRES_DB` | Database name | No | bizgov | bizgov |
+| `POSTGRES_USER` | Database user | No | postgres | postgres |
+| `POSTGRES_PASSWORD` | Database password | **Yes** | postgres | MySecureP@ss123 |
+| `POSTGRES_PORT` | External DB port | No | 5432 | 5432 |
+| `APP_PORT` | External app port | No | 5000 | 5000 |
+| `APP_URL` | Public URL | No | http://localhost:5000 | https://bizgov.company.com |
+| `SESSION_SECRET` | Session encryption | **Yes** | changeme | 32+ random chars |
+| `AZURE_CLIENT_ID` | Graph API client | **Yes** | - | xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx |
+| `AZURE_CLIENT_SECRET` | Graph API secret | **Yes** | - | your-secret-value |
+| `AZURE_TENANT_ID` | Azure tenant | **Yes** | - | xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx |
+| `SENDER_EMAIL` | Email from address | No | noreply@healthtrixss.com | noreply@company.com |
+| `DEFAULT_ALERT_EMAIL` | Alert recipient | No | admin@healthtrixss.com | admin@company.com |
+| `NODE_ENV` | Runtime environment | No | production | production |
 
 ## Support
 
-For issues or questions, refer to the main application documentation or contact your system administrator.
+- **Application Logs**: `docker-compose logs -f app`
+- **Database Logs**: `docker-compose logs -f postgres`
+- **Health Status**: `docker-compose ps`
+- **Shell Access**: `docker-compose exec app sh`
+- **Database Access**: `docker-compose exec postgres psql -U postgres -d bizgov`
+
+For additional help, refer to the main application documentation or contact your system administrator.
