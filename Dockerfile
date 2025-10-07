@@ -20,7 +20,7 @@ RUN npm ci
 COPY server ./server
 COPY client ./client
 COPY shared ./shared
-COPY vite.config.ts tsconfig.json drizzle.config.ts index.html tailwind.config.ts postcss.config.js ./
+COPY vite.config.ts tsconfig.json drizzle.config.ts tailwind.config.ts postcss.config.js ./
 
 # Build the application (builds both frontend with Vite and backend with esbuild)
 RUN npm run build
