@@ -1,0 +1,79 @@
+(base) C:\Projects\HTCompliance\HTCompliance>docker pull ghcr.io/jayallanbaker/htcompliance:latest
+latest: Pulling from jayallanbaker/htcompliance
+9824c27679d3: Already exists
+f4c26c8fab28: Already exists
+8eb1ff6ad740: Already exists
+568251d7904d: Already exists
+00210a4b40a4: Already exists
+2cc9c28b3eb6: Already exists
+dc5e39cb2399: Already exists
+a2269956cb4c: Already exists
+1be9b50fa303: Already exists
+25423115253a: Already exists
+956cdf86f70a: Already exists
+4162055b8143: Already exists
+ebdfdaa52cad: Already exists
+05a8ecdc061b: Already exists
+788aa789b1b7: Already exists
+28e937c49994: Already exists
+f1085c31fbd3: Pull complete
+72b22a00dc60: Pull complete
+4f4fb700ef54: Pull complete
+Digest: sha256:1e6f3fdf5963dfa01d80088b98cb63ab7c316acf8f9e5650f9303fb283ecb0f6
+Status: Downloaded newer image for ghcr.io/jayallanbaker/htcompliance:latest
+ghcr.io/jayallanbaker/htcompliance:latest
+
+What's next:
+    View a summary of image vulnerabilities and recommendations → docker scout quickview ghcr.io/jayallanbaker/htcompliance:latest
+
+(base) C:\Projects\HTCompliance\HTCompliance>docker-compose build --no-cache
+time="2025-10-07T12:19:41-05:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:19:41-05:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:19:41-05:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-07T12:19:41-05:00" level=warning msg="C:\\Projects\\HTCompliance\\HTCompliance\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Building 18.3s (36/36) FINISHED
+ => [internal] load local bake definitions                                                                                      0.0s
+ => => reading from stdin 556B                                                                                                  0.0s
+ => [internal] load build definition from Dockerfile                                                                            0.0s
+ => => transferring dockerfile: 3.07kB                                                                                          0.0s
+ => [internal] load metadata for docker.io/library/node:22-alpine                                                               0.2s
+ => [internal] load .dockerignore                                                                                               0.0s
+ => => transferring context: 326B                                                                                               0.0s
+ => [internal] load build context                                                                                               0.0s
+ => => transferring context: 5.48kB                                                                                             0.0s
+ => CACHED [base 1/1] FROM docker.io/library/node:22-alpine@sha256:cb3143549582cc5f74f26f0992cdef4a422b22128cb517f94173a5f910f  0.0s
+ => CACHED [builder 1/9] WORKDIR /app                                                                                           0.0s
+ => [runner  2/16] RUN apk add --no-cache postgresql-client                                                                     1.2s
+ => [deps 1/4] RUN apk add --no-cache libc6-compat                                                                              0.9s
+ => [builder 2/9] COPY package.json package-lock.json* ./                                                                       0.0s
+ => [builder 3/9] RUN npm ci                                                                                                    9.2s
+ => [deps 2/4] WORKDIR /app                                                                                                     0.0s
+ => [deps 3/4] COPY package.json package-lock.json* ./                                                                          0.0s
+ => [deps 4/4] RUN npm ci --only=production && npm cache clean --force                                                          8.3s
+ => [runner  3/16] RUN addgroup --system --gid 1001 nodejs                                                                      0.8s
+ => [runner  4/16] RUN adduser --system --uid 1001 nextjs                                                                       1.1s
+ => [builder 4/9] COPY server ./server                                                                                          0.0s
+ => [builder 5/9] COPY client ./client                                                                                          0.0s
+ => [builder 6/9] COPY shared ./shared                                                                                          0.0s
+ => [builder 7/9] COPY vite.config.ts tsconfig.json drizzle.config.ts tailwind.config.ts postcss.config.js ./                   0.0s
+ => [builder 8/9] COPY docker-entrypoint.sh ./docker-entrypoint.sh                                                              0.0s
+ => [builder 9/9] RUN npm run build                                                                                             4.0s
+ => [runner  5/16] COPY --from=builder /app/dist ./dist                                                                         0.0s
+ => [runner  6/16] COPY --from=builder /app/package.json ./package.json                                                         0.0s
+ => [runner  7/16] COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts                                               0.0s
+ => [runner  8/16] COPY --from=builder /app/shared ./shared                                                                     0.0s
+ => [runner  9/16] COPY --from=deps /app/node_modules ./node_modules                                                            0.9s
+ => [runner 10/16] COPY --from=builder /app/node_modules/drizzle-kit ./node_modules/drizzle-kit                                 0.0s
+ => [runner 11/16] COPY --from=builder /app/node_modules/.bin/drizzle-kit ./node_modules/.bin/drizzle-kit                       0.0s
+ => [runner 12/16] COPY docker-entrypoint.sh /docker-entrypoint.sh                                                              0.0s
+ => [runner 13/16] RUN sed -i 's/\r$//' /docker-entrypoint.sh &&     grep -qxF '#!/bin/sh' /docker-entrypoint.sh || sed -i '1i  0.2s
+ => [runner 14/16] RUN sed -i 's/\r$//' /docker-entrypoint.sh                                                                   0.5s
+ => [runner 15/16] RUN grep -qxF '#!/bin/sh' /docker-entrypoint.sh || sed -i '1i#!/bin/sh' /docker-entrypoint.sh                0.5s
+ => [runner 16/16] RUN chmod +x /docker-entrypoint.sh && chown nextjs:nodejs /docker-entrypoint.sh                              0.5s
+ => exporting to image                                                                                                          1.5s
+ => => exporting layers                                                                                                         1.5s
+ => => writing image sha256:6723ec32b28390bf37ffa4bd29300f95479fcb83314f399efdb76c2d98b19f96                                    0.0s
+ => => naming to docker.io/library/htcompliance-app                                                                             0.0s
+ => resolving provenance for metadata file                                                                                      0.0s
+[+] Building 1/1
+ ✔ htcompliance-app  Built  
