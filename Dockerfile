@@ -52,26 +52,28 @@ COPY --from=builder /app/node_modules/.bin/drizzle-kit ./node_modules/.bin/drizz
 
 # Copy entrypoint script from builder stage
 COPY --from=builder /app/docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
 
-# Create uploads directory
-RUN mkdir -p uploads && chown -R nextjs:nodejs uploads
+# Ensure Unix LF line endings (fixes Windows CRLF issues)
+RUN sed -i 's/\r$//' /docker-entrypoint.sh
 
-# Fix permissions for entrypoint
-RUN chown nextjs:nodejs /docker-entrypoint.sh
+# Ensure the script is executable and owned by our non-root user
+RUN chmod +x /docker-entrypoint.sh && chown nextjs:nodejs /docker-entrypoint.sh
+
+# Default Postgres connection envs (can be overridden by --env-file)
+ENV PGHOST=postgres
+ENV PGUSER=postgres
+ENV PGDATABASE=htdb
 
 USER nextjs
 
 EXPOSE 5000
-
 ENV PORT=5000
 ENV HOSTNAME="0.0.0.0"
 
-# Health check - accepts both 200 (authenticated) and 401 (not authenticated) as healthy
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/api/user', (r) => {process.exit(r.statusCode === 401 || r.statusCode === 200 ? 0 : 1)})"
 
-# Use entrypoint script to initialize database and start application
+# Run entrypoint then start the app
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["node", "dist/server/index.js"]
-
+CMD ["node", "dist/index.js"]
