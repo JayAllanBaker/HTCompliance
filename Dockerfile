@@ -21,6 +21,7 @@ COPY server ./server
 COPY client ./client
 COPY shared ./shared
 COPY vite.config.ts tsconfig.json drizzle.config.ts tailwind.config.ts postcss.config.js ./
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
 # Build the application (builds both frontend with Vite and backend with esbuild)
 RUN npm run build
@@ -49,8 +50,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
 COPY --from=builder /app/node_modules/.bin/drizzle-kit ./node_modules/.bin/drizzle-kit
 
-# Copy entrypoint script
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+# Copy entrypoint script from builder stage
+COPY --from=builder /app/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 # Create uploads directory
