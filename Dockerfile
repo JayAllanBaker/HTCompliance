@@ -56,19 +56,24 @@ COPY --from=builder /app/docker-entrypoint.sh /docker-entrypoint.sh
 # Ensure Unix LF line endings (fixes Windows CRLF issues)
 RUN sed -i 's/\r$//' /docker-entrypoint.sh
 
+# Ensure shebang is present
+RUN grep -qxF '#!/bin/sh' /docker-entrypoint.sh || sed -i '1i#!/bin/sh' /docker-entrypoint.sh
+
 # Ensure the script is executable and owned by our non-root user
 RUN chmod +x /docker-entrypoint.sh && chown nextjs:nodejs /docker-entrypoint.sh
 
-# Default Postgres connection envs (can be overridden by --env-file)
+# Default Postgres connection envs (can be overridden by docker-compose or --env-file)
 ENV PGHOST=postgres
 ENV PGUSER=postgres
+ENV PGPASSWORD=postgres
 ENV PGDATABASE=htdb
+ENV PGPORT=5432
 
 USER nextjs
 
 EXPOSE 5000
 ENV PORT=5000
-ENV HOSTNAME="0.0.0.0"
+ENV HOSTNAME=0.0.0.0
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
