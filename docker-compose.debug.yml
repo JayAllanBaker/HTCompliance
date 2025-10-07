@@ -1,0 +1,18 @@
+# Docker Compose override for verbose debugging
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.debug.yml up
+
+version: '3.8'
+
+services:
+  app:
+    environment:
+      # Enable verbose logging
+      - DEBUG=express:*,drizzle:*
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+    # Stream logs to console with timestamps
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

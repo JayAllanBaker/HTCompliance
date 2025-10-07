@@ -132,14 +132,23 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/contracts", async (req, res) => {
     try {
+      console.log("=== POST /api/contracts ===");
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
+      
       // Convert date strings to Date objects before validation
       const data = {
         ...req.body,
         startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
         endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
       };
+      
+      console.log("Data after date conversion:", JSON.stringify(data, null, 2));
+      
       const validatedData = insertContractSchema.parse(data);
+      console.log("Validated data:", JSON.stringify(validatedData, null, 2));
+      
       const contract = await storage.createContract(validatedData);
+      console.log("Created contract:", JSON.stringify(contract, null, 2));
       
       // Audit log
       await storage.createAuditLog({
@@ -155,9 +164,15 @@ export function registerRoutes(app: Express): Server {
       res.status(201).json(contract);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("=== CONTRACT VALIDATION ERROR ===");
+        console.error("Validation errors:", JSON.stringify(error.errors, null, 2));
+        console.error("Failed request body:", JSON.stringify(req.body, null, 2));
         res.status(400).json({ error: "Invalid input", details: error.errors });
       } else {
-        res.status(500).json({ error: "Failed to create contract" });
+        console.error("=== CONTRACT CREATION ERROR ===");
+        console.error("Error:", error);
+        console.error("Request body:", JSON.stringify(req.body, null, 2));
+        res.status(500).json({ error: "Failed to create contract", message: error instanceof Error ? error.message : String(error) });
       }
     }
   });

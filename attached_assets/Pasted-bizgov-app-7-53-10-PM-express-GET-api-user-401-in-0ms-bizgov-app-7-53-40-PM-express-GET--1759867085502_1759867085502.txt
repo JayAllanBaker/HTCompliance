@@ -1,0 +1,129 @@
+bizgov-app  | 7:53:10 PM [express] GET /api/user 401 in 0ms
+bizgov-app  | 7:53:40 PM [express] GET /api/user 401 in 0ms
+bizgov-app  | 7:54:10 PM [express] GET /api/user 401 in 1ms
+bizgov-app  | Update request body: {
+bizgov-app  |   "customerId": "52a9c856-15bc-4c5d-94ed-c0df97aa4b4b",
+bizgov-app  |   "category": "Marketing Agreement",
+bizgov-app  |   "type": "Quarterly commission calculation and payment",
+bizgov-app  |   "commitment": "Quarter 1 Commission Payment - Year 1 (partial qtr)",
+bizgov-app  |   "description": "5% commission on fees rendered and paid during Quarter 3 of Year 2025",
+bizgov-app  |   "responsibleParty": "Health Trixss Finance",
+bizgov-app  |   "dueDate": "2025-10-01T00:00:00.000Z",
+bizgov-app  |   "status": "pending"
+bizgov-app  | }
+bizgov-app  | Data after date conversion: {
+bizgov-app  |   "customerId": "52a9c856-15bc-4c5d-94ed-c0df97aa4b4b",
+bizgov-app  |   "category": "Marketing Agreement",
+bizgov-app  |   "type": "Quarterly commission calculation and payment",
+bizgov-app  |   "commitment": "Quarter 1 Commission Payment - Year 1 (partial qtr)",
+bizgov-app  |   "description": "5% commission on fees rendered and paid during Quarter 3 of Year 2025",
+bizgov-app  |   "responsibleParty": "Health Trixss Finance",
+bizgov-app  |   "dueDate": "2025-10-01T00:00:00.000Z",
+bizgov-app  |   "status": "pending",
+bizgov-app  |   "completedAt": null
+bizgov-app  | }
+bizgov-app  | 7:54:33 PM [express] PUT /api/compliance-items/2880840f-eddb-4fb2-bf91-1edf1203cc32 200 in 12ms :: {…
+bizgov-app  | 7:54:33 PM [express] GET /api/compliance-items 200 in 2ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | 7:54:33 PM [express] GET /api/compliance-items 304 in 3ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | 7:54:33 PM [express] GET /api/dashboard/metrics 304 in 12ms :: {"totalItems":27,"completedItems":1,"…
+bizgov-app  | 7:54:38 PM [express] GET /api/compliance-items 200 in 4ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | 7:54:40 PM [express] GET /api/user 401 in 0ms
+bizgov-app  | Update request body: {
+bizgov-app  |   "customerId": "e6985759-7d03-40db-bb0a-c381ceeb769c",
+bizgov-app  |   "category": "Billing",
+bizgov-app  |   "type": "Billing Commitments",
+bizgov-app  |   "commitment": "Submit monthly invoice with valid PO",
+bizgov-app  |   "description": "Invoice must include PO, detail prior month?s services, and be submitted to ap@thealliance.health and cc Kim Phillips. Payable net 30 days if undisputed. Maximum Cap: Total contract payments cannot exceed $251,160 under SOW1.",
+bizgov-app  |   "responsibleParty": "Jay Baker",
+bizgov-app  |   "dueDate": "2025-10-07T00:00:00.000Z",
+bizgov-app  |   "status": "pending"
+bizgov-app  | }
+bizgov-app  | Data after date conversion: {
+bizgov-app  |   "customerId": "e6985759-7d03-40db-bb0a-c381ceeb769c",
+bizgov-app  |   "category": "Billing",
+bizgov-app  |   "type": "Billing Commitments",
+bizgov-app  |   "commitment": "Submit monthly invoice with valid PO",
+bizgov-app  |   "description": "Invoice must include PO, detail prior month?s services, and be submitted to ap@thealliance.health and cc Kim Phillips. Payable net 30 days if undisputed. Maximum Cap: Total contract payments cannot exceed $251,160 under SOW1.",
+bizgov-app  |   "responsibleParty": "Jay Baker",
+bizgov-app  |   "dueDate": "2025-10-07T00:00:00.000Z",
+bizgov-app  |   "status": "pending",
+bizgov-app  |   "completedAt": null
+bizgov-app  | }
+bizgov-app  | 7:54:43 PM [express] PUT /api/compliance-items/17373b3d-90a6-4a4e-adde-61f0ccff076a 200 in 6ms :: {"…
+bizgov-app  | 7:54:43 PM [express] GET /api/compliance-items 200 in 1ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | 7:54:43 PM [express] GET /api/compliance-items 304 in 1ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | Update request body: {
+bizgov-app  |   "customerId": "52a9c856-15bc-4c5d-94ed-c0df97aa4b4b",
+bizgov-app  |   "category": "Marketing Agreement",
+bizgov-app  |   "type": "Quarterly commission calculation and payment",
+bizgov-app  |   "commitment": "Quarter 1 Commission Payment - Year 1 (partial qtr)",
+bizgov-app  |   "description": "5% commission on fees rendered and paid during Quarter 3 of Year 2025",
+bizgov-app  |   "responsibleParty": "Health Trixss Finance",
+bizgov-app  |   "dueDate": "2025-10-01T00:00:00.000Z",
+bizgov-app  |   "status": "complete"
+bizgov-app  | }
+bizgov-app  | Data after date conversion: {
+bizgov-app  |   "customerId": "52a9c856-15bc-4c5d-94ed-c0df97aa4b4b",
+bizgov-app  |   "category": "Marketing Agreement",
+bizgov-app  |   "type": "Quarterly commission calculation and payment",
+bizgov-app  |   "commitment": "Quarter 1 Commission Payment - Year 1 (partial qtr)",
+bizgov-app  |   "description": "5% commission on fees rendered and paid during Quarter 3 of Year 2025",
+bizgov-app  |   "responsibleParty": "Health Trixss Finance",
+bizgov-app  |   "dueDate": "2025-10-01T00:00:00.000Z",
+bizgov-app  |   "status": "complete",
+bizgov-app  |   "completedAt": null
+bizgov-app  | }
+bizgov-app  | 7:54:55 PM [express] PUT /api/compliance-items/2880840f-eddb-4fb2-bf91-1edf1203cc32 200 in 12ms :: {…
+bizgov-app  | 7:54:55 PM [express] GET /api/compliance-items 200 in 3ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | 7:54:55 PM [express] GET /api/compliance-items 304 in 2ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | Update request body: {
+bizgov-app  |   "status": "complete",
+bizgov-app  |   "completedAt": "2025-10-07T19:55:07.141Z"
+bizgov-app  | }
+bizgov-app  | Data after date conversion: {
+bizgov-app  |   "status": "complete",
+bizgov-app  |   "completedAt": "2025-10-07T19:55:07.141Z",
+bizgov-app  |   "dueDate": null
+bizgov-app  | }
+bizgov-app  | 7:55:07 PM [express] PUT /api/compliance-items/17373b3d-90a6-4a4e-adde-61f0ccff076a 200 in 10ms :: {…
+bizgov-app  | 7:55:07 PM [express] GET /api/compliance-items 200 in 2ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | 7:55:07 PM [express] GET /api/compliance-items 304 in 2ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | 7:55:10 PM [express] GET /api/user 401 in 1ms
+bizgov-app  | 7:55:11 PM [express] GET /api/user 401 in 0ms
+bizgov-app  | 7:55:18 PM [express] POST /api/login 401 in 37ms
+bizgov-app  | 7:55:20 PM [express] POST /api/login 401 in 29ms
+bizgov-app  | 7:55:26 PM [express] POST /api/login 200 in 45ms :: {"id":"aef2302d-0769-4970-ab5b-cbb305105056","us…
+bizgov-app  | 7:55:26 PM [express] GET /api/organizations 304 in 3ms :: [{"id":"52a9c856-15bc-4c5d-94ed-c0df97aa4b…
+bizgov-app  | 7:55:26 PM [express] GET /api/dashboard/metrics 200 in 12ms :: {"totalItems":27,"completedItems":3,"…
+bizgov-app  | 7:55:26 PM [express] GET /api/compliance-items 200 in 24ms :: {"items":[{"id":"8f7ab341-7d01-46f2-98…
+bizgov-app  | 7:55:34 PM [express] GET /api/compliance-items 304 in 2ms :: {"items":[{"id":"8f7ab341-7d01-46f2-981…
+bizgov-app  | 7:55:39 PM [express] GET /api/export/database 200 in 9ms :: {"appName":"BizGov","appVersion":"1.0","…
+bizgov-app  | 7:55:40 PM [express] GET /api/user 401 in 1ms
+bizgov-app  | Starting database import from file: uploads/b2011765ca46a81f3ec04fc1059e4a23
+bizgov-app  | Parsed import data, version: 1.0
+bizgov-app  | Starting database import...
+bizgov-app  | Import data structure: [ 'appName', 'appVersion', 'version', 'timestamp', 'data' ]
+bizgov-app  | Import data.data structure: [
+bizgov-app  |   'users',
+bizgov-app  |   'organizations',
+bizgov-app  |   'contracts',
+bizgov-app  |   'complianceItems',
+bizgov-app  |   'billableEvents',
+bizgov-app  |   'evidence',
+bizgov-app  |   'auditLogs',
+bizgov-app  |   'emailAlerts'
+bizgov-app  | ]
+bizgov-app  | Importing 1 users...
+bizgov-app  | Imported 0 users (skipped 1 duplicates)
+bizgov-app  | Importing 3 organizations...
+bizgov-app  | Imported 0 organizations (skipped 3 duplicates)
+bizgov-app  | Importing 27 compliance items...
+bizgov-app  | Imported 0 compliance items (skipped 27 duplicates)
+bizgov-app  | Database import complete. Total records imported: 0
+bizgov-app  | Database import completed successfully
+bizgov-app  | 7:55:59 PM [express] POST /api/import/database 200 in 19ms :: {"message":"Database imported successf…
+bizgov-app  | 7:56:10 PM [express] GET /api/user 401 in 1ms
+bizgov-app  | 7:56:38 PM [express] GET /api/contracts 304 in 7ms :: []
+bizgov-app  | 7:56:40 PM [express] GET /api/user 401 in 0ms
+bizgov-app  | 7:57:05 PM [express] POST /api/contracts 400 in 1ms :: {"error":"Invalid input","details":[{"code":"…
+bizgov-app  | 7:57:10 PM [express] GET /api/user 401 in 0ms
