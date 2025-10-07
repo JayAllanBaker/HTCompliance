@@ -50,8 +50,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
 COPY --from=builder /app/node_modules/.bin/drizzle-kit ./node_modules/.bin/drizzle-kit
 
-# Copy entrypoint script from builder stage
-COPY --from=builder /app/docker-entrypoint.sh /docker-entrypoint.sh
+# Copy entrypoint script directly into runner
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+
+# Ensure LF endings + shebang + executable
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
+    grep -qxF '#!/bin/sh' /docker-entrypoint.sh || sed -i '1i#!/bin/sh' /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh && \
+    chown nextjs:nodejs /docker-entrypoint.sh
 
 # Ensure Unix LF line endings (fixes Windows CRLF issues)
 RUN sed -i 's/\r$//' /docker-entrypoint.sh
