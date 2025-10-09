@@ -44,6 +44,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/server ./server
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy drizzle-kit from builder (it's in devDependencies)

@@ -19,5 +19,11 @@ if ! npx drizzle-kit push --force 2>&1; then
   echo "Attempting to start application anyway..."
 fi
 
+# Create default admin user if it doesn't exist
+echo "Initializing default admin user..."
+if ! npx tsx server/init-admin.ts 2>&1; then
+  echo "Warning: Admin initialization failed. Continuing anyway..."
+fi
+
 echo "Starting application server..."
 exec node dist/index.js
