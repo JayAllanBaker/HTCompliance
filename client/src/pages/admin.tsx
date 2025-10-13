@@ -32,10 +32,13 @@ export default function AdminPage() {
   });
 
   const [qbSettings, setQbSettings] = useState({
-    qb_client_id: "",
-    qb_client_secret: "",
-    qb_redirect_uri: "",
-    qb_environment: "sandbox"
+    qb_active_config: "dev" as "dev" | "prod",
+    qb_dev_client_id: "",
+    qb_dev_client_secret: "",
+    qb_dev_redirect_uri: "",
+    qb_prod_client_id: "",
+    qb_prod_client_secret: "",
+    qb_prod_redirect_uri: "",
   });
 
   const { data: users, isLoading } = useQuery<UserWithoutPassword[]>({
@@ -76,11 +79,13 @@ export default function AdminPage() {
   useEffect(() => {
     if (qbSettingsData) {
       setQbSettings({
-        qb_client_id: qbSettingsData.qb_client_id?.value || "",
-        // Keep masked value from server as placeholder, but track separately
-        qb_client_secret: "", // Empty by default for security
-        qb_redirect_uri: qbSettingsData.qb_redirect_uri?.value || "",
-        qb_environment: qbSettingsData.qb_environment?.value || "sandbox"
+        qb_active_config: (qbSettingsData.qb_active_config?.value as "dev" | "prod") || "dev",
+        qb_dev_client_id: qbSettingsData.qb_dev_client_id?.value || "",
+        qb_dev_client_secret: "", // Always empty for security (write-only)
+        qb_dev_redirect_uri: qbSettingsData.qb_dev_redirect_uri?.value || "",
+        qb_prod_client_id: qbSettingsData.qb_prod_client_id?.value || "",
+        qb_prod_client_secret: "", // Always empty for security (write-only)
+        qb_prod_redirect_uri: qbSettingsData.qb_prod_redirect_uri?.value || "",
       });
     }
   }, [qbSettingsData]);

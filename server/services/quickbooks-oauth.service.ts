@@ -199,6 +199,7 @@ export async function createQuickBooksOAuthService(storage?: any): Promise<Quick
   let clientSecret = '';
   let redirectUri = '';
   let environment = '';
+  let activeConfig = 'dev'; // default to dev
 
   // Priority 1: Load from database (if storage provided)
   if (storage) {
@@ -209,10 +210,18 @@ export async function createQuickBooksOAuthService(storage?: any): Promise<Quick
         return acc;
       }, {} as Record<string, string>);
 
-      clientId = settingsMap.qb_client_id || '';
-      clientSecret = settingsMap.qb_client_secret || '';
-      redirectUri = settingsMap.qb_redirect_uri || '';
-      environment = settingsMap.qb_environment || '';
+      // Check which config is active
+      activeConfig = settingsMap.qb_active_config || 'dev';
+      
+      // Load credentials based on active config
+      const prefix = activeConfig === 'prod' ? 'qb_prod_' : 'qb_dev_';
+      
+      clientId = settingsMap[`${prefix}client_id`] || settingsMap.qb_client_id || '';
+      clientSecret = settingsMap[`${prefix}client_secret`] || settingsMap.qb_client_secret || '';
+      redirectUri = settingsMap[`${prefix}redirect_uri`] || settingsMap.qb_redirect_uri || '';
+      
+      // Environment is always based on active config
+      environment = activeConfig === 'prod' ? 'production' : 'sandbox';
     } catch (error) {
       console.error('Failed to load QB settings from database:', error);
     }

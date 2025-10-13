@@ -948,8 +948,9 @@ export function registerRoutes(app: Express): Server {
       
       // Convert to object for easier consumption
       const settingsObj = qbSettings.reduce((acc, setting) => {
-        // SECURITY: Never expose client secret in cleartext
-        const value = setting.key === 'qb_client_secret' && setting.value 
+        // SECURITY: Never expose client secrets in cleartext
+        const isSecret = setting.key.includes('client_secret');
+        const value = isSecret && setting.value 
           ? '••••••••' // Masked value for security
           : setting.value || '';
         
@@ -969,12 +970,17 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/admin/qb-settings", requireAdmin, async (req: Request, res: Response) => {
     try {
-      // Validate request body
+      // Validate request body - support both dev and prod configs
       const qbSettingsSchema = z.object({
-        qb_client_id: z.string().min(1).optional(),
-        qb_client_secret: z.string().min(1).optional(),
-        qb_redirect_uri: z.string().url().optional(),
-        qb_environment: z.enum(['sandbox', 'production']).optional(),
+        qb_active_config: z.enum(['dev', 'prod']).optional(),
+        // Dev config
+        qb_dev_client_id: z.string().optional(),
+        qb_dev_client_secret: z.string().optional(),
+        qb_dev_redirect_uri: z.string().url().optional().or(z.literal('')),
+        // Prod config
+        qb_prod_client_id: z.string().optional(),
+        qb_prod_client_secret: z.string().optional(),
+        qb_prod_redirect_uri: z.string().url().optional().or(z.literal('')),
       });
       
       const validationResult = qbSettingsSchema.safeParse(req.body);
@@ -985,42 +991,71 @@ export function registerRoutes(app: Express): Server {
         });
       }
       
-      const { qb_client_id, qb_client_secret, qb_redirect_uri, qb_environment } = validationResult.data;
+      const data = validationResult.data;
       
-      // Upsert each setting
-      if (qb_client_id !== undefined) {
+      // Upsert active config
+      if (data.qb_active_config !== undefined) {
         await storage.upsertSystemSetting({
-          key: 'qb_client_id',
-          value: qb_client_id,
+          key: 'qb_active_config',
+          value: data.qb_active_config,
           isEncrypted: false,
-          description: 'QuickBooks OAuth Client ID',
+          description: 'Active QuickBooks configuration (dev or prod)',
         });
       }
       
-      if (qb_client_secret !== undefined) {
+      // Upsert dev settings
+      if (data.qb_dev_client_id !== undefined) {
         await storage.upsertSystemSetting({
-          key: 'qb_client_secret',
-          value: qb_client_secret,
+          key: 'qb_dev_client_id',
+          value: data.qb_dev_client_id,
+          isEncrypted: false,
+          description: 'QuickBooks Dev Client ID',
+        });
+      }
+      
+      if (data.qb_dev_client_secret !== undefined && data.qb_dev_client_secret !== '') {
+        await storage.upsertSystemSetting({
+          key: 'qb_dev_client_secret',
+          value: data.qb_dev_client_secret,
           isEncrypted: true,
-          description: 'QuickBooks OAuth Client Secret (encrypted)',
+          description: 'QuickBooks Dev Client Secret (encrypted)',
         });
       }
       
-      if (qb_redirect_uri !== undefined) {
+      if (data.qb_dev_redirect_uri !== undefined) {
         await storage.upsertSystemSetting({
-          key: 'qb_redirect_uri',
-          value: qb_redirect_uri,
+          key: 'qb_dev_redirect_uri',
+          value: data.qb_dev_redirect_uri,
           isEncrypted: false,
-          description: 'QuickBooks OAuth Redirect URI',
+          description: 'QuickBooks Dev Redirect URI',
         });
       }
       
-      if (qb_environment !== undefined) {
+      // Upsert prod settings
+      if (data.qb_prod_client_id !== undefined) {
         await storage.upsertSystemSetting({
-          key: 'qb_environment',
-          value: qb_environment,
+          key: 'qb_prod_client_id',
+          value: data.qb_prod_client_id,
           isEncrypted: false,
-          description: 'QuickBooks environment (sandbox or production)',
+          description: 'QuickBooks Production Client ID',
+        });
+      }
+      
+      if (data.qb_prod_client_secret !== undefined && data.qb_prod_client_secret !== '') {
+        await storage.upsertSystemSetting({
+          key: 'qb_prod_client_secret',
+          value: data.qb_prod_client_secret,
+          isEncrypted: true,
+          description: 'QuickBooks Production Client Secret (encrypted)',
+        });
+      }
+      
+      if (data.qb_prod_redirect_uri !== undefined) {
+        await storage.upsertSystemSetting({
+          key: 'qb_prod_redirect_uri',
+          value: data.qb_prod_redirect_uri,
+          isEncrypted: false,
+          description: 'QuickBooks Production Redirect URI',
         });
       }
       
