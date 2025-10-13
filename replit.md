@@ -2,7 +2,7 @@
 
 ## Overview
 
-BizGov is an internal compliance, billing, and contract lifecycle management application for Health Trixss LLC. The system provides a centralized hub for tracking compliance obligations, managing billable events, maintaining contract milestones, and storing audit evidence. Built with a React frontend and Express backend, the application emphasizes audit readiness, automated alerting, and data portability through JSON export/restore capabilities.
+BizGov is an internal compliance, billing, and contract lifecycle management application for Health Trixss LLC. The system provides a centralized hub for tracking compliance obligations, managing billable events, maintaining contract milestones, storing audit evidence, and syncing invoice data from QuickBooks Online. Built with a React frontend and Express backend, the application emphasizes audit readiness, automated alerting, and data portability through JSON export/restore capabilities.
 
 ## User Preferences
 
@@ -88,6 +88,27 @@ Preferred communication style: Simple, everyday language.
 **UI Components**: Extensive use of Radix UI primitives (@radix-ui/*) for accessible, unstyled components that are styled with Tailwind CSS via shadcn/ui configuration.
 
 **Design Rationale**: Microsoft Graph API integration leverages existing Health Trixss infrastructure for email. PapaParse provides robust CSV handling with error recovery. The JSON export format enables simple backup/restore without database-specific tools. Local file storage keeps the initial deployment simple but should be migrated to cloud storage (S3/Azure Blob) for production scalability.
+
+### QuickBooks Online Integration
+
+**OAuth 2.0 Authentication**: Integration uses OAuth 2.0 for secure authentication with QuickBooks Online. Each organization can connect to a separate QuickBooks company. The system stores access tokens (1-hour expiry) and refresh tokens (100-day expiry) in the database, with automatic token refresh on 401 errors.
+
+**Customer Mapping**: Organizations must be mapped to a QuickBooks customer before invoices can be synced. The system provides a search interface to find and map QuickBooks customers by name or company.
+
+**Invoice Synchronization**: Once connected and mapped, invoices can be synced from QuickBooks to the local database. Invoices are cached locally and can be updated by re-syncing.
+
+**Environment Configuration**: The integration requires three environment variables:
+- `QB_CLIENT_ID` - QuickBooks application client ID
+- `QB_CLIENT_SECRET` - QuickBooks application client secret  
+- `QB_REDIRECT_URI` - OAuth callback URL (defaults to http://localhost:5000/api/quickbooks/callback in development)
+
+**Security Features**:
+- CSRF protection via state parameter in OAuth flow
+- Query string escaping to prevent QuickBooks Query Language injection
+- Automatic token refresh with 401 error handling
+- OAuth callback upsert logic to handle reconnections
+
+**Design Rationale**: Separate quickbooks_connections table isolates OAuth credentials from organization data for better security. The sync service caches invoices locally to reduce API calls and provide offline access to invoice data. Per-organization connections enable multi-company scenarios where different organizations use different QuickBooks companies.
 
 ### Help & Documentation System
 
