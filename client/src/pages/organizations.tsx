@@ -9,15 +9,24 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, Pencil, Trash2 } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Link as LinkIcon, Search } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Organization } from "@shared/schema";
+import type { Organization, QuickbooksConnection } from "@shared/schema";
+
+interface QBCustomer {
+  Id: string;
+  DisplayName: string;
+  CompanyName?: string;
+  PrimaryEmailAddr?: { Address: string };
+}
 
 export default function OrganizationsPage() {
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isQBDialogOpen, setIsQBDialogOpen] = useState(false);
+  const [isCustomerSearchOpen, setIsCustomerSearchOpen] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -25,9 +34,17 @@ export default function OrganizationsPage() {
     contactEmail: "",
     isActive: true
   });
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [qbCustomers, setQbCustomers] = useState<QBCustomer[]>([]);
 
   const { data: organizations, isLoading } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
+  });
+
+  // Fetch QB connections for all organizations
+  const { data: qbConnections = {} } = useQuery<Record<string, QuickbooksConnection>>({
+    queryKey: ["/api/quickbooks/connections"],
+    enabled: !!organizations && organizations.length > 0,
   });
 
   const createOrganizationMutation = useMutation({
@@ -125,6 +142,140 @@ export default function OrganizationsPage() {
     }
   };
 
+  const handleQBConnect = async (organizationId: string) => {
+    try {
+      const response = await fetch(`/api/quickbooks/auth-url?organizationId=${organizationId}`);
+      const data = await response.json();
+      
+      if (data.authUrl) {
+        // Open QuickBooks OAuth in a popup
+        const width = 800;
+        const height = 600;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+        
+        window.open(
+          data.authUrl,
+          'QuickBooks OAuth',
+          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+        );
+        
+        toast({
+          title: "QuickBooks Authorization",
+          description: "Please authorize in the popup window.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : "Failed to connect to QuickBooks",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleQBManage = (organization: Organization) => {
+    setSelectedOrganization(organization);
+    setIsQBDialogOpen(true);
+  };
+
+  const disconnectQBMutation = useMutation({
+    mutationFn: async (organizationId: string) => {
+      const response = await apiRequest("DELETE", `/api/quickbooks/${organizationId}/disconnect`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quickbooks/connections"] });
+      setIsQBDialogOpen(false);
+      toast({
+        title: "Disconnected",
+        description: "QuickBooks has been disconnected successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Disconnect Failed",
+        description: error.message || "Failed to disconnect QuickBooks.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const syncInvoicesMutation = useMutation({
+    mutationFn: async (organizationId: string) => {
+      const response = await apiRequest("POST", `/api/organizations/${organizationId}/qb-sync`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Invoices Synced",
+        description: `Synced ${data.syncedCount || 0} invoices from QuickBooks.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync QuickBooks invoices.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const mapCustomerMutation = useMutation({
+    mutationFn: async ({ organizationId, customerId, customerName }: { organizationId: string; customerId: string; customerName: string }) => {
+      const response = await apiRequest("POST", `/api/organizations/${organizationId}/qb-map-customer`, {
+        qbCustomerId: customerId,
+        qbCustomerName: customerName
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quickbooks/connections"] });
+      setIsCustomerSearchOpen(false);
+      setCustomerSearchTerm("");
+      setQbCustomers([]);
+      toast({
+        title: "Customer Mapped",
+        description: "QuickBooks customer has been mapped successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Mapping Failed",
+        description: error.message || "Failed to map QuickBooks customer.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSearchCustomers = async () => {
+    if (!selectedOrganization) return;
+    
+    try {
+      const searchParam = customerSearchTerm ? `?search=${encodeURIComponent(customerSearchTerm)}` : '';
+      const response = await fetch(`/api/organizations/${selectedOrganization.id}/qb-customers${searchParam}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to search customers');
+      }
+      
+      const data = await response.json();
+      setQbCustomers(data.customers || []);
+    } catch (error) {
+      toast({
+        title: "Search Failed",
+        description: error instanceof Error ? error.message : "Failed to search QuickBooks customers",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenCustomerSearch = () => {
+    setIsCustomerSearchOpen(true);
+    // Auto-load customers on open
+    setTimeout(() => handleSearchCustomers(), 100);
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
@@ -173,6 +324,7 @@ export default function OrganizationsPage() {
                         <TableHead>Code</TableHead>
                         <TableHead>Contact Email</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>QuickBooks</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -192,6 +344,36 @@ export default function OrganizationsPage() {
                             <Badge variant={org.isActive ? "default" : "secondary"} data-testid={`badge-org-status-${org.id}`}>
                               {org.isActive ? "Active" : "Inactive"}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {qbConnections[org.id] ? (
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant={qbConnections[org.id].status === 'connected' ? 'default' : 'secondary'}
+                                  data-testid={`badge-qb-status-${org.id}`}
+                                >
+                                  {qbConnections[org.id].status === 'connected' ? 'Connected' : qbConnections[org.id].status}
+                                </Badge>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleQBManage(org)}
+                                  data-testid={`button-qb-manage-${org.id}`}
+                                >
+                                  Manage
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleQBConnect(org.id)}
+                                data-testid={`button-qb-connect-${org.id}`}
+                              >
+                                <LinkIcon className="h-3 w-3 mr-1" />
+                                Connect
+                              </Button>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
@@ -284,6 +466,159 @@ export default function OrganizationsPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Customer Search Dialog */}
+      <Dialog open={isCustomerSearchOpen} onOpenChange={setIsCustomerSearchOpen}>
+        <DialogContent className="max-w-2xl max-h-[600px] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Map QuickBooks Customer</DialogTitle>
+            <DialogDescription>
+              Search and select a QuickBooks customer to map to {selectedOrganization?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Search customers..."
+                value={customerSearchTerm}
+                onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchCustomers()}
+                data-testid="input-qb-customer-search"
+              />
+              <Button onClick={handleSearchCustomers} data-testid="button-search-qb-customers">
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto border rounded-lg">
+              {qbCustomers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No customers found. Try searching or click the search button to load all customers.
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {qbCustomers.map((customer) => (
+                    <div
+                      key={customer.Id}
+                      className="p-4 hover:bg-accent cursor-pointer flex items-center justify-between"
+                      onClick={() => {
+                        if (selectedOrganization) {
+                          mapCustomerMutation.mutate({
+                            organizationId: selectedOrganization.id,
+                            customerId: customer.Id,
+                            customerName: customer.DisplayName
+                          });
+                        }
+                      }}
+                      data-testid={`qb-customer-${customer.Id}`}
+                    >
+                      <div>
+                        <p className="font-medium">{customer.DisplayName}</p>
+                        {customer.CompanyName && (
+                          <p className="text-sm text-muted-foreground">{customer.CompanyName}</p>
+                        )}
+                        {customer.PrimaryEmailAddr && (
+                          <p className="text-xs text-muted-foreground">{customer.PrimaryEmailAddr.Address}</p>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={mapCustomerMutation.isPending}
+                        data-testid={`button-select-customer-${customer.Id}`}
+                      >
+                        {mapCustomerMutation.isPending ? 'Mapping...' : 'Select'}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* QuickBooks Management Dialog */}
+      <Dialog open={isQBDialogOpen} onOpenChange={setIsQBDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>QuickBooks Management</DialogTitle>
+            <DialogDescription>
+              Manage QuickBooks connection and customer mapping for {selectedOrganization?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedOrganization && qbConnections[selectedOrganization.id] ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">Connection Status</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {qbConnections[selectedOrganization.id].status === 'connected' 
+                        ? 'Successfully connected to QuickBooks'
+                        : `Status: ${qbConnections[selectedOrganization.id].status}`
+                      }
+                    </p>
+                  </div>
+                  <Badge 
+                    variant={qbConnections[selectedOrganization.id].status === 'connected' ? 'default' : 'secondary'}
+                    data-testid="badge-qb-connection-status"
+                  >
+                    {qbConnections[selectedOrganization.id].status}
+                  </Badge>
+                </div>
+
+                {qbConnections[selectedOrganization.id].qbCustomerName && (
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm font-medium">Mapped QuickBooks Customer</p>
+                    <p className="text-sm mt-1">{qbConnections[selectedOrganization.id].qbCustomerName}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Customer ID: {qbConnections[selectedOrganization.id].qbCustomerId}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={handleOpenCustomerSearch}
+                    data-testid="button-qb-search-customer"
+                  >
+                    {qbConnections[selectedOrganization.id].qbCustomerId ? 'Change Customer' : 'Map Customer'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    disabled={!qbConnections[selectedOrganization.id].qbCustomerId || syncInvoicesMutation.isPending}
+                    onClick={() => syncInvoicesMutation.mutate(selectedOrganization.id)}
+                    data-testid="button-qb-sync-invoices"
+                  >
+                    {syncInvoicesMutation.isPending ? 'Syncing...' : 'Sync Invoices'}
+                  </Button>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <Button 
+                    variant="destructive" 
+                    className="w-full"
+                    onClick={() => disconnectQBMutation.mutate(selectedOrganization.id)}
+                    disabled={disconnectQBMutation.isPending}
+                    data-testid="button-qb-disconnect"
+                  >
+                    {disconnectQBMutation.isPending ? 'Disconnecting...' : 'Disconnect QuickBooks'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No QuickBooks connection found for this organization.
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

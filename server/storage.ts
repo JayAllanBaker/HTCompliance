@@ -83,6 +83,7 @@ export interface IStorage {
   updateEmailAlertStatus(id: string, status: string, errorMessage?: string): Promise<void>;
   
   // QuickBooks methods
+  getAllQuickbooksConnections(): Promise<QuickbooksConnection[]>;
   getQuickbooksConnection(organizationId: string): Promise<QuickbooksConnection | undefined>;
   createQuickbooksConnection(connection: InsertQuickbooksConnection): Promise<QuickbooksConnection>;
   updateQuickbooksConnection(organizationId: string, updates: Partial<InsertQuickbooksConnection>): Promise<QuickbooksConnection>;
@@ -485,6 +486,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // QuickBooks methods
+  async getAllQuickbooksConnections(): Promise<QuickbooksConnection[]> {
+    return await db.select().from(quickbooksConnections);
+  }
+
   async getQuickbooksConnection(organizationId: string): Promise<QuickbooksConnection | undefined> {
     const [connection] = await db
       .select()

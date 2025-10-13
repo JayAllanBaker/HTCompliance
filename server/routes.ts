@@ -940,6 +940,25 @@ export function registerRoutes(app: Express): Server {
   });
 
   // QuickBooks OAuth routes
+  
+  // Get all QuickBooks connections (for UI status display)
+  app.get("/api/quickbooks/connections", async (req: Request, res: Response) => {
+    try {
+      const connections = await storage.getAllQuickbooksConnections();
+      
+      // Create a map of organizationId -> connection
+      const connectionsMap = connections.reduce((acc, conn) => {
+        acc[conn.organizationId] = conn;
+        return acc;
+      }, {} as Record<string, typeof connections[0]>);
+      
+      res.json(connectionsMap);
+    } catch (error) {
+      console.error('Error fetching QB connections:', error);
+      res.status(500).json({ error: 'Failed to fetch QuickBooks connections' });
+    }
+  });
+  
   app.get("/api/quickbooks/auth-url", async (req, res) => {
     try {
       const organizationId = req.query.organizationId as string;
