@@ -508,30 +508,29 @@ export default function AdminPage() {
                       onChange={(e) => setQbSettings({ ...qbSettings, qb_redirect_uri: e.target.value })}
                       data-testid="input-qb-redirect-uri"
                     />
-                    {detectedRedirectData && (
-                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 text-sm">
-                        <div className="flex items-start gap-2">
-                          <AlertCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                          <div className="space-y-1">
-                            <p className="font-semibold text-blue-900 dark:text-blue-100">
-                              {detectedRedirectData.isReplit ? '✓ Auto-Detected Redirect URI (Replit)' : 'Auto-Detected Redirect URI'}
+                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 text-sm">
+                      <div className="flex items-start gap-2">
+                        <AlertCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div className="space-y-1 flex-1">
+                          <p className="font-semibold text-blue-900 dark:text-blue-100">
+                            ✓ Auto-Detected Redirect URI
+                            {detectedRedirectData?.isReplit && ' (Replit)'}
+                          </p>
+                          <p className="text-blue-800 dark:text-blue-200 font-mono text-xs break-all select-all">
+                            {detectedRedirectData?.detectedRedirectUri || 'Loading...'}
+                          </p>
+                          <p className="text-blue-700 dark:text-blue-300 text-xs">
+                            Use this exact URL in your QuickBooks Developer Portal app settings.
+                            {detectedRedirectData?.isReplit && ' This is your public Replit URL.'}
+                          </p>
+                          {qbSettings.qb_redirect_uri && detectedRedirectData && qbSettings.qb_redirect_uri !== detectedRedirectData.detectedRedirectUri && (
+                            <p className="text-amber-700 dark:text-amber-300 text-xs mt-2">
+                              ⚠️ Your saved redirect URI differs from the detected one. Make sure they match in QuickBooks!
                             </p>
-                            <p className="text-blue-800 dark:text-blue-200 font-mono text-xs break-all">
-                              {detectedRedirectData.detectedRedirectUri}
-                            </p>
-                            <p className="text-blue-700 dark:text-blue-300 text-xs">
-                              Use this URL in your QuickBooks Developer Portal app settings.
-                              {detectedRedirectData.isReplit && ' This is your public Replit URL.'}
-                            </p>
-                            {qbSettings.qb_redirect_uri && qbSettings.qb_redirect_uri !== detectedRedirectData.detectedRedirectUri && (
-                              <p className="text-amber-700 dark:text-amber-300 text-xs mt-2">
-                                ⚠️ Your saved redirect URI differs from the detected one. Make sure they match in QuickBooks!
-                              </p>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="qb_environment">Environment</Label>
