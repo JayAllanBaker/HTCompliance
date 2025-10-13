@@ -447,6 +447,209 @@ If you need to rotate your QuickBooks credentials for security:
 
 ⚠️ **Note:** After updating credentials, existing QuickBooks connections will need to be re-authorized.
 
+---
+
+## QuickBooks Online Integration
+
+### Getting QuickBooks OAuth Credentials
+
+Before using the QuickBooks integration, you need to create OAuth credentials in the QuickBooks Developer Portal.
+
+**Steps:**
+1. Go to [developer.intuit.com](https://developer.intuit.com)
+2. Sign in with your Intuit account (or create one)
+3. Click **"Create an app"**
+4. Select **"QuickBooks Online"** as the platform
+5. Choose your scopes (accounting scope required for invoices)
+6. Set your Redirect URI:
+   ```
+   http://localhost:5000/api/quickbooks/callback
+   ```
+7. Save and copy your **Client ID** and **Client Secret**
+
+**Sandbox vs Production:**
+- **Sandbox**: For testing with fake data (free, no approval required)
+- **Production**: For real QuickBooks companies (requires Intuit approval process)
+
+💡 **Tip:** Start with sandbox credentials to test the integration before going to production.
+
+### Setting Up QuickBooks Integration
+
+Once you have your OAuth credentials, configure them in BizGov:
+
+**Option 1: Admin Panel (Recommended for Docker)**
+1. Go to **Admin Panel** → **QuickBooks Online Settings**
+2. Enter credentials:
+   - Client ID
+   - Client Secret  
+   - Redirect URI
+   - Environment (sandbox or production)
+3. Click **"Save QuickBooks Settings"**
+
+**Option 2: Environment Variables**
+Add to your `.env` file:
+```
+QB_CLIENT_ID=your_client_id
+QB_CLIENT_SECRET=your_client_secret
+QB_REDIRECT_URI=http://localhost:5000/api/quickbooks/callback
+QB_ENVIRONMENT=sandbox
+```
+
+### Connecting Organizations to QuickBooks
+
+**Step-by-Step:**
+1. Navigate to **Organizations** page
+2. Find the organization you want to connect
+3. Click **"Connect"** in the QuickBooks column
+4. A popup window will open - sign in to QuickBooks
+5. Select the QuickBooks company to connect
+6. Authorize BizGov to access your QuickBooks data
+7. Connection status updates to "Connected"
+
+✅ **Success:** You'll see a green checkmark and connection details.
+
+### Mapping QuickBooks Customers
+
+After connecting, you must map each organization to a QuickBooks customer:
+
+**Steps:**
+1. Click **"Manage"** on the connected organization
+2. Click **"Map Customer"** button
+3. Use the search box to find your QuickBooks customer
+4. Click on the customer to select and map them
+5. The mapped customer name will appear in the dialog
+
+**Why map customers?**
+Mapping links your BizGov organization to a specific QuickBooks customer, enabling:
+- Invoice synchronization
+- Revenue tracking
+- Customer-specific data queries
+
+### Syncing QuickBooks Invoices
+
+Once connected and mapped, you can sync invoices:
+
+**Steps:**
+1. Open the QuickBooks management dialog
+2. Click **"Sync Invoices"** button
+3. Wait for sync to complete
+4. Success message shows number of invoices synced
+5. Invoices appear in the list with details:
+   - Invoice number
+   - Date
+   - Total amount
+   - Balance due
+   - Status (paid/unpaid)
+
+**Sync Behavior:**
+- ✅ Updates existing invoices
+- ✅ Adds new invoices
+- ✅ Preserves local data
+- ✅ Idempotent (safe to run multiple times)
+
+### Checking QuickBooks System Health
+
+The Admin Panel includes a **System Health** card for monitoring QuickBooks integration status.
+
+**Health Indicators:**
+
+| Status | Color | Meaning |
+|--------|-------|---------|
+| Healthy | 🟢 Green | Credentials configured, system ready |
+| Not Configured | 🟡 Yellow | No QB credentials set up |
+| Error | 🔴 Red | Health check failed |
+
+**Health Metrics:**
+- **Client ID**: Masked for security (e.g., "ABbWvOcQ...")
+- **Environment**: Sandbox or Production
+- **Active Connections**: Total QB connections
+- **Valid Connections**: Non-expired connections
+- **Expired Connections**: Need reconnection
+- **Last Check**: Timestamp of last health check
+
+**Usage:**
+1. Go to **Admin Panel**
+2. Locate **System Health** card
+3. Review status and metrics
+4. Click **"Refresh"** to manually update
+5. Auto-refreshes every 60 seconds
+
+### Testing the QuickBooks Integration
+
+Follow this complete test workflow:
+
+#### Test 1: Verify Credentials
+1. Go to Admin Panel → QuickBooks Online Settings
+2. Verify Client ID and Environment are set
+3. Check System Health shows "Healthy" (green status)
+
+✅ **Pass:** Green status indicator appears
+
+#### Test 2: Connect Test Organization
+1. Create a test organization (e.g., "Test Company")
+2. Click "Connect" in the QuickBooks column
+3. Sign in to your QuickBooks sandbox/company
+4. Authorize the connection
+5. Verify status changes to "Connected"
+
+✅ **Pass:** Status shows "Connected" with green checkmark
+
+#### Test 3: Map Customer
+1. Click "Manage" on the test organization
+2. Click "Map Customer"
+3. Search for a QuickBooks customer
+4. Select a customer to map
+5. Verify customer name appears in dialog
+
+✅ **Pass:** Customer name displays correctly
+
+#### Test 4: Sync Invoices
+1. Click "Sync Invoices" in the management dialog
+2. Wait for sync to complete
+3. Verify success message shows invoice count
+4. Check that invoices appear in the list
+
+✅ **Pass:** Invoices display with correct data
+
+#### Test 5: Verify Health Status
+1. Return to Admin Panel
+2. Check System Health shows 1 Active Connection
+3. Verify Valid Connections count is 1
+4. Confirm Expired Connections is 0
+
+✅ **Pass:** All connection counts are correct
+
+🎉 **Integration Working:** If all tests pass, your QuickBooks integration is fully operational!
+
+### Handling Connection Expiration
+
+QuickBooks access tokens expire after **1 hour** and refresh tokens after **100 days** of inactivity.
+
+**If connection status shows "expired":**
+
+1. Click **"Disconnect"** in the management dialog
+2. Click **"Connect"** again to reauthorize
+3. Sign in to QuickBooks and authorize again
+4. Your customer mapping will be preserved
+
+💡 **Tip:** The system automatically refreshes access tokens when possible, but refresh tokens require manual reconnection after 100 days.
+
+### Disconnecting QuickBooks
+
+**Steps:**
+1. Click **"Manage"** on the organization
+2. Scroll down and click **"Disconnect QuickBooks"**
+3. Confirm disconnection
+4. Connection removed and tokens revoked
+
+**What Happens:**
+- ✅ Connection removed
+- ✅ Tokens revoked
+- ✅ Synced invoices remain in database
+- ✅ Customer mapping preserved (for reconnection)
+
+---
+
 ### Database Reset
 
 ⚠️ **DANGER ZONE** - This deletes all business data!
@@ -602,6 +805,45 @@ If you need to rotate your QuickBooks credentials for security:
 - Check browser download settings
 - Try different browser
 - Use smaller date ranges if large dataset
+
+### QuickBooks Integration Issues
+
+**❌ Connection button doesn't open popup**
+- Check that QuickBooks credentials are configured in Admin Panel
+- Verify System Health shows "Healthy" status
+- Check browser console for errors
+- Disable popup blockers for this site
+
+**❌ OAuth callback fails with "invalid_client"**
+- Verify Client ID and Secret are correct
+- Check Redirect URI matches exactly (including http/https)
+- Ensure environment (sandbox/production) matches your QB app
+- Verify credentials haven't expired or been revoked
+
+**❌ Connection shows "expired"**
+- Disconnect and reconnect the organization
+- QuickBooks refresh tokens expire after 100 days of inactivity
+- Customer mapping is preserved during reconnection
+
+**❌ Invoice sync returns 0 invoices**
+- Verify customer mapping is correct
+- Check that the mapped customer has invoices in QuickBooks
+- Ensure your QB app has "Accounting" scope enabled
+- Check that connection hasn't expired
+
+**❌ System Health shows "Not Configured"**
+- Go to Admin Panel → QuickBooks Online Settings
+- Enter Client ID, Client Secret, and Redirect URI
+- Select correct environment (sandbox/production)
+- Save settings and refresh health check
+
+**❌ Customer mapping search returns no results**
+- Verify QuickBooks connection is valid (not expired)
+- Ensure you have customers in your QuickBooks company
+- Check that you're searching the correct QB company
+- Try reconnecting if search consistently fails
+
+💡 **Still having issues?** Check the audit log in the Admin Panel for detailed error messages and timestamps.
 
 ---
 

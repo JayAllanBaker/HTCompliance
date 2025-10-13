@@ -381,6 +381,39 @@ export default function HelpPage() {
       description: "Connect and sync with QuickBooks Online",
       content: [
         {
+          question: "How do I get QuickBooks OAuth credentials?",
+          answer: (
+            <div className="space-y-3">
+              <p>Before using the QuickBooks integration, you need to create OAuth credentials in the QuickBooks Developer Portal.</p>
+              
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Go to <a href="https://developer.intuit.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">developer.intuit.com</a></li>
+                <li>Sign in with your Intuit account (or create one)</li>
+                <li>Click <strong>"Create an app"</strong></li>
+                <li>Select <strong>"QuickBooks Online"</strong> as the platform</li>
+                <li>Choose your scopes (accounting scope required for invoices)</li>
+                <li>Set your Redirect URI:
+                  <div className="bg-muted p-2 rounded-md font-mono text-xs mt-1">
+                    http://localhost:5000/api/quickbooks/callback
+                  </div>
+                </li>
+                <li>Save and copy your <strong>Client ID</strong> and <strong>Client Secret</strong></li>
+              </ol>
+              
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold mb-1">Sandbox vs Production:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>Sandbox</strong>: For testing with fake data (free)</li>
+                    <li><strong>Production</strong>: For real QuickBooks companies (requires approval)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )
+        },
+        {
           question: "How do I configure QuickBooks OAuth credentials?",
           answer: (
             <div className="space-y-3">
@@ -518,6 +551,190 @@ export default function HelpPage() {
               
               <div className="bg-muted p-4 rounded-md space-y-2">
                 <p className="text-sm"><strong>Note:</strong> Disconnecting removes the live connection but keeps historical invoice data.</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "How do I check QuickBooks system health?",
+          answer: (
+            <div className="space-y-3">
+              <p>The Admin Panel includes a System Health card that monitors the QuickBooks integration status.</p>
+              
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Navigate to <strong>Admin Panel</strong></li>
+                <li>Locate the <strong>"System Health"</strong> card</li>
+                <li>Review the health indicators:
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li><strong>Status</strong>: Green (Healthy), Yellow (Not Configured), or Red (Error)</li>
+                    <li><strong>Client ID</strong>: Masked for security</li>
+                    <li><strong>Environment</strong>: Sandbox or Production</li>
+                    <li><strong>Active Connections</strong>: Total QB connections</li>
+                    <li><strong>Valid Connections</strong>: Non-expired connections</li>
+                    <li><strong>Expired Connections</strong>: Need reconnection</li>
+                    <li><strong>Last Check</strong>: Timestamp of last health check</li>
+                  </ul>
+                </li>
+                <li>Click <strong>"Refresh"</strong> to manually update health status</li>
+              </ol>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                <div className="flex items-start gap-2 bg-green-50 dark:bg-green-950/30 p-3 rounded-md">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-semibold text-green-700 dark:text-green-300">Healthy</p>
+                    <p className="text-green-600 dark:text-green-400">Credentials configured</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
+                  <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-semibold text-amber-700 dark:text-amber-300">Not Configured</p>
+                    <p className="text-amber-600 dark:text-amber-400">No credentials set</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/30 p-3 rounded-md">
+                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-semibold text-red-700 dark:text-red-300">Error</p>
+                    <p className="text-red-600 dark:text-red-400">Health check failed</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">The health check auto-refreshes every 60 seconds. Use the Refresh button for immediate updates.</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "How do I test the QuickBooks integration?",
+          answer: (
+            <div className="space-y-3">
+              <p>Follow this end-to-end test to verify your QuickBooks integration is working correctly.</p>
+              
+              <div className="space-y-4">
+                <div className="border-l-4 border-primary pl-4">
+                  <p className="font-semibold mb-2">Step 1: Verify Credentials</p>
+                  <ol className="list-decimal pl-5 space-y-1 text-sm">
+                    <li>Go to Admin Panel → QuickBooks Online Settings</li>
+                    <li>Verify Client ID and Environment are set</li>
+                    <li>Check System Health shows "Healthy" (green status)</li>
+                  </ol>
+                </div>
+                
+                <div className="border-l-4 border-primary pl-4">
+                  <p className="font-semibold mb-2">Step 2: Connect Test Organization</p>
+                  <ol className="list-decimal pl-5 space-y-1 text-sm">
+                    <li>Create a test organization (e.g., "Test Company")</li>
+                    <li>Click "Connect" in the QuickBooks column</li>
+                    <li>Sign in to your QuickBooks sandbox/company</li>
+                    <li>Authorize the connection</li>
+                    <li>Verify status changes to "Connected"</li>
+                  </ol>
+                </div>
+                
+                <div className="border-l-4 border-primary pl-4">
+                  <p className="font-semibold mb-2">Step 3: Map Customer</p>
+                  <ol className="list-decimal pl-5 space-y-1 text-sm">
+                    <li>Click "Manage" on the test organization</li>
+                    <li>Click "Map Customer"</li>
+                    <li>Search for a QuickBooks customer</li>
+                    <li>Select a customer to map</li>
+                    <li>Verify customer name appears in dialog</li>
+                  </ol>
+                </div>
+                
+                <div className="border-l-4 border-primary pl-4">
+                  <p className="font-semibold mb-2">Step 4: Sync Invoices</p>
+                  <ol className="list-decimal pl-5 space-y-1 text-sm">
+                    <li>Click "Sync Invoices" in the management dialog</li>
+                    <li>Wait for sync to complete</li>
+                    <li>Verify success message shows invoice count</li>
+                    <li>Check that invoices appear in the list</li>
+                  </ol>
+                </div>
+                
+                <div className="border-l-4 border-primary pl-4">
+                  <p className="font-semibold mb-2">Step 5: Verify Health Status</p>
+                  <ol className="list-decimal pl-5 space-y-1 text-sm">
+                    <li>Return to Admin Panel</li>
+                    <li>Check System Health shows 1 Active Connection</li>
+                    <li>Verify Valid Connections count is 1</li>
+                    <li>Confirm Expired Connections is 0</li>
+                  </ol>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-3 rounded-md">
+                <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">If all steps complete successfully, your QuickBooks integration is working correctly!</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "Troubleshooting QuickBooks issues",
+          answer: (
+            <div className="space-y-3">
+              <p>Common issues and solutions:</p>
+              
+              <div className="space-y-3">
+                <div className="border rounded-md p-3 bg-muted/50">
+                  <p className="font-semibold mb-2">❌ Connection button doesn't open popup</p>
+                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                    <li>Check that QuickBooks credentials are configured in Admin Panel</li>
+                    <li>Verify System Health shows "Healthy" status</li>
+                    <li>Check browser console for errors</li>
+                    <li>Disable popup blockers for this site</li>
+                  </ul>
+                </div>
+                
+                <div className="border rounded-md p-3 bg-muted/50">
+                  <p className="font-semibold mb-2">❌ OAuth callback fails with "invalid_client"</p>
+                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                    <li>Verify Client ID and Secret are correct</li>
+                    <li>Check Redirect URI matches exactly (including http/https)</li>
+                    <li>Ensure environment (sandbox/production) matches your QB app</li>
+                    <li>Verify credentials haven't expired or been revoked</li>
+                  </ul>
+                </div>
+                
+                <div className="border rounded-md p-3 bg-muted/50">
+                  <p className="font-semibold mb-2">❌ Connection shows "expired"</p>
+                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                    <li>Disconnect and reconnect the organization</li>
+                    <li>QuickBooks refresh tokens expire after 100 days of inactivity</li>
+                    <li>Customer mapping is preserved during reconnection</li>
+                  </ul>
+                </div>
+                
+                <div className="border rounded-md p-3 bg-muted/50">
+                  <p className="font-semibold mb-2">❌ Invoice sync returns 0 invoices</p>
+                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                    <li>Verify customer mapping is correct</li>
+                    <li>Check that the mapped customer has invoices in QuickBooks</li>
+                    <li>Ensure your QB app has "Accounting" scope enabled</li>
+                    <li>Check that connection hasn't expired</li>
+                  </ul>
+                </div>
+                
+                <div className="border rounded-md p-3 bg-muted/50">
+                  <p className="font-semibold mb-2">❌ System Health shows "Not Configured"</p>
+                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                    <li>Go to Admin Panel → QuickBooks Online Settings</li>
+                    <li>Enter Client ID, Client Secret, and Redirect URI</li>
+                    <li>Select correct environment (sandbox/production)</li>
+                    <li>Save settings and refresh health check</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
+                <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">Still having issues? Check the audit log in the Admin Panel for detailed error messages and timestamps.</p>
               </div>
             </div>
           )
