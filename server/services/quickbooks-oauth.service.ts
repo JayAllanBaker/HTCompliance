@@ -171,6 +171,24 @@ export class QuickBooksOAuthService {
       ? 'https://quickbooks.api.intuit.com'
       : 'https://sandbox-quickbooks.api.intuit.com';
   }
+
+  /**
+   * Health check - verify QB OAuth service is configured correctly
+   * Returns basic connectivity test without requiring active tokens
+   */
+  async healthCheck(): Promise<{
+    credentialsConfigured: boolean;
+    clientId: string;
+    environment: string;
+    redirectUri: string;
+  }> {
+    return {
+      credentialsConfigured: !!(this.config.clientId && this.config.clientSecret),
+      clientId: this.config.clientId ? `${this.config.clientId.substring(0, 8)}...` : 'Not configured',
+      environment: this.config.environment,
+      redirectUri: this.config.redirectUri,
+    };
+  }
 }
 
 /**
@@ -185,17 +203,16 @@ export async function createQuickBooksOAuthService(storage?: any): Promise<Quick
   // Priority 1: Load from database (if storage provided)
   if (storage) {
     try {
-      const settings = await storage.getSystemSettings([
-        'qb_client_id',
-        'qb_client_secret',
-        'qb_redirect_uri',
-        'qb_environment'
-      ]);
+      const allSettings = await storage.getAllSystemSettings();
+      const settingsMap = allSettings.reduce((acc: Record<string, string>, setting: { key: string; value: string | null }) => {
+        acc[setting.key] = setting.value || '';
+        return acc;
+      }, {} as Record<string, string>);
 
-      clientId = settings.qb_client_id?.value || '';
-      clientSecret = settings.qb_client_secret?.value || '';
-      redirectUri = settings.qb_redirect_uri?.value || '';
-      environment = settings.qb_environment?.value || '';
+      clientId = settingsMap.qb_client_id || '';
+      clientSecret = settingsMap.qb_client_secret || '';
+      redirectUri = settingsMap.qb_redirect_uri || '';
+      environment = settingsMap.qb_environment || '';
     } catch (error) {
       console.error('Failed to load QB settings from database:', error);
     }
@@ -209,7 +226,7 @@ export async function createQuickBooksOAuthService(storage?: any): Promise<Quick
 
   // Priority 3: Apply defaults last
   redirectUri = redirectUri || 'http://localhost:5000/api/quickbooks/callback';
-  environment = (environment as 'sandbox' | 'production') || 'sandbox';
+  const finalEnvironment = (environment as 'sandbox' | 'production') || 'sandbox';
 
   if (!clientId || !clientSecret) {
     throw new Error('QuickBooks OAuth credentials not configured. Set QB_CLIENT_ID and QB_CLIENT_SECRET environment variables or configure in Admin panel.');
@@ -219,6 +236,6 @@ export async function createQuickBooksOAuthService(storage?: any): Promise<Quick
     clientId,
     clientSecret,
     redirectUri,
-    environment,
+    environment: finalEnvironment,
   });
 }

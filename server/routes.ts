@@ -1041,6 +1041,67 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // QuickBooks Health Check
+  app.get("/api/admin/qb-health", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      let healthCheck;
+      let credentialsConfigured = false;
+      
+      try {
+        // Attempt to create QB OAuth service
+        const qbOAuth = await createQuickBooksOAuthService(storage);
+        healthCheck = await qbOAuth.healthCheck();
+        credentialsConfigured = healthCheck.credentialsConfigured;
+      } catch (error) {
+        // Credentials not configured - this is expected, not an error
+        if (error instanceof Error && error.message.includes('credentials not configured')) {
+          healthCheck = {
+            credentialsConfigured: false,
+            clientId: 'Not configured',
+            environment: 'sandbox',
+            redirectUri: 'Not configured',
+          };
+        } else {
+          throw error; // Re-throw unexpected errors
+        }
+      }
+      
+      // Get active connections count
+      const connections = await storage.getAllQuickbooksConnections();
+      const activeConnections = connections.length;
+      
+      // Count connections by status
+      const now = new Date();
+      const validConnections = connections.filter(conn => {
+        const expiresAt = new Date(conn.accessTokenExpiresAt);
+        return expiresAt > now;
+      }).length;
+      
+      res.json({
+        ...healthCheck,
+        activeConnections,
+        validConnections,
+        expiredConnections: activeConnections - validConnections,
+        status: credentialsConfigured ? 'healthy' : 'unconfigured',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error checking QB health:', error);
+      res.status(500).json({ 
+        status: 'error',
+        credentialsConfigured: false,
+        clientId: 'Error',
+        environment: 'sandbox',
+        redirectUri: 'Error',
+        activeConnections: 0,
+        validConnections: 0,
+        expiredConnections: 0,
+        error: error instanceof Error ? error.message : 'Failed to check QuickBooks health',
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
   // QuickBooks OAuth routes
   
   // Get all QuickBooks connections (for UI status display)

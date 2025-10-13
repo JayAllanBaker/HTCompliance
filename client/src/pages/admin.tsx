@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Settings, UserPlus, Pencil, Trash2, Database, AlertTriangle, Key } from "lucide-react";
+import { Settings, UserPlus, Pencil, Trash2, Database, AlertTriangle, Key, Activity, RefreshCw, CheckCircle, XCircle, AlertCircle as AlertCircleIcon } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
@@ -45,6 +45,22 @@ export default function AdminPage() {
   // Fetch QB settings
   const { data: qbSettingsData } = useQuery<Record<string, { value: string; description?: string | null }>>({
     queryKey: ["/api/admin/qb-settings"],
+  });
+
+  // Fetch QB health check
+  const { data: qbHealthData, refetch: refetchHealth } = useQuery<{
+    credentialsConfigured: boolean;
+    clientId: string;
+    environment: string;
+    redirectUri: string;
+    activeConnections: number;
+    validConnections: number;
+    expiredConnections: number;
+    status: string;
+    timestamp: string;
+  }>({
+    queryKey: ["/api/admin/qb-health"],
+    refetchInterval: 60000, // Refresh every minute
   });
 
   useEffect(() => {
@@ -320,6 +336,113 @@ export default function AdminPage() {
                     </Table>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* System Health Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Activity className="mr-2 h-5 w-5" />
+                    System Health
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchHealth()}
+                    data-testid="button-refresh-health"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                </CardTitle>
+                <CardDescription>
+                  QuickBooks integration status and diagnostics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid gap-4">
+                    {/* Status Indicator */}
+                    <div className="flex items-center gap-3 p-4 rounded-lg border">
+                      {qbHealthData?.status === 'healthy' && (
+                        <>
+                          <CheckCircle className="h-6 w-6 text-green-500" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-green-700 dark:text-green-400">Healthy</p>
+                            <p className="text-sm text-muted-foreground">QuickBooks credentials configured and ready</p>
+                          </div>
+                        </>
+                      )}
+                      {qbHealthData?.status === 'unconfigured' && (
+                        <>
+                          <AlertCircleIcon className="h-6 w-6 text-yellow-500" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-yellow-700 dark:text-yellow-400">Not Configured</p>
+                            <p className="text-sm text-muted-foreground">QuickBooks credentials not set up</p>
+                          </div>
+                        </>
+                      )}
+                      {qbHealthData?.status === 'error' && (
+                        <>
+                          <XCircle className="h-6 w-6 text-red-500" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-red-700 dark:text-red-400">Error</p>
+                            <p className="text-sm text-muted-foreground">Failed to check QuickBooks status</p>
+                          </div>
+                        </>
+                      )}
+                      {!qbHealthData && (
+                        <>
+                          <AlertCircleIcon className="h-6 w-6 text-gray-400" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-muted-foreground">Loading...</p>
+                            <p className="text-sm text-muted-foreground">Checking system health</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Health Details */}
+                    {qbHealthData && (
+                      <div className="grid gap-3 text-sm">
+                        <div className="flex justify-between py-2 border-b">
+                          <span className="text-muted-foreground">Client ID:</span>
+                          <span className="font-mono text-xs">{qbHealthData.clientId}</span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b">
+                          <span className="text-muted-foreground">Environment:</span>
+                          <Badge variant={qbHealthData.environment === 'production' ? 'default' : 'secondary'}>
+                            {qbHealthData.environment}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between py-2 border-b">
+                          <span className="text-muted-foreground">Active Connections:</span>
+                          <span className="font-semibold">{qbHealthData.activeConnections}</span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b">
+                          <span className="text-muted-foreground">Valid Connections:</span>
+                          <span className="font-semibold text-green-600 dark:text-green-400">
+                            {qbHealthData.validConnections}
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b">
+                          <span className="text-muted-foreground">Expired Connections:</span>
+                          <span className="font-semibold text-amber-600 dark:text-amber-400">
+                            {qbHealthData.expiredConnections}
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-2">
+                          <span className="text-muted-foreground">Last Check:</span>
+                          <span className="text-xs">
+                            {qbHealthData.timestamp ? new Date(qbHealthData.timestamp).toLocaleString() : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
