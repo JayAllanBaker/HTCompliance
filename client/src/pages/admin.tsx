@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, UserPlus, Pencil, Trash2, Database, AlertTriangle, Key, Activity, RefreshCw, CheckCircle, XCircle, AlertCircle as AlertCircleIcon } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -180,13 +181,16 @@ export default function AdminPage() {
 
   const saveQBSettingsMutation = useMutation({
     mutationFn: async (settings: typeof qbSettings) => {
-      // Only send client secret if it has been changed (not empty)
+      // Build payload with active config and credentials
       const payload = {
-        qb_client_id: settings.qb_client_id,
-        qb_redirect_uri: settings.qb_redirect_uri,
-        qb_environment: settings.qb_environment,
-        // Only include secret if user entered a new value
-        ...(settings.qb_client_secret ? { qb_client_secret: settings.qb_client_secret } : {})
+        qb_active_config: settings.qb_active_config,
+        qb_dev_client_id: settings.qb_dev_client_id,
+        qb_dev_redirect_uri: settings.qb_dev_redirect_uri,
+        qb_prod_client_id: settings.qb_prod_client_id,
+        qb_prod_redirect_uri: settings.qb_prod_redirect_uri,
+        // Only include secrets if user entered new values (write-only)
+        ...(settings.qb_dev_client_secret ? { qb_dev_client_secret: settings.qb_dev_client_secret } : {}),
+        ...(settings.qb_prod_client_secret ? { qb_prod_client_secret: settings.qb_prod_client_secret } : {})
       };
       
       const response = await apiRequest("POST", "/api/admin/qb-settings", payload);
@@ -194,8 +198,13 @@ export default function AdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/qb-settings"] });
-      // Clear the client secret field after save for security
-      setQbSettings(prev => ({ ...prev, qb_client_secret: "" }));
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/qb-health"] });
+      // Clear both secret fields after save for security
+      setQbSettings(prev => ({ 
+        ...prev, 
+        qb_dev_client_secret: "",
+        qb_prod_client_secret: ""
+      }));
       toast({
         title: "Settings Saved",
         description: "QuickBooks settings have been updated successfully.",
@@ -464,104 +473,149 @@ export default function AdminPage() {
             {/* QuickBooks Settings Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Key className="mr-2 h-5 w-5" />
-                  QuickBooks Online Settings
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Key className="mr-2 h-5 w-5" />
+                    QuickBooks Online Settings
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-normal text-muted-foreground">Active:</span>
+                    <Badge variant={qbSettings.qb_active_config === 'prod' ? 'default' : 'secondary'}>
+                      {qbSettings.qb_active_config === 'prod' ? 'Production' : 'Development'}
+                    </Badge>
+                  </div>
                 </CardTitle>
                 <CardDescription>
-                  Configure QuickBooks OAuth credentials for invoice synchronization
+                  Configure separate Dev and Production QuickBooks OAuth credentials
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="qb_client_id">Client ID</Label>
-                    <Input
-                      id="qb_client_id"
-                      type="text"
-                      placeholder="Enter QuickBooks Client ID"
-                      value={qbSettings.qb_client_id}
-                      onChange={(e) => setQbSettings({ ...qbSettings, qb_client_id: e.target.value })}
-                      data-testid="input-qb-client-id"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="qb_client_secret">Client Secret</Label>
-                    <Input
-                      id="qb_client_secret"
-                      type="password"
-                      placeholder={qbSettingsData?.qb_client_secret?.value === "••••••••" 
-                        ? "Leave empty to keep current secret" 
-                        : "Enter QuickBooks Client Secret"}
-                      value={qbSettings.qb_client_secret}
-                      onChange={(e) => setQbSettings({ ...qbSettings, qb_client_secret: e.target.value })}
-                      data-testid="input-qb-client-secret"
-                    />
-                    {qbSettingsData?.qb_client_secret?.value === "••••••••" && (
-                      <p className="text-xs text-muted-foreground">
-                        Secret is already configured. Enter a new value only if you want to update it.
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="qb_redirect_uri">Redirect URI</Label>
-                    <Input
-                      id="qb_redirect_uri"
-                      type="text"
-                      placeholder="e.g., http://localhost:5000/api/quickbooks/callback"
-                      value={qbSettings.qb_redirect_uri}
-                      onChange={(e) => setQbSettings({ ...qbSettings, qb_redirect_uri: e.target.value })}
-                      data-testid="input-qb-redirect-uri"
-                    />
-                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 text-sm">
-                      <div className="flex items-start gap-2">
-                        <AlertCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                        <div className="space-y-1 flex-1">
-                          <p className="font-semibold text-blue-900 dark:text-blue-100">
-                            ✓ Auto-Detected Redirect URI
-                            {detectedRedirectData?.isReplit && ' (Replit)'}
-                          </p>
-                          <p className="text-blue-800 dark:text-blue-200 font-mono text-xs break-all select-all">
-                            {detectedRedirectData?.detectedRedirectUri || 'Loading...'}
-                          </p>
-                          <p className="text-blue-700 dark:text-blue-300 text-xs">
-                            Use this exact URL in your QuickBooks Developer Portal app settings.
-                            {detectedRedirectData?.isReplit && ' This is your public Replit URL.'}
-                          </p>
-                          {qbSettings.qb_redirect_uri && detectedRedirectData && qbSettings.qb_redirect_uri !== detectedRedirectData.detectedRedirectUri && (
-                            <p className="text-amber-700 dark:text-amber-300 text-xs mt-2">
-                              ⚠️ Your saved redirect URI differs from the detected one. Make sure they match in QuickBooks!
+                <Tabs value={qbSettings.qb_active_config} onValueChange={(value) => setQbSettings({ ...qbSettings, qb_active_config: value as "dev" | "prod" })}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="dev">Development (Sandbox)</TabsTrigger>
+                    <TabsTrigger value="prod">Production</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="dev" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="qb_dev_client_id">Client ID</Label>
+                      <Input
+                        id="qb_dev_client_id"
+                        type="text"
+                        placeholder="Enter QuickBooks Dev Client ID"
+                        value={qbSettings.qb_dev_client_id}
+                        onChange={(e) => setQbSettings({ ...qbSettings, qb_dev_client_id: e.target.value })}
+                        data-testid="input-qb-dev-client-id"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="qb_dev_client_secret">Client Secret</Label>
+                      <Input
+                        id="qb_dev_client_secret"
+                        type="password"
+                        placeholder={qbSettingsData?.qb_dev_client_secret?.value === "••••••••" 
+                          ? "Leave empty to keep current secret" 
+                          : "Enter QuickBooks Dev Client Secret"}
+                        value={qbSettings.qb_dev_client_secret}
+                        onChange={(e) => setQbSettings({ ...qbSettings, qb_dev_client_secret: e.target.value })}
+                        data-testid="input-qb-dev-client-secret"
+                      />
+                      {qbSettingsData?.qb_dev_client_secret?.value === "••••••••" && (
+                        <p className="text-xs text-muted-foreground">
+                          Secret is already configured. Enter a new value only if you want to update it.
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="qb_dev_redirect_uri">Redirect URI</Label>
+                      <Input
+                        id="qb_dev_redirect_uri"
+                        type="text"
+                        placeholder="Leave empty to auto-detect"
+                        value={qbSettings.qb_dev_redirect_uri}
+                        onChange={(e) => setQbSettings({ ...qbSettings, qb_dev_redirect_uri: e.target.value })}
+                        data-testid="input-qb-dev-redirect-uri"
+                      />
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 text-sm">
+                        <div className="flex items-start gap-2">
+                          <AlertCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1 flex-1">
+                            <p className="font-semibold text-blue-900 dark:text-blue-100">
+                              ✓ Auto-Detected Redirect URI
+                              {detectedRedirectData?.isReplit && ' (Replit)'}
                             </p>
-                          )}
+                            <p className="text-blue-800 dark:text-blue-200 font-mono text-xs break-all select-all">
+                              {detectedRedirectData?.detectedRedirectUri || 'Loading...'}
+                            </p>
+                            <p className="text-blue-700 dark:text-blue-300 text-xs">
+                              Use this exact URL in your QuickBooks Developer Portal app settings.
+                              {detectedRedirectData?.isReplit && ' This is your public Replit URL.'}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="qb_environment">Environment</Label>
-                    <Select
-                      value={qbSettings.qb_environment}
-                      onValueChange={(value) => setQbSettings({ ...qbSettings, qb_environment: value })}
-                    >
-                      <SelectTrigger id="qb_environment" data-testid="select-qb-environment">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sandbox">Sandbox (Development)</SelectItem>
-                        <SelectItem value="production">Production</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="border-t pt-4">
-                    <Button
-                      onClick={() => saveQBSettingsMutation.mutate(qbSettings)}
-                      disabled={saveQBSettingsMutation.isPending}
-                      data-testid="button-save-qb-settings"
-                    >
-                      <Key className="mr-2 h-4 w-4" />
-                      {saveQBSettingsMutation.isPending ? "Saving..." : "Save QuickBooks Settings"}
-                    </Button>
-                  </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="prod" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="qb_prod_client_id">Client ID</Label>
+                      <Input
+                        id="qb_prod_client_id"
+                        type="text"
+                        placeholder="Enter QuickBooks Production Client ID"
+                        value={qbSettings.qb_prod_client_id}
+                        onChange={(e) => setQbSettings({ ...qbSettings, qb_prod_client_id: e.target.value })}
+                        data-testid="input-qb-prod-client-id"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="qb_prod_client_secret">Client Secret</Label>
+                      <Input
+                        id="qb_prod_client_secret"
+                        type="password"
+                        placeholder={qbSettingsData?.qb_prod_client_secret?.value === "••••••••" 
+                          ? "Leave empty to keep current secret" 
+                          : "Enter QuickBooks Production Client Secret"}
+                        value={qbSettings.qb_prod_client_secret}
+                        onChange={(e) => setQbSettings({ ...qbSettings, qb_prod_client_secret: e.target.value })}
+                        data-testid="input-qb-prod-client-secret"
+                      />
+                      {qbSettingsData?.qb_prod_client_secret?.value === "••••••••" && (
+                        <p className="text-xs text-muted-foreground">
+                          Secret is already configured. Enter a new value only if you want to update it.
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="qb_prod_redirect_uri">Redirect URI</Label>
+                      <Input
+                        id="qb_prod_redirect_uri"
+                        type="text"
+                        placeholder="Enter your production redirect URI"
+                        value={qbSettings.qb_prod_redirect_uri}
+                        onChange={(e) => setQbSettings({ ...qbSettings, qb_prod_redirect_uri: e.target.value })}
+                        data-testid="input-qb-prod-redirect-uri"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        For production, use your published domain (e.g., https://yourdomain.com/api/quickbooks/callback)
+                      </p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+                
+                <div className="border-t pt-4 flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Switching tabs changes which config is active. Save to apply changes.
+                  </p>
+                  <Button
+                    onClick={() => saveQBSettingsMutation.mutate(qbSettings)}
+                    disabled={saveQBSettingsMutation.isPending}
+                    data-testid="button-save-qb-settings"
+                  >
+                    <Key className="mr-2 h-4 w-4" />
+                    {saveQBSettingsMutation.isPending ? "Saving..." : "Save QuickBooks Settings"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

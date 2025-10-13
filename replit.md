@@ -97,20 +97,31 @@ Preferred communication style: Simple, everyday language.
 
 **Invoice Synchronization**: Once connected and mapped, invoices can be synced from QuickBooks to the local database. Invoices are cached locally and can be updated by re-syncing.
 
-**Environment Configuration**: The integration supports two configuration methods:
+**Environment Configuration**: The integration supports dual development/production configuration with multiple setup methods:
 
-1. **Environment Variables** (traditional):
+1. **Dev/Prod Dual Configuration** (recommended):
+   - Separate credentials for Development (Sandbox) and Production environments
+   - Active config selector (`qb_active_config`) determines which credentials to use
+   - Database fields: `qb_dev_client_id`, `qb_dev_client_secret`, `qb_dev_redirect_uri` for development
+   - Database fields: `qb_prod_client_id`, `qb_prod_client_secret`, `qb_prod_redirect_uri` for production
+   - Admin panel provides tabbed UI to configure both environments and switch between them
+   - OAuth service automatically loads credentials based on active configuration
+
+2. **Admin Panel Settings** (primary configuration method):
+   - Admins configure QB credentials via `/admin` route → QuickBooks Online Settings
+   - Tabbed interface for Development (Sandbox) and Production configurations
+   - Switching tabs changes the active configuration
+   - Settings stored in `system_settings` table with write-only secret handling
+   - Client secrets masked in all API responses for security (never exposed in cleartext)
+   - Write-only secret updates (leave empty to keep existing value)
+   - Redirect URI auto-detection for Replit deployments via `REPLIT_DEV_DOMAIN`
+   - Visual badge indicates which configuration is currently active
+
+3. **Environment Variables** (legacy fallback):
    - `QB_CLIENT_ID` - QuickBooks application client ID
    - `QB_CLIENT_SECRET` - QuickBooks application client secret  
-   - `QB_REDIRECT_URI` - OAuth callback URL (defaults to http://localhost:5000/api/quickbooks/callback in development)
-
-2. **Admin Panel Settings** (recommended for Docker):
-   - Admins can configure QB credentials via `/admin` route → QuickBooks Online Settings
-   - Settings stored in `system_settings` table with encryption support
-   - OAuth service automatically falls back to database settings when env vars not present
-   - Client secret is masked in all API responses for security (never exposed in cleartext)
-   - Write-only secret updates (leave empty to keep existing value)
-   - Zod validation ensures all inputs are properly formatted
+   - `QB_REDIRECT_URI` - OAuth callback URL
+   - OAuth service falls back to env vars if database settings not configured
 
 **Security Features**:
 - CSRF protection via state parameter in OAuth flow
