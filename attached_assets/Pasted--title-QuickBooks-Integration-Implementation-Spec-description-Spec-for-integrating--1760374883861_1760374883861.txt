@@ -1,0 +1,132 @@
+{
+  "title": "QuickBooks Integration Implementation Spec",
+  "description": "Spec for integrating QuickBooks Online into our app: connecting via OAuth, mapping customers, fetching invoices, syncing state, and handling updates/errors.",
+  "requirements": {
+    "oauth": {
+      "scopes": ["com.intuit.quickbooks.accounting"],
+      "redirectUri": "YOUR_APP_CALLBACK_URL",
+      "clientId": "OBTAIN_FROM_INTUIT_DEV_PORTAL",
+      "clientSecret": "OBTAIN_FROM_INTUIT_DEV_PORTAL"
+    },
+    "dataMapping": {
+      "customer": {
+        "localCustomerId": "internal ID in your app",
+        "quickbooksCustomerId": "Id returned from QB Customer object"
+      },
+      "invoice": {
+        "invoiceId": "QB Invoice Id (string)",
+        "customerRef": "quickbooksCustomerId",
+        "balance": "remaining balance",
+        "totalAmt": "total amount",
+        "dueDate": "due date",
+        "qbRaw": "store full raw JSON from QB response"
+      }
+    },
+    "tokenStorage": {
+      "realmId": "String, the QuickBooks company identifier (tenant)",
+      "accessToken": "String, OAuth access token",
+      "refreshToken": "String, OAuth refresh token",
+      "expiresAt": "Timestamp (ms or ISO) when accessToken expires"
+    },
+    "syncMetadata": {
+      "syncToken": "Optional string/version token from QB object",
+      "active": "Boolean (customer active/inactive in QB)"
+    }
+  },
+  "flows": {
+    "oauthConnect": {
+      "step1": "User-initiated: redirect user to QuickBooks authorization URL with clientId, redirectUri, scopes, state",
+      "step2": "QuickBooks redirects to callback with code, realmId, state",
+      "step3": "Backend exchanges code for accessToken, refreshToken, expires_in",
+      "step4": "Store tokens + realmId + user mapping in DB"
+    },
+    "mapCustomer": {
+      "input": {
+        "localCustomerId": "your app’s ID",
+        "quickbooksCustomerNameOrSearch": "Name or query to find matching QB customer"
+      },
+      "output": {
+        "quickbooksCustomerId": "Id of matching QB customer"
+      },
+      "notes": "You may call the QB Customer API (query or search) to locate the matching customer and then store its Id for mapping."
+    },
+    "fetchInvoicesForCustomer": {
+      "trigger": "on demand or background job",
+      "preconditions": "customer has quickbooksCustomerId & valid tokens",
+      "steps": [
+        "If accessToken expired, refresh it using refreshToken",
+        "Make a Query API call to QB: `select * from Invoice where CustomerRef = '{quickbooksCustomerId}'` (or include filters)",
+        "Receive JSON response, parse `Invoice` array",
+        "For each invoice, upsert local record with mapped fields and store raw JSON",
+        "Store `syncToken` and `active` if present in invoice data"
+      ],
+      "errorHandling": [
+        "If 401 unauthorized, try refreshing token",
+        "If refresh fails, mark connection as needing re-authentication",
+        "Catch rate-limit / 429 and backoff / retry"
+      ]
+    },
+    "getInvoicesEndpoint": {
+      "api": {
+        "method": "GET",
+        "path": "/api/customers/{localCustomerId}/invoices"
+      },
+      "behavior": "Return list of locally stored invoices for the customer for display in dashboard/card"
+    },
+    "refreshEndpoint": {
+      "api": {
+        "method": "POST",
+        "path": "/api/customers/{localCustomerId}/refreshInvoices"
+      },
+      "behavior": "Trigger fetchInvoicesForCustomer flow to re-sync data"
+    }
+  },
+  "schema": {
+    "Customer": {
+      "fields": {
+        "localCustomerId": "string or integer",
+        "quickbooksCustomerId": "string",
+        "realmId": "string",
+        "accessToken": "string",
+        "refreshToken": "string",
+        "expiresAt": "datetime or integer timestamp",
+        "syncToken": "string (nullable)",
+        "active": "boolean"
+      }
+    },
+    "Invoice": {
+      "fields": {
+        "invoiceId": "string",
+        "customerLocalId": "string or integer",
+        "customerQbId": "string",
+        "balance": "number",
+        "totalAmt": "number",
+        "dueDate": "string (ISO-date)",
+        "qbRaw": "object (JSON)",
+        "syncToken": "string (nullable)",
+        "active": "boolean (nullable)"
+      }
+    }
+  },
+  "errorHandling": {
+    "401": {
+      "action": "try token refresh; if fails, mark user connection invalid and prompt re-connect"
+    },
+    "429": {
+      "action": "wait / backoff and retry",
+      "retryPolicy": {
+        "initialDelayMs": 500,
+        "factor": 2,
+        "maxRetries": 3
+      }
+    },
+    "otherErrors": {
+      "action": "log error, fail gracefully"
+    }
+  },
+  "security": {
+    "storeSecrets": "accessToken, refreshToken must be encrypted or stored securely (not exposed to client side)",
+    "validateState": "use signed / encrypted `state` parameter in OAuth to prevent CSRF",
+    "scopeValidation": "only request minimum needed scopes"
+  }
+}

@@ -1,0 +1,178 @@
+// server.js
+
+const express = require('express');
+const axios = require('axios');
+const bodyParser = require('body-parser');
+const session = require('express-session');
+const { db } = require('./db');  // your DB module
+
+const app = express();
+app.use(bodyParser.json());
+app.use(session({
+  secret: 'replace_with_a_secure_secret',
+  resave: false,
+  saveUninitialized: true
+}));
+
+// ========== CONFIG ==========
+const CLIENT_ID = process.env.QB_CLIENT_ID;
+const CLIENT_SECRET = process.env.QB_CLIENT_SECRET;
+const REDIRECT_URI = process.env.QB_REDIRECT_URI;  // e.g. https://yourapp.com/qb/callback
+const SCOPES = 'com.intuit.quickbooks.accounting';
+const API_BASE = 'https://sandbox-quickbooks.api.intuit.com';  // change to production when ready
+const OAUTH_TOKEN_URL = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
+
+// ========== QB OAuth Helpers ==========
+
+async function exchangeAuthCode(authCode) {
+  const params = new URLSearchParams();
+  params.append('grant_type', 'authorization_code');
+  params.append('code', authCode);
+  params.append('redirect_uri', REDIRECT_URI);
+
+  const auth = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+
+  const resp = await axios.post(OAUTH_TOKEN_URL, params, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': `Basic ${auth}`,
+    }
+  });
+  return resp.data;
+}
+
+async function refreshAccessToken(refreshToken) {
+  const params = new URLSearchParams();
+  params.append('grant_type', 'refresh_token');
+  params.append('refresh_token', refreshToken);
+
+  const auth = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+
+  const resp = await axios.post(OAUTH_TOKEN_URL, params, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': `Basic ${auth}`,
+    }
+  });
+  return resp.data;
+}
+
+async function qbRequest(method, urlPath, accessToken, data = null, query = {}) {
+  const url = `${API_BASE}${urlPath}`;
+  const resp = await axios({
+    method,
+    url,
+    data,
+    params: query,
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    }
+  });
+  return resp.data;
+}
+
+// ========== OAuth / Connection Routes ==========
+
+// Start QB connection
+app.get('/qb/connect', (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) {
+    return res.status(401).send('Not authenticated');
+  }
+  const state = `uid=${userId}`;
+  const url = `https://appcenter.intuit.com/connect/oauth2?client_id=${CLIENT_ID}` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+    `&response_type=code&scope=${encodeURIComponent(SCOPES)}` +
+    `&state=${encodeURIComponent(state)}`;
+  res.redirect(url);
+});
+
+// OAuth callback
+app.get('/qb/callback', async (req, res) => {
+  const { code, state, realmId } = req.query;
+  const userId = parseState(state).uid;
+  try {
+    const tokenData = await exchangeAuthCode(code);
+    await db.saveQBAuth(userId, {
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      realmId,
+      expiresAt: Date.now() + tokenData.expires_in * 1000
+    });
+    res.redirect('/dashboard');
+  } catch (err) {
+    console.error('QB OAuth error:', err.response?.data || err.message);
+    res.status(500).send('QuickBooks OAuth failed');
+  }
+});
+
+// ========== Customer Mapping / Invoice Fetch ==========
+
+// Map your app’s customer to a QuickBooks customer
+app.post('/customers/:custId/mapQBCustomer', async (req, res) => {
+  const { custId } = req.params;
+  const { qbCustomerId } = req.body;
+  await db.updateCustomer(custId, { qbCustomerId });
+  res.json({ success: true });
+});
+
+// Fetch & store invoices for one customer
+async function fetchAndStoreInvoicesForCustomer(cust) {
+  if (!cust.qbCustomerId) {
+    console.warn(`Customer ${cust.id} not mapped to QuickBooks`);
+    return;
+  }
+  const auth = await db.getQBAuthForUser(cust.ownerUserId);
+  let { accessToken, refreshToken, realmId, expiresAt } = auth;
+
+  if (Date.now() > expiresAt) {
+    const newTokens = await refreshAccessToken(refreshToken);
+    accessToken = newTokens.access_token;
+    refreshToken = newTokens.refresh_token;
+    expiresAt = Date.now() + newTokens.expires_in * 1000;
+    await db.saveQBAuth(cust.ownerUserId, { accessToken, refreshToken, expiresAt });
+  }
+
+  // Use QuickBooks query API
+  const query = `select * from Invoice where CustomerRef = '${cust.qbCustomerId}'`;
+  const resp = await qbRequest('GET', `/v3/company/${realmId}/query`, accessToken, null, { query });
+  const invoices = resp.QueryResponse?.Invoice || [];
+
+  for (const inv of invoices) {
+    await db.upsertInvoice({
+      invoiceId: inv.Id,
+      customerId: cust.id,
+      qbData: inv,
+      balance: inv.Balance,
+      totalAmt: inv.TotalAmt,
+      dueDate: inv.DueDate,
+      // add more as needed
+    });
+  }
+}
+
+// API to get invoices for your dashboard/card
+app.get('/customers/:custId/invoices', async (req, res) => {
+  const { custId } = req.params;
+  const invs = await db.getInvoicesByCustomer(custId);
+  res.json({ invoices: invs });
+});
+
+// Trigger a fetch on demand
+app.post('/customers/:custId/refreshInvoices', async (req, res) => {
+  const cust = await db.getCustomerById(req.params.custId);
+  await fetchAndStoreInvoicesForCustomer(cust);
+  res.json({ success: true });
+});
+
+function parseState(stateStr) {
+  const parts = stateStr.split('=');
+  return { uid: parts[1] };
+}
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log('Server running on port', port);
+});
