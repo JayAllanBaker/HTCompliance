@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Customer, BillableEvent } from "@shared/schema";
+import type { Organization, BillableEvent } from "@shared/schema";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,7 @@ export default function BillableEvents() {
     queryKey: ["/api/billable-events", { customerId: filters.customerId }],
   });
 
-  const { data: customers } = useQuery<Customer[]>({
+  const { data: customers } = useQuery<Organization[]>({
     queryKey: ["/api/customers"],
   });
 
