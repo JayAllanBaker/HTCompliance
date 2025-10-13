@@ -20,7 +20,8 @@ import {
   ArrowRight,
   CheckCircle,
   AlertCircle,
-  Info
+  Info,
+  Link as LinkIcon
 } from "lucide-react";
 
 export default function HelpPage() {
@@ -367,6 +368,112 @@ export default function HelpPage() {
                   </ul>
                   <p className="mt-2"><strong>What it keeps:</strong> User accounts and passwords</p>
                 </div>
+              </div>
+            </div>
+          )
+        }
+      ]
+    },
+    {
+      id: "quickbooks",
+      title: "QuickBooks Integration",
+      icon: LinkIcon,
+      description: "Connect and sync with QuickBooks Online",
+      content: [
+        {
+          question: "How do I connect QuickBooks to an organization?",
+          answer: (
+            <div className="space-y-3">
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Go to <strong>"Organizations"</strong> page</li>
+                <li>Find the organization you want to connect</li>
+                <li>Click the <strong>"Connect"</strong> button in the QuickBooks column</li>
+                <li>A popup window will open - sign in to QuickBooks</li>
+                <li>Authorize BizGov to access your QuickBooks data</li>
+                <li>The connection status will update to "Connected"</li>
+              </ol>
+              
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">You need QuickBooks Online credentials and appropriate permissions to connect.</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "How do I map a QuickBooks customer to an organization?",
+          answer: (
+            <div className="space-y-3">
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>After connecting QuickBooks, click <strong>"Manage"</strong> on the organization</li>
+                <li>Click <strong>"Map Customer"</strong> button</li>
+                <li>Use the search box to find your QuickBooks customer</li>
+                <li>Click on the customer to select and map them</li>
+                <li>The mapped customer will now appear in the management dialog</li>
+              </ol>
+              
+              <div className="bg-muted p-4 rounded-md space-y-2">
+                <p className="font-semibold">Why map customers?</p>
+                <p className="text-sm">Mapping links your BizGov organization to a specific QuickBooks customer, allowing invoice sync and revenue tracking.</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "How do I sync QuickBooks invoices?",
+          answer: (
+            <div className="space-y-3">
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Make sure you've connected QuickBooks and mapped a customer</li>
+                <li>Open the QuickBooks management dialog for the organization</li>
+                <li>Click <strong>"Sync Invoices"</strong> button</li>
+                <li>Invoices will be pulled from QuickBooks and stored locally</li>
+                <li>A success message will show the number of synced invoices</li>
+              </ol>
+              
+              <div className="flex items-start gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-3 rounded-md">
+                <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">Invoices sync automatically updates existing invoices and adds new ones from QuickBooks.</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "What if my QuickBooks connection expires?",
+          answer: (
+            <div className="space-y-3">
+              <p>QuickBooks access tokens expire after 1 hour and refresh tokens after 100 days.</p>
+              
+              <div className="space-y-2">
+                <p className="font-semibold">If connection status shows "expired":</p>
+                <ol className="list-decimal pl-5 space-y-1">
+                  <li>Click <strong>"Disconnect"</strong> in the management dialog</li>
+                  <li>Click <strong>"Connect"</strong> again to reauthorize</li>
+                  <li>Sign in to QuickBooks and authorize again</li>
+                  <li>Your customer mapping will be preserved</li>
+                </ol>
+              </div>
+              
+              <div className="flex items-start gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
+                <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">The system automatically refreshes access tokens when possible, but refresh tokens expire after 100 days of inactivity.</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "How do I disconnect QuickBooks?",
+          answer: (
+            <div className="space-y-3">
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Click <strong>"Manage"</strong> on the organization</li>
+                <li>Scroll down and click <strong>"Disconnect QuickBooks"</strong></li>
+                <li>The connection will be removed and tokens revoked</li>
+                <li>Synced invoices will remain in the database</li>
+              </ol>
+              
+              <div className="bg-muted p-4 rounded-md space-y-2">
+                <p className="text-sm"><strong>Note:</strong> Disconnecting removes the live connection but keeps historical invoice data.</p>
               </div>
             </div>
           )
