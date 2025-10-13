@@ -88,3 +88,20 @@ Preferred communication style: Simple, everyday language.
 **UI Components**: Extensive use of Radix UI primitives (@radix-ui/*) for accessible, unstyled components that are styled with Tailwind CSS via shadcn/ui configuration.
 
 **Design Rationale**: Microsoft Graph API integration leverages existing Health Trixss infrastructure for email. PapaParse provides robust CSV handling with error recovery. The JSON export format enables simple backup/restore without database-specific tools. Local file storage keeps the initial deployment simple but should be migrated to cloud storage (S3/Azure Blob) for production scalability.
+
+### Help & Documentation System
+
+**In-App Help Center** (`/help` route): Comprehensive, searchable help system with end-to-end user instructions and examples. Features:
+- **Quick Start Guide**: Step-by-step onboarding for new users
+- **Searchable FAQ**: Full-text search across all help topics
+- **Category-Based Organization**: Help organized by feature (Organizations, Contracts, Compliance, Billable Events, Evidence, Export/Import, Admin)
+- **Interactive Examples**: Real-world examples with code samples and data formats
+- **Accordion UI**: Clean, expandable Q&A format for easy navigation
+- **Contextual Alerts**: Important warnings, tips, and security notices highlighted
+
+**External Documentation**:
+- `USER_GUIDE.md`: Complete end-to-end user manual with detailed workflows and examples
+- `DOCKER_SETUP.md`: Docker deployment guide with default credentials and troubleshooting
+- `design_guidelines.md`: UI/UX design system and component guidelines
+
+**Design Rationale**: The in-app help system ensures users have immediate access to guidance without leaving the application. Material Design-inspired documentation patterns with clear visual hierarchy make complex compliance workflows easy to understand. Searchable, categorized content helps users find answers quickly, reducing support burden and improving user self-sufficiency.

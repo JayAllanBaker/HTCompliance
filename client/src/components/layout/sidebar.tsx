@@ -11,7 +11,8 @@ import {
   Download,
   Activity,
   Settings,
-  Building2
+  Building2,
+  HelpCircle
 } from "lucide-react";
 
 const navigation = [
@@ -49,6 +50,11 @@ const navigation = [
     name: "Export/Import",
     href: "/export-import",
     icon: Download,
+  },
+  {
+    name: "Help",
+    href: "/help",
+    icon: HelpCircle,
   },
 ];
 
