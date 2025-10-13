@@ -1041,6 +1041,33 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get detected redirect URI
+  app.get("/api/admin/qb-detected-redirect", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      let detectedRedirectUri = '';
+      
+      // Auto-detect based on environment (same logic as service)
+      if (process.env.REPLIT_DEV_DOMAIN) {
+        detectedRedirectUri = `https://${process.env.REPLIT_DEV_DOMAIN}/api/quickbooks/callback`;
+      } else if (process.env.REPLIT_DOMAINS) {
+        const domain = process.env.REPLIT_DOMAINS.split(',')[0];
+        detectedRedirectUri = `https://${domain}/api/quickbooks/callback`;
+      } else {
+        detectedRedirectUri = 'http://localhost:5000/api/quickbooks/callback';
+      }
+      
+      res.json({ 
+        detectedRedirectUri,
+        isReplit: !!(process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS),
+        replitDevDomain: process.env.REPLIT_DEV_DOMAIN || null,
+        replitDomains: process.env.REPLIT_DOMAINS || null,
+      });
+    } catch (error) {
+      console.error('Error detecting redirect URI:', error);
+      res.status(500).json({ error: 'Failed to detect redirect URI' });
+    }
+  });
+
   // QuickBooks Health Check
   app.get("/api/admin/qb-health", requireAdmin, async (req: Request, res: Response) => {
     try {

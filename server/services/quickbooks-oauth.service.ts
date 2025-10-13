@@ -224,8 +224,22 @@ export async function createQuickBooksOAuthService(storage?: any): Promise<Quick
   redirectUri = redirectUri || process.env.QB_REDIRECT_URI || '';
   environment = environment || process.env.QB_ENVIRONMENT || '';
 
-  // Priority 3: Apply defaults last
-  redirectUri = redirectUri || 'http://localhost:5000/api/quickbooks/callback';
+  // Priority 3: Auto-detect redirect URI based on environment
+  if (!redirectUri) {
+    // Check if running on Replit
+    if (process.env.REPLIT_DEV_DOMAIN) {
+      // Replit development environment - use the .repl.co domain
+      redirectUri = `https://${process.env.REPLIT_DEV_DOMAIN}/api/quickbooks/callback`;
+    } else if (process.env.REPLIT_DOMAINS) {
+      // Replit deployment - use published domain
+      const domain = process.env.REPLIT_DOMAINS.split(',')[0];
+      redirectUri = `https://${domain}/api/quickbooks/callback`;
+    } else {
+      // Local development fallback
+      redirectUri = 'http://localhost:5000/api/quickbooks/callback';
+    }
+  }
+  
   const finalEnvironment = (environment as 'sandbox' | 'production') || 'sandbox';
 
   if (!clientId || !clientSecret) {
