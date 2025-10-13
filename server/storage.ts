@@ -1,9 +1,12 @@
 import { 
   users, organizations, contracts, complianceItems, billableEvents, evidence, auditLog, emailAlerts,
+  quickbooksConnections, quickbooksInvoices,
   type User, type InsertUser, type Organization, type InsertOrganization, type Contract, type InsertContract,
   type ComplianceItem, type InsertComplianceItem, type BillableEvent, type InsertBillableEvent,
   type Evidence, type InsertEvidence, type AuditLog, type InsertAuditLog,
-  type EmailAlert, type InsertEmailAlert
+  type EmailAlert, type InsertEmailAlert,
+  type QuickbooksConnection, type InsertQuickbooksConnection,
+  type QuickbooksInvoice, type InsertQuickbooksInvoice
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, gte, lte, like, count, sql } from "drizzle-orm";
@@ -78,6 +81,15 @@ export interface IStorage {
   createEmailAlert(alert: InsertEmailAlert): Promise<EmailAlert>;
   getPendingEmailAlerts(): Promise<EmailAlert[]>;
   updateEmailAlertStatus(id: string, status: string, errorMessage?: string): Promise<void>;
+  
+  // QuickBooks methods
+  getQuickbooksConnection(organizationId: string): Promise<QuickbooksConnection | undefined>;
+  createQuickbooksConnection(connection: InsertQuickbooksConnection): Promise<QuickbooksConnection>;
+  updateQuickbooksConnection(organizationId: string, updates: Partial<InsertQuickbooksConnection>): Promise<QuickbooksConnection>;
+  deleteQuickbooksConnection(organizationId: string): Promise<void>;
+  getQuickbooksInvoices(organizationId: string): Promise<QuickbooksInvoice[]>;
+  upsertQuickbooksInvoice(invoice: InsertQuickbooksInvoice): Promise<QuickbooksInvoice>;
+  deleteOrganizationInvoices(organizationId: string): Promise<void>;
   
   // Import/Export methods
   exportDatabase(): Promise<any>;
@@ -470,6 +482,82 @@ export class DatabaseStorage implements IStorage {
       .update(emailAlerts)
       .set(updates)
       .where(eq(emailAlerts.id, id));
+  }
+
+  // QuickBooks methods
+  async getQuickbooksConnection(organizationId: string): Promise<QuickbooksConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(quickbooksConnections)
+      .where(eq(quickbooksConnections.organizationId, organizationId));
+    return connection;
+  }
+
+  async createQuickbooksConnection(connection: InsertQuickbooksConnection): Promise<QuickbooksConnection> {
+    const [newConnection] = await db
+      .insert(quickbooksConnections)
+      .values(connection)
+      .returning();
+    return newConnection;
+  }
+
+  async updateQuickbooksConnection(organizationId: string, updates: Partial<InsertQuickbooksConnection>): Promise<QuickbooksConnection> {
+    const [updated] = await db
+      .update(quickbooksConnections)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(quickbooksConnections.organizationId, organizationId))
+      .returning();
+    return updated;
+  }
+
+  async deleteQuickbooksConnection(organizationId: string): Promise<void> {
+    await db
+      .delete(quickbooksConnections)
+      .where(eq(quickbooksConnections.organizationId, organizationId));
+  }
+
+  async getQuickbooksInvoices(organizationId: string): Promise<QuickbooksInvoice[]> {
+    return await db
+      .select()
+      .from(quickbooksInvoices)
+      .where(eq(quickbooksInvoices.organizationId, organizationId))
+      .orderBy(desc(quickbooksInvoices.txnDate));
+  }
+
+  async upsertQuickbooksInvoice(invoice: InsertQuickbooksInvoice): Promise<QuickbooksInvoice> {
+    // Try to find existing invoice by qbInvoiceId and organizationId
+    const [existing] = await db
+      .select()
+      .from(quickbooksInvoices)
+      .where(
+        and(
+          eq(quickbooksInvoices.qbInvoiceId, invoice.qbInvoiceId),
+          eq(quickbooksInvoices.organizationId, invoice.organizationId)
+        )
+      );
+
+    if (existing) {
+      // Update existing invoice
+      const [updated] = await db
+        .update(quickbooksInvoices)
+        .set({ ...invoice, lastSyncedAt: new Date() })
+        .where(eq(quickbooksInvoices.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      // Insert new invoice
+      const [newInvoice] = await db
+        .insert(quickbooksInvoices)
+        .values(invoice)
+        .returning();
+      return newInvoice;
+    }
+  }
+
+  async deleteOrganizationInvoices(organizationId: string): Promise<void> {
+    await db
+      .delete(quickbooksInvoices)
+      .where(eq(quickbooksInvoices.organizationId, organizationId));
   }
 
   // Import/Export methods

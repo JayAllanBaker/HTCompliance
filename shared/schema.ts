@@ -8,6 +8,7 @@ export const roleEnum = pgEnum("role", ["admin", "user"]);
 export const statusEnum = pgEnum("status", ["pending", "complete", "overdue", "na"]);
 export const categoryEnum = pgEnum("category", ["Marketing Agreement", "Billing", "Deliverable", "Compliance", "End-of-Term"]);
 export const evidenceTypeEnum = pgEnum("evidence_type", ["document", "email", "screenshot", "report", "other"]);
+export const qbConnectionStatusEnum = pgEnum("qb_connection_status", ["connected", "disconnected", "error", "token_expired"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -123,16 +124,58 @@ export const emailAlerts = pgTable("email_alerts", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// QuickBooks Connections table
+export const quickbooksConnections = pgTable("quickbooks_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  organizationId: varchar("organization_id").notNull().references(() => organizations.id).unique(), // One QB connection per organization
+  realmId: text("realm_id").notNull(), // QuickBooks company ID
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  accessTokenExpiresAt: timestamp("access_token_expires_at").notNull(),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at").notNull(),
+  qbCustomerId: text("qb_customer_id"), // Mapped QB customer ID
+  qbCustomerName: text("qb_customer_name"), // Mapped QB customer name
+  status: qbConnectionStatusEnum("status").notNull().default("connected"),
+  lastSyncAt: timestamp("last_sync_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+// QuickBooks Invoices table (cached QB data)
+export const quickbooksInvoices = pgTable("quickbooks_invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  organizationId: varchar("organization_id").notNull().references(() => organizations.id),
+  qbInvoiceId: text("qb_invoice_id").notNull(), // QB Invoice ID
+  qbDocNumber: text("qb_doc_number"), // QB Invoice number (user-facing)
+  qbCustomerId: text("qb_customer_id").notNull(),
+  balance: decimal("balance", { precision: 10, scale: 2 }).notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  dueDate: timestamp("due_date"),
+  txnDate: timestamp("txn_date").notNull(), // Invoice/transaction date
+  emailStatus: text("email_status"), // QB email status
+  privateNote: text("private_note"),
+  qbRawData: text("qb_raw_data").notNull(), // Full JSON from QB API
+  syncToken: text("sync_token"), // QB sync token for updates
+  lastSyncedAt: timestamp("last_synced_at").notNull().default(sql`now()`),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   evidence: many(evidence),
   auditLog: many(auditLog),
 }));
 
-export const organizationsRelations = relations(organizations, ({ many }) => ({
+export const organizationsRelations = relations(organizations, ({ many, one }) => ({
   contracts: many(contracts),
   complianceItems: many(complianceItems),
   billableEvents: many(billableEvents),
+  quickbooksConnection: one(quickbooksConnections, {
+    fields: [organizations.id],
+    references: [quickbooksConnections.organizationId],
+  }),
+  quickbooksInvoices: many(quickbooksInvoices),
 }));
 
 export const contractsRelations = relations(contracts, ({ one, many }) => ({
@@ -196,6 +239,20 @@ export const emailAlertsRelations = relations(emailAlerts, ({ one }) => ({
   }),
 }));
 
+export const quickbooksConnectionsRelations = relations(quickbooksConnections, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [quickbooksConnections.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const quickbooksInvoicesRelations = relations(quickbooksInvoices, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [quickbooksInvoices.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -246,6 +303,21 @@ export const insertEmailAlertSchema = createInsertSchema(emailAlerts).omit({
   createdAt: true,
 });
 
+export const insertQuickbooksConnectionSchema = createInsertSchema(quickbooksConnections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertQuickbooksInvoiceSchema = createInsertSchema(quickbooksInvoices).omit({
+  id: true,
+  createdAt: true,
+  lastSyncedAt: true,
+}).extend({
+  balance: z.union([z.string(), z.number()]).transform(val => val?.toString()),
+  totalAmount: z.union([z.string(), z.number()]).transform(val => val?.toString()),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -263,3 +335,7 @@ export type AuditLog = typeof auditLog.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type EmailAlert = typeof emailAlerts.$inferSelect;
 export type InsertEmailAlert = z.infer<typeof insertEmailAlertSchema>;
+export type QuickbooksConnection = typeof quickbooksConnections.$inferSelect;
+export type InsertQuickbooksConnection = z.infer<typeof insertQuickbooksConnectionSchema>;
+export type QuickbooksInvoice = typeof quickbooksInvoices.$inferSelect;
+export type InsertQuickbooksInvoice = z.infer<typeof insertQuickbooksInvoiceSchema>;

@@ -8,6 +8,9 @@ import multer from "multer";
 import { parseCSV, validateComplianceCSV } from "./services/csv-import";
 import { sendEmailAlert } from "./services/email-service";
 import { exportService } from "./services/export-service";
+import { createQuickBooksOAuthService } from "./services/quickbooks-oauth.service";
+import { createQuickBooksSyncService } from "./services/quickbooks-sync.service";
+import "./types"; // Import session type declarations
 
 // Admin-only middleware
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -933,6 +936,256 @@ export function registerRoutes(app: Express): Server {
       res.json({ message: "Database reset successfully. All data cleared except users." });
     } catch (error) {
       res.status(500).json({ error: "Failed to reset database" });
+    }
+  });
+
+  // QuickBooks OAuth routes
+  app.get("/api/quickbooks/auth-url", async (req, res) => {
+    try {
+      const organizationId = req.query.organizationId as string;
+      
+      if (!organizationId) {
+        return res.status(400).json({ error: "Organization ID is required" });
+      }
+
+      const qbOAuth = createQuickBooksOAuthService();
+      const { authUrl, state } = qbOAuth.generateAuthUrl();
+      
+      // Store state in session for CSRF validation
+      if (req.session) {
+        req.session.qbState = state;
+        req.session.qbOrganizationId = organizationId;
+      }
+      
+      res.json({ authUrl, state });
+    } catch (error) {
+      console.error('Error generating QB auth URL:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to generate auth URL" });
+    }
+  });
+
+  app.get("/api/quickbooks/callback", async (req, res) => {
+    try {
+      const { code, state, realmId, error: qbError } = req.query;
+      
+      // Check for QB errors
+      if (qbError) {
+        console.error('QuickBooks OAuth error:', qbError);
+        return res.redirect(`/?qb_error=${encodeURIComponent(qbError as string)}`);
+      }
+      
+      // Validate state for CSRF protection
+      if (!req.session?.qbState || state !== req.session.qbState) {
+        return res.redirect('/?qb_error=invalid_state');
+      }
+      
+      const organizationId = req.session.qbOrganizationId;
+      if (!organizationId) {
+        return res.redirect('/?qb_error=missing_organization');
+      }
+      
+      // Exchange code for tokens
+      const qbOAuth = createQuickBooksOAuthService();
+      const tokenResponse = await qbOAuth.exchangeCodeForTokens(code as string);
+      
+      // Check if connection already exists (reconnect scenario)
+      const existingConnection = await storage.getQuickbooksConnection(organizationId);
+      
+      if (existingConnection) {
+        // Update existing connection
+        await storage.updateQuickbooksConnection(organizationId, {
+          realmId: realmId as string,
+          accessToken: tokenResponse.access_token,
+          refreshToken: tokenResponse.refresh_token,
+          accessTokenExpiresAt: qbOAuth.calculateExpiryDate(tokenResponse.expires_in),
+          refreshTokenExpiresAt: qbOAuth.calculateExpiryDate(tokenResponse.x_refresh_token_expires_in),
+          status: 'connected',
+          errorMessage: null,
+        });
+      } else {
+        // Create new connection
+        await storage.createQuickbooksConnection({
+          organizationId,
+          realmId: realmId as string,
+          accessToken: tokenResponse.access_token,
+          refreshToken: tokenResponse.refresh_token,
+          accessTokenExpiresAt: qbOAuth.calculateExpiryDate(tokenResponse.expires_in),
+          refreshTokenExpiresAt: qbOAuth.calculateExpiryDate(tokenResponse.x_refresh_token_expires_in),
+          status: 'connected',
+        });
+      }
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CONNECT",
+        entityType: "quickbooks_connection",
+        entityId: organizationId,
+        newValues: JSON.stringify({ realmId }),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      // Clear session data
+      delete req.session.qbState;
+      delete req.session.qbOrganizationId;
+      
+      // Redirect to organization page with success message
+      res.redirect(`/organizations?qb_connected=true&org_id=${organizationId}`);
+    } catch (error) {
+      console.error('QuickBooks callback error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'connection_failed';
+      res.redirect(`/?qb_error=${encodeURIComponent(errorMsg)}`);
+    }
+  });
+
+  app.delete("/api/quickbooks/:organizationId/disconnect", async (req, res) => {
+    try {
+      const { organizationId } = req.params;
+      
+      const connection = await storage.getQuickbooksConnection(organizationId);
+      if (!connection) {
+        return res.status(404).json({ error: "QuickBooks connection not found" });
+      }
+      
+      // Revoke tokens
+      try {
+        const qbOAuth = createQuickBooksOAuthService();
+        await qbOAuth.revokeTokens(connection.refreshToken);
+      } catch (error) {
+        console.error('Error revoking QB tokens:', error);
+        // Continue with deletion even if revoke fails
+      }
+      
+      // Delete connection and invoices
+      await storage.deleteOrganizationInvoices(organizationId);
+      await storage.deleteQuickbooksConnection(organizationId);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DISCONNECT",
+        entityType: "quickbooks_connection",
+        entityId: organizationId,
+        oldValues: JSON.stringify({ realmId: connection.realmId }),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json({ message: "QuickBooks disconnected successfully" });
+    } catch (error) {
+      console.error('Error disconnecting QuickBooks:', error);
+      res.status(500).json({ error: "Failed to disconnect QuickBooks" });
+    }
+  });
+
+  // QuickBooks customer and invoice routes
+  app.get("/api/organizations/:id/qb-connection", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const connection = await storage.getQuickbooksConnection(id);
+      
+      if (!connection) {
+        return res.json({ connected: false });
+      }
+      
+      // Return connection status without sensitive data
+      res.json({
+        connected: true,
+        status: connection.status,
+        qbCustomerId: connection.qbCustomerId,
+        qbCustomerName: connection.qbCustomerName,
+        lastSyncAt: connection.lastSyncAt,
+        errorMessage: connection.errorMessage,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch QuickBooks connection" });
+    }
+  });
+
+  app.get("/api/organizations/:id/qb-customers", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const searchTerm = (req.query.search as string) || '';
+      
+      const qbOAuth = createQuickBooksOAuthService();
+      const qbSync = createQuickBooksSyncService(qbOAuth);
+      
+      const customers = await qbSync.searchCustomers(id, searchTerm);
+      res.json(customers);
+    } catch (error) {
+      console.error('Error searching QB customers:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to search customers" });
+    }
+  });
+
+  app.post("/api/organizations/:id/qb-map-customer", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { qbCustomerId } = req.body;
+      
+      if (!qbCustomerId) {
+        return res.status(400).json({ error: "QuickBooks customer ID is required" });
+      }
+      
+      const qbOAuth = createQuickBooksOAuthService();
+      const qbSync = createQuickBooksSyncService(qbOAuth);
+      
+      await qbSync.mapCustomer(id, qbCustomerId);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "MAP_CUSTOMER",
+        entityType: "quickbooks_connection",
+        entityId: id,
+        newValues: JSON.stringify({ qbCustomerId }),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json({ message: "Customer mapped successfully" });
+    } catch (error) {
+      console.error('Error mapping QB customer:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to map customer" });
+    }
+  });
+
+  app.get("/api/organizations/:id/qb-invoices", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const invoices = await storage.getQuickbooksInvoices(id);
+      res.json(invoices);
+    } catch (error) {
+      console.error('Error fetching QB invoices:', error);
+      res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+  });
+
+  app.post("/api/organizations/:id/qb-sync", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const qbOAuth = createQuickBooksOAuthService();
+      const qbSync = createQuickBooksSyncService(qbOAuth);
+      
+      const result = await qbSync.syncInvoices(id);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "SYNC_INVOICES",
+        entityType: "quickbooks_connection",
+        entityId: id,
+        newValues: JSON.stringify({ synced: result.synced, errors: result.errors.length }),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error syncing QB invoices:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to sync invoices" });
     }
   });
 
