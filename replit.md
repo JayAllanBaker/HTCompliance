@@ -97,16 +97,28 @@ Preferred communication style: Simple, everyday language.
 
 **Invoice Synchronization**: Once connected and mapped, invoices can be synced from QuickBooks to the local database. Invoices are cached locally and can be updated by re-syncing.
 
-**Environment Configuration**: The integration requires three environment variables:
-- `QB_CLIENT_ID` - QuickBooks application client ID
-- `QB_CLIENT_SECRET` - QuickBooks application client secret  
-- `QB_REDIRECT_URI` - OAuth callback URL (defaults to http://localhost:5000/api/quickbooks/callback in development)
+**Environment Configuration**: The integration supports two configuration methods:
+
+1. **Environment Variables** (traditional):
+   - `QB_CLIENT_ID` - QuickBooks application client ID
+   - `QB_CLIENT_SECRET` - QuickBooks application client secret  
+   - `QB_REDIRECT_URI` - OAuth callback URL (defaults to http://localhost:5000/api/quickbooks/callback in development)
+
+2. **Admin Panel Settings** (recommended for Docker):
+   - Admins can configure QB credentials via `/admin` route → QuickBooks Online Settings
+   - Settings stored in `system_settings` table with encryption support
+   - OAuth service automatically falls back to database settings when env vars not present
+   - Client secret is masked in all API responses for security (never exposed in cleartext)
+   - Write-only secret updates (leave empty to keep existing value)
+   - Zod validation ensures all inputs are properly formatted
 
 **Security Features**:
 - CSRF protection via state parameter in OAuth flow
 - Query string escaping to prevent QuickBooks Query Language injection
 - Automatic token refresh with 401 error handling
 - OAuth callback upsert logic to handle reconnections
+- **Admin settings security**: Client secret masked in GET responses, write-only updates, validation on POST
+- Audit trail for all settings changes
 
 **Design Rationale**: Separate quickbooks_connections table isolates OAuth credentials from organization data for better security. The sync service caches invoices locally to reduce API calls and provide offline access to invoice data. Per-organization connections enable multi-company scenarios where different organizations use different QuickBooks companies.
 

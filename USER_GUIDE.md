@@ -409,6 +409,44 @@ Please ensure this obligation is completed on time.
 2. Confirm deletion
 3. User is permanently removed
 
+### QuickBooks Online Settings
+
+**Configuring QuickBooks OAuth Credentials:**
+
+Administrators can configure QuickBooks integration credentials directly from the admin panel. This is especially useful for Docker deployments where environment variables aren't easily accessible.
+
+**Setup Steps:**
+1. Go to **Admin Panel** → **QuickBooks Online Settings**
+2. Enter your QuickBooks application credentials:
+   - **Client ID**: Your QuickBooks OAuth Client ID
+   - **Client Secret**: Your QuickBooks OAuth Client Secret (write-only for security)
+   - **Redirect URI**: OAuth callback URL (e.g., `http://localhost:5000/api/quickbooks/callback`)
+   - **Environment**: Select "Sandbox (Development)" or "Production"
+3. Click **"Save QuickBooks Settings"**
+
+**Security Features:**
+- ✅ **Client Secret is masked** - The API never exposes the actual secret value
+- ✅ **Write-only secret field** - Leave empty to keep existing secret unchanged
+- ✅ **Validation** - All inputs are validated before saving
+- ✅ **Audit trail** - All settings changes are logged
+
+**Updating Credentials:**
+1. Go to **Admin Panel** → **QuickBooks Online Settings**
+2. Update any field you want to change
+3. For **Client Secret**:
+   - Leave empty to keep current secret
+   - Enter new value only if you want to update it
+4. Click **"Save QuickBooks Settings"**
+
+**Rotating Credentials:**
+If you need to rotate your QuickBooks credentials for security:
+1. Create new OAuth credentials in QuickBooks Developer Portal
+2. Update settings in Admin Panel with new Client ID and Secret
+3. Reconnect all organizations to QuickBooks using the new credentials
+4. Revoke old credentials in QuickBooks Developer Portal
+
+⚠️ **Note:** After updating credentials, existing QuickBooks connections will need to be re-authorized.
+
 ### Database Reset
 
 ⚠️ **DANGER ZONE** - This deletes all business data!

@@ -176,14 +176,43 @@ export class QuickBooksOAuthService {
 /**
  * Create QuickBooks OAuth service from environment variables
  */
-export function createQuickBooksOAuthService(): QuickBooksOAuthService {
-  const clientId = process.env.QB_CLIENT_ID || '';
-  const clientSecret = process.env.QB_CLIENT_SECRET || '';
-  const redirectUri = process.env.QB_REDIRECT_URI || 'http://localhost:5000/api/quickbooks/callback';
-  const environment = (process.env.QB_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox';
+export async function createQuickBooksOAuthService(storage?: any): Promise<QuickBooksOAuthService> {
+  let clientId = '';
+  let clientSecret = '';
+  let redirectUri = '';
+  let environment = '';
+
+  // Priority 1: Load from database (if storage provided)
+  if (storage) {
+    try {
+      const settings = await storage.getSystemSettings([
+        'qb_client_id',
+        'qb_client_secret',
+        'qb_redirect_uri',
+        'qb_environment'
+      ]);
+
+      clientId = settings.qb_client_id?.value || '';
+      clientSecret = settings.qb_client_secret?.value || '';
+      redirectUri = settings.qb_redirect_uri?.value || '';
+      environment = settings.qb_environment?.value || '';
+    } catch (error) {
+      console.error('Failed to load QB settings from database:', error);
+    }
+  }
+
+  // Priority 2: Fall back to environment variables if database values not set
+  clientId = clientId || process.env.QB_CLIENT_ID || '';
+  clientSecret = clientSecret || process.env.QB_CLIENT_SECRET || '';
+  redirectUri = redirectUri || process.env.QB_REDIRECT_URI || '';
+  environment = environment || process.env.QB_ENVIRONMENT || '';
+
+  // Priority 3: Apply defaults last
+  redirectUri = redirectUri || 'http://localhost:5000/api/quickbooks/callback';
+  environment = (environment as 'sandbox' | 'production') || 'sandbox';
 
   if (!clientId || !clientSecret) {
-    throw new Error('QuickBooks OAuth credentials not configured. Set QB_CLIENT_ID and QB_CLIENT_SECRET environment variables.');
+    throw new Error('QuickBooks OAuth credentials not configured. Set QB_CLIENT_ID and QB_CLIENT_SECRET environment variables or configure in Admin panel.');
   }
 
   return new QuickBooksOAuthService({

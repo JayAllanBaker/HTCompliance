@@ -939,6 +939,108 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin routes - QuickBooks Settings
+  app.get("/api/admin/qb-settings", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Get all QB-related settings
+      const allSettings = await storage.getAllSystemSettings();
+      const qbSettings = allSettings.filter(s => s.key.startsWith('qb_'));
+      
+      // Convert to object for easier consumption
+      const settingsObj = qbSettings.reduce((acc, setting) => {
+        // SECURITY: Never expose client secret in cleartext
+        const value = setting.key === 'qb_client_secret' && setting.value 
+          ? '••••••••' // Masked value for security
+          : setting.value || '';
+        
+        acc[setting.key] = {
+          value,
+          description: setting.description,
+        };
+        return acc;
+      }, {} as Record<string, { value: string; description?: string | null }>);
+      
+      res.json(settingsObj);
+    } catch (error) {
+      console.error('Error fetching QB settings:', error);
+      res.status(500).json({ error: 'Failed to fetch QuickBooks settings' });
+    }
+  });
+
+  app.post("/api/admin/qb-settings", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const qbSettingsSchema = z.object({
+        qb_client_id: z.string().min(1).optional(),
+        qb_client_secret: z.string().min(1).optional(),
+        qb_redirect_uri: z.string().url().optional(),
+        qb_environment: z.enum(['sandbox', 'production']).optional(),
+      });
+      
+      const validationResult = qbSettingsSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: 'Invalid QuickBooks settings', 
+          details: validationResult.error.errors 
+        });
+      }
+      
+      const { qb_client_id, qb_client_secret, qb_redirect_uri, qb_environment } = validationResult.data;
+      
+      // Upsert each setting
+      if (qb_client_id !== undefined) {
+        await storage.upsertSystemSetting({
+          key: 'qb_client_id',
+          value: qb_client_id,
+          isEncrypted: false,
+          description: 'QuickBooks OAuth Client ID',
+        });
+      }
+      
+      if (qb_client_secret !== undefined) {
+        await storage.upsertSystemSetting({
+          key: 'qb_client_secret',
+          value: qb_client_secret,
+          isEncrypted: true,
+          description: 'QuickBooks OAuth Client Secret (encrypted)',
+        });
+      }
+      
+      if (qb_redirect_uri !== undefined) {
+        await storage.upsertSystemSetting({
+          key: 'qb_redirect_uri',
+          value: qb_redirect_uri,
+          isEncrypted: false,
+          description: 'QuickBooks OAuth Redirect URI',
+        });
+      }
+      
+      if (qb_environment !== undefined) {
+        await storage.upsertSystemSetting({
+          key: 'qb_environment',
+          value: qb_environment,
+          isEncrypted: false,
+          description: 'QuickBooks environment (sandbox or production)',
+        });
+      }
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: 'UPDATE',
+        entityType: 'system_settings',
+        entityId: 'qb_settings',
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json({ message: 'QuickBooks settings updated successfully' });
+    } catch (error) {
+      console.error('Error updating QB settings:', error);
+      res.status(500).json({ error: 'Failed to update QuickBooks settings' });
+    }
+  });
+
   // QuickBooks OAuth routes
   
   // Get all QuickBooks connections (for UI status display)
@@ -967,7 +1069,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: "Organization ID is required" });
       }
 
-      const qbOAuth = createQuickBooksOAuthService();
+      const qbOAuth = await createQuickBooksOAuthService(storage);
       const { authUrl, state } = qbOAuth.generateAuthUrl();
       
       // Store state in session for CSRF validation
@@ -1004,7 +1106,7 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Exchange code for tokens
-      const qbOAuth = createQuickBooksOAuthService();
+      const qbOAuth = await createQuickBooksOAuthService(storage);
       const tokenResponse = await qbOAuth.exchangeCodeForTokens(code as string);
       
       // Check if connection already exists (reconnect scenario)
@@ -1069,7 +1171,7 @@ export function registerRoutes(app: Express): Server {
       
       // Revoke tokens
       try {
-        const qbOAuth = createQuickBooksOAuthService();
+        const qbOAuth = await createQuickBooksOAuthService(storage);
         await qbOAuth.revokeTokens(connection.refreshToken);
       } catch (error) {
         console.error('Error revoking QB tokens:', error);
@@ -1127,7 +1229,7 @@ export function registerRoutes(app: Express): Server {
       const { id } = req.params;
       const searchTerm = (req.query.search as string) || '';
       
-      const qbOAuth = createQuickBooksOAuthService();
+      const qbOAuth = await createQuickBooksOAuthService(storage);
       const qbSync = createQuickBooksSyncService(qbOAuth);
       
       const customers = await qbSync.searchCustomers(id, searchTerm);
@@ -1147,7 +1249,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: "QuickBooks customer ID is required" });
       }
       
-      const qbOAuth = createQuickBooksOAuthService();
+      const qbOAuth = await createQuickBooksOAuthService(storage);
       const qbSync = createQuickBooksSyncService(qbOAuth);
       
       await qbSync.mapCustomer(id, qbCustomerId);
@@ -1185,7 +1287,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const { id } = req.params;
       
-      const qbOAuth = createQuickBooksOAuthService();
+      const qbOAuth = await createQuickBooksOAuthService(storage);
       const qbSync = createQuickBooksSyncService(qbOAuth);
       
       const result = await qbSync.syncInvoices(id);

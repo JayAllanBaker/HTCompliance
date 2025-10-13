@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Settings, UserPlus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
+import { Settings, UserPlus, Pencil, Trash2, Database, AlertTriangle, Key } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
@@ -31,9 +31,33 @@ export default function AdminPage() {
     role: "user" as "admin" | "user"
   });
 
+  const [qbSettings, setQbSettings] = useState({
+    qb_client_id: "",
+    qb_client_secret: "",
+    qb_redirect_uri: "",
+    qb_environment: "sandbox"
+  });
+
   const { data: users, isLoading } = useQuery<UserWithoutPassword[]>({
     queryKey: ["/api/users"],
   });
+
+  // Fetch QB settings
+  const { data: qbSettingsData } = useQuery<Record<string, { value: string; description?: string | null }>>({
+    queryKey: ["/api/admin/qb-settings"],
+  });
+
+  useEffect(() => {
+    if (qbSettingsData) {
+      setQbSettings({
+        qb_client_id: qbSettingsData.qb_client_id?.value || "",
+        // Keep masked value from server as placeholder, but track separately
+        qb_client_secret: "", // Empty by default for security
+        qb_redirect_uri: qbSettingsData.qb_redirect_uri?.value || "",
+        qb_environment: qbSettingsData.qb_environment?.value || "sandbox"
+      });
+    }
+  }, [qbSettingsData]);
 
   const createUserMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -118,6 +142,38 @@ export default function AdminPage() {
       toast({
         title: "Reset Failed",
         description: error.message || "Failed to reset database.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveQBSettingsMutation = useMutation({
+    mutationFn: async (settings: typeof qbSettings) => {
+      // Only send client secret if it has been changed (not empty)
+      const payload = {
+        qb_client_id: settings.qb_client_id,
+        qb_redirect_uri: settings.qb_redirect_uri,
+        qb_environment: settings.qb_environment,
+        // Only include secret if user entered a new value
+        ...(settings.qb_client_secret ? { qb_client_secret: settings.qb_client_secret } : {})
+      };
+      
+      const response = await apiRequest("POST", "/api/admin/qb-settings", payload);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/qb-settings"] });
+      // Clear the client secret field after save for security
+      setQbSettings(prev => ({ ...prev, qb_client_secret: "" }));
+      toast({
+        title: "Settings Saved",
+        description: "QuickBooks settings have been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save QuickBooks settings.",
         variant: "destructive",
       });
     },
@@ -264,6 +320,88 @@ export default function AdminPage() {
                     </Table>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* QuickBooks Settings Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Key className="mr-2 h-5 w-5" />
+                  QuickBooks Online Settings
+                </CardTitle>
+                <CardDescription>
+                  Configure QuickBooks OAuth credentials for invoice synchronization
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="qb_client_id">Client ID</Label>
+                    <Input
+                      id="qb_client_id"
+                      type="text"
+                      placeholder="Enter QuickBooks Client ID"
+                      value={qbSettings.qb_client_id}
+                      onChange={(e) => setQbSettings({ ...qbSettings, qb_client_id: e.target.value })}
+                      data-testid="input-qb-client-id"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="qb_client_secret">Client Secret</Label>
+                    <Input
+                      id="qb_client_secret"
+                      type="password"
+                      placeholder={qbSettingsData?.qb_client_secret?.value === "••••••••" 
+                        ? "Leave empty to keep current secret" 
+                        : "Enter QuickBooks Client Secret"}
+                      value={qbSettings.qb_client_secret}
+                      onChange={(e) => setQbSettings({ ...qbSettings, qb_client_secret: e.target.value })}
+                      data-testid="input-qb-client-secret"
+                    />
+                    {qbSettingsData?.qb_client_secret?.value === "••••••••" && (
+                      <p className="text-xs text-muted-foreground">
+                        Secret is already configured. Enter a new value only if you want to update it.
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="qb_redirect_uri">Redirect URI</Label>
+                    <Input
+                      id="qb_redirect_uri"
+                      type="text"
+                      placeholder="e.g., http://localhost:5000/api/quickbooks/callback"
+                      value={qbSettings.qb_redirect_uri}
+                      onChange={(e) => setQbSettings({ ...qbSettings, qb_redirect_uri: e.target.value })}
+                      data-testid="input-qb-redirect-uri"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="qb_environment">Environment</Label>
+                    <Select
+                      value={qbSettings.qb_environment}
+                      onValueChange={(value) => setQbSettings({ ...qbSettings, qb_environment: value })}
+                    >
+                      <SelectTrigger id="qb_environment" data-testid="select-qb-environment">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sandbox">Sandbox (Development)</SelectItem>
+                        <SelectItem value="production">Production</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="border-t pt-4">
+                    <Button
+                      onClick={() => saveQBSettingsMutation.mutate(qbSettings)}
+                      disabled={saveQBSettingsMutation.isPending}
+                      data-testid="button-save-qb-settings"
+                    >
+                      <Key className="mr-2 h-4 w-4" />
+                      {saveQBSettingsMutation.isPending ? "Saving..." : "Save QuickBooks Settings"}
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

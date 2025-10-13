@@ -1,12 +1,13 @@
 import { 
   users, organizations, contracts, complianceItems, billableEvents, evidence, auditLog, emailAlerts,
-  quickbooksConnections, quickbooksInvoices,
+  quickbooksConnections, quickbooksInvoices, systemSettings,
   type User, type InsertUser, type Organization, type InsertOrganization, type Contract, type InsertContract,
   type ComplianceItem, type InsertComplianceItem, type BillableEvent, type InsertBillableEvent,
   type Evidence, type InsertEvidence, type AuditLog, type InsertAuditLog,
   type EmailAlert, type InsertEmailAlert,
   type QuickbooksConnection, type InsertQuickbooksConnection,
-  type QuickbooksInvoice, type InsertQuickbooksInvoice
+  type QuickbooksInvoice, type InsertQuickbooksInvoice,
+  type SystemSetting, type InsertSystemSetting
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, gte, lte, like, count, sql } from "drizzle-orm";
@@ -91,6 +92,12 @@ export interface IStorage {
   getQuickbooksInvoices(organizationId: string): Promise<QuickbooksInvoice[]>;
   upsertQuickbooksInvoice(invoice: InsertQuickbooksInvoice): Promise<QuickbooksInvoice>;
   deleteOrganizationInvoices(organizationId: string): Promise<void>;
+  
+  // System Settings methods
+  getSystemSetting(key: string): Promise<SystemSetting | undefined>;
+  getAllSystemSettings(): Promise<SystemSetting[]>;
+  upsertSystemSetting(setting: InsertSystemSetting): Promise<SystemSetting>;
+  deleteSystemSetting(key: string): Promise<void>;
   
   // Import/Export methods
   exportDatabase(): Promise<any>;
@@ -563,6 +570,45 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(quickbooksInvoices)
       .where(eq(quickbooksInvoices.organizationId, organizationId));
+  }
+
+  // System Settings methods
+  async getSystemSetting(key: string): Promise<SystemSetting | undefined> {
+    const [setting] = await db
+      .select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, key));
+    return setting;
+  }
+
+  async getAllSystemSettings(): Promise<SystemSetting[]> {
+    return await db.select().from(systemSettings);
+  }
+
+  async upsertSystemSetting(setting: InsertSystemSetting): Promise<SystemSetting> {
+    const [result] = await db
+      .insert(systemSettings)
+      .values({
+        ...setting,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: systemSettings.key,
+        set: {
+          value: setting.value,
+          isEncrypted: setting.isEncrypted ?? false,
+          description: setting.description,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  async deleteSystemSetting(key: string): Promise<void> {
+    await db
+      .delete(systemSettings)
+      .where(eq(systemSettings.key, key));
   }
 
   // Import/Export methods

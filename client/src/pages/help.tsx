@@ -381,6 +381,50 @@ export default function HelpPage() {
       description: "Connect and sync with QuickBooks Online",
       content: [
         {
+          question: "How do I configure QuickBooks OAuth credentials?",
+          answer: (
+            <div className="space-y-3">
+              <p>Administrators can configure QuickBooks integration credentials in the Admin Panel. This is especially useful for Docker deployments.</p>
+              
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Go to <strong>Admin Panel</strong> → <strong>QuickBooks Online Settings</strong></li>
+                <li>Enter your QuickBooks application credentials:
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li><strong>Client ID</strong>: Your QuickBooks OAuth Client ID</li>
+                    <li><strong>Client Secret</strong>: Your QuickBooks OAuth Client Secret</li>
+                    <li><strong>Redirect URI</strong>: OAuth callback URL (e.g., <code className="text-xs bg-muted px-1 py-0.5 rounded">http://localhost:5000/api/quickbooks/callback</code>)</li>
+                    <li><strong>Environment</strong>: Select "Sandbox (Development)" or "Production"</li>
+                  </ul>
+                </li>
+                <li>Click <strong>"Save QuickBooks Settings"</strong></li>
+              </ol>
+              
+              <div className="flex items-start gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-3 rounded-md">
+                <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold mb-1">Security Features:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Client Secret is masked and never exposed in API responses</li>
+                    <li>Leave secret field empty to keep existing value unchanged</li>
+                    <li>All inputs are validated before saving</li>
+                    <li>All changes are logged in the audit trail</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="bg-muted p-4 rounded-md space-y-2">
+                <p className="font-semibold">Rotating Credentials:</p>
+                <ol className="list-decimal pl-5 space-y-1 text-sm">
+                  <li>Create new OAuth credentials in QuickBooks Developer Portal</li>
+                  <li>Update settings in Admin Panel with new Client ID and Secret</li>
+                  <li>Reconnect all organizations to QuickBooks</li>
+                  <li>Revoke old credentials in QuickBooks Developer Portal</li>
+                </ol>
+              </div>
+            </div>
+          )
+        },
+        {
           question: "How do I connect QuickBooks to an organization?",
           answer: (
             <div className="space-y-3">

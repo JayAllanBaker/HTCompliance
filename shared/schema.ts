@@ -161,6 +161,17 @@ export const quickbooksInvoices = pgTable("quickbooks_invoices", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// System Settings table - stores QuickBooks and other system configuration
+export const systemSettings = pgTable("system_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: text("key").notNull().unique(), // Setting key (e.g., 'qb_client_id', 'qb_environment')
+  value: text("value"), // Setting value (encrypted for sensitive data)
+  isEncrypted: boolean("is_encrypted").notNull().default(false), // Whether value is encrypted
+  description: text("description"), // Human-readable description
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   evidence: many(evidence),
@@ -318,6 +329,12 @@ export const insertQuickbooksInvoiceSchema = createInsertSchema(quickbooksInvoic
   totalAmount: z.union([z.string(), z.number()]).transform(val => val?.toString()),
 });
 
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -339,3 +356,5 @@ export type QuickbooksConnection = typeof quickbooksConnections.$inferSelect;
 export type InsertQuickbooksConnection = z.infer<typeof insertQuickbooksConnectionSchema>;
 export type QuickbooksInvoice = typeof quickbooksInvoices.$inferSelect;
 export type InsertQuickbooksInvoice = z.infer<typeof insertQuickbooksInvoiceSchema>;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
