@@ -33,6 +33,16 @@ export function setupAuth(app: Express) {
     throw new Error("SESSION_SECRET environment variable must be set");
   }
 
+  // In production, trust the proxy to properly forward the protocol
+  // This is essential for platforms like Replit that terminate SSL at the edge
+  const isProduction = process.env.NODE_ENV === "production";
+  const isReplit = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_ID;
+  
+  // For Replit and similar platforms, trust proxy is required for secure cookies
+  if (isProduction || isReplit) {
+    app.set("trust proxy", 1);
+  }
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -40,13 +50,14 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // Only require secure cookies in production AND when not in a dev/testing environment
+      // This handles Replit deployments correctly
+      secure: isProduction && !process.env.DISABLE_SECURE_COOKIES,
       sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     },
   };
 
-  app.set("trust proxy", 1);
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
