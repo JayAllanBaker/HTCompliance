@@ -64,6 +64,15 @@ export const complianceItems = pgTable("compliance_items", {
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
+// Compliance Comments table
+export const complianceComments = pgTable("compliance_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  complianceItemId: varchar("compliance_item_id").notNull().references(() => complianceItems.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Billable Events table
 export const billableEvents = pgTable("billable_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -210,6 +219,18 @@ export const complianceItemsRelations = relations(complianceItems, ({ one, many 
   billableEvents: many(billableEvents),
   evidence: many(evidence),
   emailAlerts: many(emailAlerts),
+  comments: many(complianceComments),
+}));
+
+export const complianceCommentsRelations = relations(complianceComments, ({ one }) => ({
+  complianceItem: one(complianceItems, {
+    fields: [complianceComments.complianceItemId],
+    references: [complianceItems.id],
+  }),
+  user: one(users, {
+    fields: [complianceComments.userId],
+    references: [users.id],
+  }),
 }));
 
 export const billableEventsRelations = relations(billableEvents, ({ one, many }) => ({
@@ -290,6 +311,11 @@ export const insertComplianceItemSchema = createInsertSchema(complianceItems).om
   updatedAt: true,
 });
 
+export const insertComplianceCommentSchema = createInsertSchema(complianceComments).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertBillableEventSchema = createInsertSchema(billableEvents).omit({
   id: true,
   createdAt: true,
@@ -344,6 +370,8 @@ export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;
 export type ComplianceItem = typeof complianceItems.$inferSelect;
 export type InsertComplianceItem = z.infer<typeof insertComplianceItemSchema>;
+export type ComplianceComment = typeof complianceComments.$inferSelect;
+export type InsertComplianceComment = z.infer<typeof insertComplianceCommentSchema>;
 export type BillableEvent = typeof billableEvents.$inferSelect;
 export type InsertBillableEvent = z.infer<typeof insertBillableEventSchema>;
 export type Evidence = typeof evidence.$inferSelect;
