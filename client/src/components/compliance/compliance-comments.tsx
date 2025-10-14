@@ -41,20 +41,25 @@ export default function ComplianceComments({ complianceItemId }: ComplianceComme
       const response = await apiRequest("POST", `/api/compliance-items/${complianceItemId}/comments`, {
         comment,
       });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to add comment");
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/compliance-items", complianceItemId, "comments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/compliance-items"] });
       setNewComment("");
       toast({
         title: "Comment Added",
         description: "Your comment has been added successfully.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to add comment. Please try again.",
+        description: error.message || "Failed to add comment. Please try again.",
         variant: "destructive",
       });
     },
@@ -70,6 +75,7 @@ export default function ComplianceComments({ complianceItemId }: ComplianceComme
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/compliance-items", complianceItemId, "comments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/compliance-items"] });
       toast({
         title: "Comment Deleted",
         description: "The comment has been deleted successfully.",
@@ -84,8 +90,7 @@ export default function ComplianceComments({ complianceItemId }: ComplianceComme
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (!newComment.trim()) return;
     createCommentMutation.mutate(newComment);
   };
@@ -104,17 +109,24 @@ export default function ComplianceComments({ complianceItemId }: ComplianceComme
         <span className="text-sm text-muted-foreground">({comments.length})</span>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="space-y-3">
         <Textarea
           placeholder="Add a comment..."
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
           className="min-h-[80px]"
           data-testid="textarea-comment"
         />
         <div className="flex justify-end">
           <Button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={!newComment.trim() || createCommentMutation.isPending}
             size="sm"
             data-testid="button-add-comment"
@@ -129,7 +141,7 @@ export default function ComplianceComments({ complianceItemId }: ComplianceComme
             )}
           </Button>
         </div>
-      </form>
+      </div>
 
       <div className="space-y-3 max-h-[400px] overflow-y-auto">
         {isLoading ? (
