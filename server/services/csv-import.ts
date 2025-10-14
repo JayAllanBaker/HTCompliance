@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import Papa from 'papaparse';
-import { InsertComplianceItem } from '@shared/schema';
+import { InsertComplianceItem } from '../../shared/schema';
 import { storage } from '../storage';
 
 interface CSVRow {

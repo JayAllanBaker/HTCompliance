@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { QuickBooksOAuthService } from './quickbooks-oauth.service';
 import { storage } from '../storage';
-import type { QuickbooksConnection, InsertQuickbooksInvoice } from '@shared/schema';
+import type { QuickbooksConnection, InsertQuickbooksInvoice } from '../../shared/schema';
 
 export interface QuickBooksCustomer {
   Id: string;

@@ -8,7 +8,7 @@ import {
   type QuickbooksConnection, type InsertQuickbooksConnection,
   type QuickbooksInvoice, type InsertQuickbooksInvoice,
   type SystemSetting, type InsertSystemSetting
-} from "@shared/schema";
+} from "../shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, gte, lte, like, count, sql } from "drizzle-orm";
 import session, { Store } from "express-session";

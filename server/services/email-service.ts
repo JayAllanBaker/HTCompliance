@@ -1,6 +1,6 @@
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import axios from 'axios';
-import { ComplianceItem } from '@shared/schema';
+import { ComplianceItem } from '../../shared/schema';
 import { storage } from '../storage';
 
 const clientApp = new ConfidentialClientApplication({
