@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "========================================="
+echo "Checking all users in Docker database:"
+echo "========================================="
+docker exec -i $(docker ps -qf "name=bizgov-postgres") psql -U postgres -d htdb -c "SELECT id, username, role, email, full_name FROM users ORDER BY created_at;"
+echo ""
+echo "========================================="
+echo "Admin user details:"
+echo "========================================="
+docker exec -i $(docker ps -qf "name=bizgov-postgres") psql -U postgres -d htdb -c "SELECT username, role FROM users WHERE username='admin';"
