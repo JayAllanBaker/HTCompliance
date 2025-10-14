@@ -162,8 +162,66 @@
       "rule": "status_normalization",
       "description": "Status values are converted to lowercase",
       "enforcement": "Automatic conversion during import"
+    },
+    {
+      "rule": "duplicate_detection",
+      "description": "Duplicates are detected based on: Category + Commitment + Customer + Due Date",
+      "enforcement": "User choice: skip duplicates or update existing items",
+      "matchingCriteria": [
+        "Category must match exactly",
+        "Commitment must match (case-insensitive, trimmed)",
+        "Customer/Organization ID must match",
+        "Due Date must match (date only, time ignored)"
+      ],
+      "duplicateHandlingOptions": {
+        "skip": {
+          "description": "Leave existing items unchanged and skip duplicate rows",
+          "recommended": true,
+          "behavior": "Duplicate rows are not imported, existing data remains intact"
+        },
+        "update": {
+          "description": "Overwrite existing items with data from CSV",
+          "recommended": false,
+          "behavior": "Existing compliance items are updated with new values from CSV",
+          "warning": "This will overwrite existing compliance data including status, responsible party, and description"
+        }
+      }
     }
   ],
+  "duplicateHandling": {
+    "detectionMethod": "Exact match on key fields",
+    "keyFields": ["Category", "Commitment", "Customer", "Due Date"],
+    "caseInsensitive": ["Commitment"],
+    "options": ["skip", "update"],
+    "defaultBehavior": "skip",
+    "reportFormat": {
+      "imported": "Number of new items created",
+      "updated": "Number of existing items updated (when update mode selected)",
+      "skipped": "Number of duplicate rows skipped",
+      "skippedDetails": "List of skipped items with row number and commitment text"
+    },
+    "examples": [
+      {
+        "scenario": "Same commitment exists with same customer and due date",
+        "csvRow": "Compliance,,Annual audit,,John Doe,pending,12/31/2024,CCAH",
+        "existingItem": "Category: Compliance, Commitment: Annual audit, Customer: CCAH, Due: 12/31/2024",
+        "skipResult": "Row skipped, existing item unchanged",
+        "updateResult": "Existing item updated with new responsible party and status"
+      },
+      {
+        "scenario": "Same commitment but different due date",
+        "csvRow": "Compliance,,Annual audit,,Jane Doe,pending,01/31/2025,CCAH",
+        "existingItem": "Category: Compliance, Commitment: Annual audit, Customer: CCAH, Due: 12/31/2024",
+        "result": "Not a duplicate - new item created (different due date)"
+      },
+      {
+        "scenario": "Same commitment but different customer",
+        "csvRow": "Compliance,,Annual audit,,John Doe,pending,12/31/2024,Acme Corp",
+        "existingItem": "Category: Compliance, Commitment: Annual audit, Customer: CCAH, Due: 12/31/2024",
+        "result": "Not a duplicate - new item created (different customer)"
+      }
+    ]
+  },
   "examples": [
     {
       "description": "Complete CSV with all fields",
@@ -216,6 +274,18 @@
     {
       "practice": "Quote fields containing commas or quotes",
       "reason": "Prevents CSV parsing errors"
+    },
+    {
+      "practice": "Choose 'Skip Duplicates' for regular imports",
+      "reason": "Prevents accidental data overwrite and maintains data integrity"
+    },
+    {
+      "practice": "Use 'Update Duplicates' only when refreshing data",
+      "reason": "Only use update mode when intentionally refreshing existing compliance items with new data"
+    },
+    {
+      "practice": "Review skipped items report after import",
+      "reason": "Identify which rows were duplicates and verify they should have been skipped"
     }
   ],
   "commonErrors": [
