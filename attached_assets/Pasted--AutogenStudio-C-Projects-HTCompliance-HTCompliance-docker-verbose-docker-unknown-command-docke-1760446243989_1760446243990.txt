@@ -1,0 +1,174 @@
+(AutogenStudio) C:\Projects\HTCompliance\HTCompliance>docker verbose
+docker: unknown command: docker verbose
+
+Run 'docker --help' for more information
+
+(AutogenStudio) C:\Projects\HTCompliance\HTCompliance>docker-logs-verbose
+=========================================
+BizGov Verbose Docker Logs
+=========================================
+
+Showing live logs from all containers...
+Press Ctrl+C to stop
+
+time="2025-10-14T07:48:48-05:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-14T07:48:48-05:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-10-14T07:48:48-05:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-10-14T07:48:48-05:00" level=warning msg="C:\\Projects\\HTCompliance\\HTCompliance\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+bizgov-app  | 2025-10-14T12:48:27.187481489Z Starting BizGov application...
+bizgov-app  | 2025-10-14T12:48:27.187519360Z Waiting for PostgreSQL to be ready...
+bizgov-app  | 2025-10-14T12:48:27.196492119Z postgres:5432 - accepting connections
+bizgov-app  | 2025-10-14T12:48:27.197004722Z PostgreSQL is ready!
+bizgov-app  | 2025-10-14T12:48:27.197016199Z Initializing database schema...
+bizgov-app  | 2025-10-14T12:48:27.656131698Z No config path provided, using default 'drizzle.config.ts'
+bizgov-app  | 2025-10-14T12:48:27.656309217Z Reading config file '/app/drizzle.config.ts'
+bizgov-app  | 2025-10-14T12:48:27.977258616Z Using 'pg' driver for database querying
+bizgov-app  | 2025-10-14T12:48:28.113422059Z [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[✓] Pulling schema from database...
+bizgov-app  | 2025-10-14T12:48:28.331668100Z [i] No changes detected
+bizgov-app  | 2025-10-14T12:48:28.346619248Z npm notice
+bizgov-app  | 2025-10-14T12:48:28.346636420Z npm notice New major version of npm available! 10.9.3 -> 11.6.2
+bizgov-app  | 2025-10-14T12:48:28.346638235Z npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+bizgov-app  | 2025-10-14T12:48:28.346639895Z npm notice To update run: npm install -g npm@11.6.2
+bizgov-app  | 2025-10-14T12:48:28.346641047Z npm notice
+bizgov-app  | 2025-10-14T12:48:28.365997259Z Initializing default admin user...
+bizgov-app  | 2025-10-14T12:48:28.794195069Z
+bizgov-app  | 2025-10-14T12:48:28.794217968Z node:internal/modules/run_main:123
+bizgov-app  | 2025-10-14T12:48:28.794219626Z     triggerUncaughtException(
+bizgov-app       | 2025-10-14T12:48:28.794220763Z     ^
+bizgov-app       | 2025-10-14T12:48:28.794328245Z Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@shared/schema' imported from /app/server/db.ts
+bizgov-app       | 2025-10-14T12:48:28.794332465Z     at Object.getPackageJSONURL (node:internal/modules/package_json_reader:266:9)
+bizgov-app       | 2025-10-14T12:48:28.794333627Z     at packageResolve (node:internal/modules/esm/resolve:767:81)
+bizgov-postgres  | 2025-10-07T21:00:59.685498991Z 2025-10-07 21:00:59.685 UTC [1] LOG:  database system is shut down
+bizgov-postgres  | 2025-10-09T14:39:19.141491539Z
+bizgov-postgres  | 2025-10-09T14:39:19.141806921Z PostgreSQL Database directory appears to contain a database; Skipping initialization
+bizgov-postgres  | 2025-10-09T14:39:19.141812805Z
+bizgov-postgres  | 2025-10-09T14:39:19.186890888Z 2025-10-09 14:39:19.186 UTC [1] LOG:  starting PostgreSQL 16.10 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+bizgov-postgres  | 2025-10-09T14:39:19.186909442Z 2025-10-09 14:39:19.186 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+bizgov-postgres  | 2025-10-09T14:39:19.186911111Z 2025-10-09 14:39:19.186 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+bizgov-postgres  | 2025-10-09T14:39:19.190287519Z 2025-10-09 14:39:19.190 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+bizgov-postgres  | 2025-10-09T14:39:19.193243726Z 2025-10-09 14:39:19.193 UTC [29] LOG:  database system was shut down at 2025-10-07 21:00:59 UTC
+bizgov-postgres  | 2025-10-09T14:39:19.200321257Z 2025-10-09 14:39:19.200 UTC [1] LOG:  database system is ready to accept connections
+bizgov-postgres  | 2025-10-09T14:44:19.280975621Z 2025-10-09 14:44:19.280 UTC [27] LOG:  checkpoint starting: time
+bizgov-postgres  | 2025-10-09T14:44:20.594334378Z 2025-10-09 14:44:20.594 UTC [27] LOG:  checkpoint complete: wrote 16 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.306 s, sync=0.004 s, total=1.314 s; sync files=14, longest=0.002 s, average=0.001 s; distance=7 kB, estimate=7 kB; lsn=0/1A54908, redo lsn=0/1A548D0
+bizgov-postgres  | 2025-10-09T14:59:19.858048075Z 2025-10-09 14:59:19.857 UTC [27] LOG:  checkpoint starting: time
+bizgov-postgres  | 2025-10-09T14:59:25.086282555Z 2025-10-09 14:59:25.086 UTC [27] LOG:  checkpoint complete: wrote 53 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=5.216 s, sync=0.006 s, total=5.229 s; sync files=35, longest=0.001 s, average=0.001 s; distance=258 kB, estimate=258 kB; lsn=0/1A95318, redo lsn=0/1A952E0
+bizgov-postgres  | 2025-10-09T15:05:43.258766903Z 2025-10-09 15:05:43.258 UTC [1] LOG:  received fast shutdown request
+bizgov-postgres  | 2025-10-09T15:05:43.259792408Z 2025-10-09 15:05:43.259 UTC [1] LOG:  aborting any active transactions
+bizgov-postgres  | 2025-10-09T15:05:43.261302927Z 2025-10-09 15:05:43.261 UTC [1] LOG:  background worker "logical replication launcher" (PID 32) exited with exit code 1
+bizgov-postgres  | 2025-10-09T15:05:43.261489263Z 2025-10-09 15:05:43.261 UTC [27] LOG:  shutting down
+bizgov-postgres  | 2025-10-09T15:05:43.262305665Z 2025-10-09 15:05:43.262 UTC [27] LOG:  checkpoint starting: shutdown immediate
+bizgov-postgres  | 2025-10-09T15:05:43.267409923Z 2025-10-09 15:05:43.267 UTC [27] LOG:  checkpoint complete: wrote 0 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.006 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=232 kB; lsn=0/1A953C8, redo lsn=0/1A953C8
+bizgov-postgres  | 2025-10-09T15:05:43.270317652Z 2025-10-09 15:05:43.270 UTC [1] LOG:  database system is shut down
+bizgov-postgres  | 2025-10-09T15:06:45.692275409Z
+bizgov-postgres  | 2025-10-09T15:06:45.692291159Z PostgreSQL Database directory appears to contain a database; Skipping initialization
+bizgov-postgres  | 2025-10-09T15:06:45.692292858Z
+bizgov-postgres  | 2025-10-09T15:06:45.708087310Z 2025-10-09 15:06:45.707 UTC [1] LOG:  starting PostgreSQL 16.10 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+bizgov-postgres  | 2025-10-09T15:06:45.708105263Z 2025-10-09 15:06:45.708 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+bizgov-postgres  | 2025-10-09T15:06:45.708106965Z 2025-10-09 15:06:45.708 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+bizgov-postgres  | 2025-10-09T15:06:45.712931644Z 2025-10-09 15:06:45.712 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+bizgov-postgres  | 2025-10-09T15:06:45.716562370Z 2025-10-09 15:06:45.716 UTC [30] LOG:  database system was shut down at 2025-10-09 15:05:43 UTC
+bizgov-postgres  | 2025-10-09T15:06:45.720548855Z 2025-10-09 15:06:45.720 UTC [1] LOG:  database system is ready to accept connections
+bizgov-postgres  | 2025-10-09T15:11:45.805817798Z 2025-10-09 15:11:45.805 UTC [28] LOG:  checkpoint starting: time
+bizgov-postgres  | 2025-10-09T15:11:49.828207217Z 2025-10-09 15:11:49.828 UTC [28] LOG:  checkpoint complete: wrote 43 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=4.012 s, sync=0.006 s, total=4.023 s; sync files=31, longest=0.002 s, average=0.001 s; distance=173 kB, estimate=173 kB; lsn=0/1AC0B10, redo lsn=0/1AC0AD8
+bizgov-postgres  | 2025-10-09T15:40:24.756399315Z 2025-10-09 15:40:24.756 UTC [1] LOG:  received fast shutdown request
+bizgov-postgres  | 2025-10-09T15:40:24.757583502Z 2025-10-09 15:40:24.757 UTC [1] LOG:  aborting any active transactions
+bizgov-postgres  | 2025-10-09T15:40:24.759099942Z 2025-10-09 15:40:24.759 UTC [1] LOG:  background worker "logical replication launcher" (PID 33) exited with exit code 1
+bizgov-postgres  | 2025-10-09T15:40:24.759108813Z 2025-10-09 15:40:24.759 UTC [28] LOG:  shutting down
+bizgov-postgres  | 2025-10-09T15:40:24.760305548Z 2025-10-09 15:40:24.760 UTC [28] LOG:  checkpoint starting: shutdown immediate
+bizgov-postgres  | 2025-10-09T15:40:24.764900514Z 2025-10-09 15:40:24.764 UTC [28] LOG:  checkpoint complete: wrote 0 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.006 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=156 kB; lsn=0/1AC0BC0, redo lsn=0/1AC0BC0
+bizgov-postgres  | 2025-10-09T15:40:24.767785995Z 2025-10-09 15:40:24.767 UTC [1] LOG:  database system is shut down
+bizgov-postgres  | 2025-10-09T15:44:42.070172786Z
+bizgov-postgres  | 2025-10-09T15:44:42.070323721Z PostgreSQL Database directory appears to contain a database; Skipping initialization
+bizgov-postgres  | 2025-10-09T15:44:42.070335913Z
+bizgov-postgres  | 2025-10-09T15:44:42.115546329Z 2025-10-09 15:44:42.115 UTC [1] LOG:  starting PostgreSQL 16.10 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+bizgov-postgres  | 2025-10-09T15:44:42.115563183Z 2025-10-09 15:44:42.115 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+bizgov-postgres  | 2025-10-09T15:44:42.115564809Z 2025-10-09 15:44:42.115 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+bizgov-postgres  | 2025-10-09T15:44:42.117397081Z 2025-10-09 15:44:42.117 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+bizgov-postgres  | 2025-10-09T15:44:42.120552758Z 2025-10-09 15:44:42.120 UTC [29] LOG:  database system was shut down at 2025-10-09 15:40:24 UTC
+bizgov-postgres  | 2025-10-09T15:44:42.128635964Z 2025-10-09 15:44:42.128 UTC [1] LOG:  database system is ready to accept connections
+bizgov-postgres  | 2025-10-09T15:49:42.211947424Z 2025-10-09 15:49:42.211 UTC [27] LOG:  checkpoint starting: time
+bizgov-postgres  | 2025-10-09T15:49:44.127349911Z 2025-10-09 15:49:44.127 UTC [27] LOG:  checkpoint complete: wrote 22 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.906 s, sync=0.005 s, total=1.916 s; sync files=13, longest=0.003 s, average=0.001 s; distance=97 kB, estimate=97 kB; lsn=0/1AD92B0, redo lsn=0/1AD9278
+bizgov-postgres  | 2025-10-09T15:59:17.050223379Z 2025-10-09 15:59:17.050 UTC [1] LOG:  received fast shutdown request
+bizgov-postgres  | 2025-10-09T15:59:17.051394250Z 2025-10-09 15:59:17.051 UTC [1] LOG:  aborting any active transactions
+bizgov-postgres  | 2025-10-09T15:59:17.052937069Z 2025-10-09 15:59:17.052 UTC [1] LOG:  background worker "logical replication launcher" (PID 32) exited with exit code 1
+bizgov-postgres  | 2025-10-09T15:59:17.053253797Z 2025-10-09 15:59:17.053 UTC [27] LOG:  shutting down
+bizgov-postgres  | 2025-10-09T15:59:17.054486908Z 2025-10-09 15:59:17.054 UTC [27] LOG:  checkpoint starting: shutdown immediate
+bizgov-postgres  | 2025-10-09T15:59:17.058997964Z 2025-10-09 15:59:17.058 UTC [27] LOG:  checkpoint complete: wrote 0 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.006 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=87 kB; lsn=0/1AD9360, redo lsn=0/1AD9360
+bizgov-postgres  | 2025-10-09T15:59:17.062274210Z 2025-10-09 15:59:17.062 UTC [1] LOG:  database system is shut down
+bizgov-postgres  | 2025-10-09T15:59:44.706952466Z
+bizgov-postgres  | 2025-10-09T15:59:44.706970920Z PostgreSQL Database directory appears to contain a database; Skipping initialization
+bizgov-postgres  | 2025-10-09T15:59:44.706972646Z
+bizgov-postgres  | 2025-10-09T15:59:44.722388778Z 2025-10-09 15:59:44.722 UTC [1] LOG:  starting PostgreSQL 16.10 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+bizgov-app       | 2025-10-14T12:48:28.794334777Z     at moduleResolve (node:internal/modules/esm/resolve:853:18)
+bizgov-app       | 2025-10-14T12:48:28.794335887Z     at defaultResolve (node:internal/modules/esm/resolve:983:11)
+bizgov-app       | 2025-10-14T12:48:28.794336987Z     at nextResolve (node:internal/modules/esm/hooks:748:28)
+bizgov-app       | 2025-10-14T12:48:28.794338168Z     at resolveBase (file:///app/node_modules/tsx/dist/esm/index.mjs?1760446108681:2:3744)
+bizgov-app       | 2025-10-14T12:48:28.794339313Z     at resolveDirectory (file:///app/node_modules/tsx/dist/esm/index.mjs?1760446108681:2:4243)
+bizgov-app       | 2025-10-14T12:48:28.794340592Z     at resolveTsPaths (file:///app/node_modules/tsx/dist/esm/index.mjs?1760446108681:2:4984)
+bizgov-app       | 2025-10-14T12:48:28.794341710Z     at resolve (file:///app/node_modules/tsx/dist/esm/index.mjs?1760446108681:2:5361)
+bizgov-app       | 2025-10-14T12:48:28.794342916Z     at nextResolve (node:internal/modules/esm/hooks:748:28) {
+bizgov-app       | 2025-10-14T12:48:28.794344035Z   code: 'ERR_MODULE_NOT_FOUND'
+bizgov-app       | 2025-10-14T12:48:28.794345162Z }
+bizgov-app       | 2025-10-14T12:48:28.794354307Z
+bizgov-app       | 2025-10-14T12:48:28.794355482Z Node.js v22.20.0
+bizgov-app       | 2025-10-14T12:48:28.810307330Z Warning: Admin initialization failed. Continuing anyway...
+bizgov-app       | 2025-10-14T12:48:28.810325561Z Starting application server...
+bizgov-app       | 2025-10-14T12:48:29.382971794Z 12:48:29 PM [express] serving on port 5000
+bizgov-app       | 2025-10-14T12:48:29.774176580Z 12:48:29 PM [express] GET /api/user 401 in 2ms
+bizgov-app       | 2025-10-14T12:48:32.251028306Z 12:48:32 PM [express] GET /api/user 401 in 1ms
+bizgov-postgres  | 2025-10-09T15:59:44.722414922Z 2025-10-09 15:59:44.722 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+bizgov-postgres  | 2025-10-09T15:59:44.722416773Z 2025-10-09 15:59:44.722 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+bizgov-postgres  | 2025-10-09T15:59:44.724129275Z 2025-10-09 15:59:44.724 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+bizgov-postgres  | 2025-10-09T15:59:44.726857269Z 2025-10-09 15:59:44.726 UTC [29] LOG:  database system was shut down at 2025-10-09 15:59:17 UTC
+bizgov-postgres  | 2025-10-09T15:59:44.730785684Z 2025-10-09 15:59:44.730 UTC [1] LOG:  database system is ready to accept connections
+bizgov-postgres  | 2025-10-09T16:04:44.816173744Z 2025-10-09 16:04:44.815 UTC [27] LOG:  checkpoint starting: time
+bizgov-postgres  | 2025-10-09T16:04:46.829467611Z 2025-10-09 16:04:46.829 UTC [27] LOG:  checkpoint complete: wrote 23 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.006 s, sync=0.004 s, total=2.014 s; sync files=17, longest=0.002 s, average=0.001 s; distance=15 kB, estimate=15 kB; lsn=0/1ADD1A8, redo lsn=0/1ADD170
+bizgov-postgres  | 2025-10-09T16:58:29.520960352Z 2025-10-09 16:58:29.520 UTC [1] LOG:  received fast shutdown request
+bizgov-postgres  | 2025-10-09T16:58:29.522726885Z 2025-10-09 16:58:29.522 UTC [1] LOG:  aborting any active transactions
+bizgov-postgres  | 2025-10-09T16:58:29.524105194Z 2025-10-09 16:58:29.524 UTC [1] LOG:  background worker "logical replication launcher" (PID 32) exited with exit code 1
+bizgov-postgres  | 2025-10-09T16:58:29.524118202Z 2025-10-09 16:58:29.524 UTC [27] LOG:  shutting down
+bizgov-postgres  | 2025-10-09T16:58:29.525372323Z 2025-10-09 16:58:29.525 UTC [27] LOG:  checkpoint starting: shutdown immediate
+bizgov-postgres  | 2025-10-09T16:58:29.530463330Z 2025-10-09 16:58:29.530 UTC [27] LOG:  checkpoint complete: wrote 0 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.007 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=13 kB; lsn=0/1ADD258, redo lsn=0/1ADD258
+bizgov-postgres  | 2025-10-09T16:58:29.533908077Z 2025-10-09 16:58:29.533 UTC [1] LOG:  database system is shut down
+bizgov-postgres  | 2025-10-14T12:45:01.712473838Z
+bizgov-postgres  | 2025-10-14T12:45:01.712719198Z PostgreSQL Database directory appears to contain a database; Skipping initialization
+bizgov-postgres  | 2025-10-14T12:45:01.712725516Z
+bizgov-postgres  | 2025-10-14T12:45:01.731403701Z 2025-10-14 12:45:01.731 UTC [1] LOG:  starting PostgreSQL 16.10 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+bizgov-postgres  | 2025-10-14T12:45:01.731420377Z 2025-10-14 12:45:01.731 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+bizgov-postgres  | 2025-10-14T12:45:01.731422002Z 2025-10-14 12:45:01.731 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+bizgov-postgres  | 2025-10-14T12:45:01.735005102Z 2025-10-14 12:45:01.734 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+bizgov-postgres  | 2025-10-14T12:45:01.738677202Z 2025-10-14 12:45:01.738 UTC [29] LOG:  database system was shut down at 2025-10-09 16:58:29 UTC
+bizgov-postgres  | 2025-10-14T12:45:01.744476382Z 2025-10-14 12:45:01.744 UTC [1] LOG:  database system is ready to accept connections
+bizgov-postgres  | 2025-10-14T12:47:03.953827440Z 2025-10-14 12:47:03.953 UTC [1] LOG:  received fast shutdown request
+bizgov-postgres  | 2025-10-14T12:47:03.955159690Z 2025-10-14 12:47:03.955 UTC [1] LOG:  aborting any active transactions
+bizgov-postgres  | 2025-10-14T12:47:03.956634555Z 2025-10-14 12:47:03.956 UTC [1] LOG:  background worker "logical replication launcher" (PID 32) exited with exit code 1
+bizgov-postgres  | 2025-10-14T12:47:03.956736478Z 2025-10-14 12:47:03.956 UTC [27] LOG:  shutting down
+bizgov-postgres  | 2025-10-14T12:47:03.957719731Z 2025-10-14 12:47:03.957 UTC [27] LOG:  checkpoint starting: shutdown immediate
+bizgov-postgres  | 2025-10-14T12:47:03.972048313Z 2025-10-14 12:47:03.971 UTC [27] LOG:  checkpoint complete: wrote 59 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.010 s, total=0.016 s; sync files=55, longest=0.002 s, average=0.001 s; distance=278 kB, estimate=278 kB; lsn=0/1B22B98, redo lsn=0/1B22B98
+bizgov-postgres  | 2025-10-14T12:47:03.975289525Z 2025-10-14 12:47:03.975 UTC [1] LOG:  database system is shut down
+bizgov-postgres  | 2025-10-14T12:48:16.524226267Z
+bizgov-postgres  | 2025-10-14T12:48:16.524248242Z PostgreSQL Database directory appears to contain a database; Skipping initialization
+bizgov-postgres  | 2025-10-14T12:48:16.524250187Z
+bizgov-postgres  | 2025-10-14T12:48:16.539146709Z 2025-10-14 12:48:16.539 UTC [1] LOG:  starting PostgreSQL 16.10 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+bizgov-postgres  | 2025-10-14T12:48:16.539163129Z 2025-10-14 12:48:16.539 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+bizgov-postgres  | 2025-10-14T12:48:16.539164712Z 2025-10-14 12:48:16.539 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+bizgov-postgres  | 2025-10-14T12:48:16.540960518Z 2025-10-14 12:48:16.540 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+bizgov-postgres  | 2025-10-14T12:48:16.543753849Z 2025-10-14 12:48:16.543 UTC [29] LOG:  database system was shut down at 2025-10-14 12:47:03 UTC
+bizgov-postgres  | 2025-10-14T12:48:16.547171460Z 2025-10-14 12:48:16.547 UTC [1] LOG:  database system is ready to accept connections
+bizgov-app       | 2025-10-14T12:48:57.991316974Z 12:48:57 PM [express] POST /api/login 401 in 15ms
+bizgov-app       | 2025-10-14T12:49:02.307489378Z 12:49:02 PM [express] GET /api/user 401 in 1ms
+bizgov-app       | 2025-10-14T12:49:32.368370107Z 12:49:32 PM [express] GET /api/user 401 in 1ms
+bizgov-app       | 2025-10-14T12:49:45.551823555Z 12:49:45 PM [express] POST /api/register 400 in 9ms
+bizgov-app       | 2025-10-14T12:49:57.120886313Z 12:49:57 PM [express] POST /api/login 200 in 52ms :: {"id":"aef2302d-0769-4970-ab5b-cbb305105056","us…
+bizgov-app       | 2025-10-14T12:49:57.135217782Z 12:49:57 PM [express] GET /api/organizations 200 in 4ms :: [{"id":"52a9c856-15bc-4c5d-94ed-c0df97aa4b…
+bizgov-app       | 2025-10-14T12:49:57.143099351Z 12:49:57 PM [express] GET /api/dashboard/metrics 304 in 7ms :: {"totalItems":27,"completedItems":3,"o…
+bizgov-app       | 2025-10-14T12:49:57.150792725Z 12:49:57 PM [express] GET /api/compliance-items 304 in 13ms :: {"items":[{"id":"8f7ab341-7d01-46f2-98…
+bizgov-app       | 2025-10-14T12:50:02.430529959Z 12:50:02 PM [express] GET /api/user 401 in 1ms
+bizgov-app       | 2025-10-14T12:50:05.603921222Z 12:50:05 PM [express] GET /api/quickbooks/connections 200 in 4ms :: {}
+bizgov-app       | 2025-10-14T12:50:08.964545488Z Error generating QB auth URL: Error: QuickBooks OAuth credentials not configured. Set QB_CLIENT_ID and QB_CLIENT_SECRET environment variables or configure in Admin panel.
+bizgov-app       | 2025-10-14T12:50:08.964566315Z     at createQuickBooksOAuthService (file:///app/dist/index.js:1461:11)
+bizgov-app       | 2025-10-14T12:50:08.964567748Z     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+bizgov-app       | 2025-10-14T12:50:08.964568888Z     at async file:///app/dist/index.js:2614:23
+bizgov-app       | 2025-10-14T12:50:08.965282093Z 12:50:08 PM [express] GET /api/quickbooks/auth-url 500 in 2ms :: {"error":"QuickBooks OAuth credentia…

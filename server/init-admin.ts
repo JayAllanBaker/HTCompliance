@@ -4,10 +4,10 @@
  * Creates admin:admin123 if no admin user exists
  */
 
-import { db } from "./db.js";
-import { users } from "../shared/schema.js";
+import { db } from "./db";
+import { users } from "../shared/schema";
 import { eq } from "drizzle-orm";
-import { hashPassword } from "./auth.js";
+import { hashPassword } from "./auth";
 
 async function initAdminUser() {
   try {
