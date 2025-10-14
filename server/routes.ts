@@ -14,7 +14,17 @@ import "./types"; // Import session type declarations
 
 // Admin-only middleware
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  console.log('[requireAdmin] Checking admin access:', {
+    hasUser: !!req.user,
+    userId: req.user?.id,
+    username: req.user?.username,
+    role: req.user?.role,
+    isAuthenticated: req.isAuthenticated?.(),
+    path: req.path
+  });
+  
   if (!req.user || req.user.role !== "admin") {
+    console.log('[requireAdmin] Access denied - user:', req.user?.username, 'role:', req.user?.role);
     return res.status(403).json({ error: "Admin access required" });
   }
   next();
