@@ -7,21 +7,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import ComplianceTable from "@/components/compliance/compliance-table";
 import ComplianceForm from "@/components/compliance/compliance-form";
 import ComplianceCalendar from "@/components/compliance/compliance-calendar";
 import ComplianceTimeline from "@/components/compliance/compliance-timeline";
-import { Plus, Upload, Download, Mail, Search, Filter, Calendar, List, BarChart3 } from "lucide-react";
+import { Plus, Upload, Download, Mail, Search, Filter, Calendar, List, BarChart3, Info, FileWarning } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 type ViewMode = "table" | "timeline" | "calendar";
+type DuplicateHandling = "skip" | "update";
 
 export default function Compliance() {
   const { toast } = useToast();
   const [showNewItemForm, setShowNewItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [duplicateHandling, setDuplicateHandling] = useState<DuplicateHandling>("skip");
+  const [isImporting, setIsImporting] = useState(false);
   const [filters, setFilters] = useState({
     search: "",
     customerId: "",
@@ -79,27 +88,55 @@ export default function Compliance() {
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
-
-      const formData = new FormData();
-      formData.append('file', file);
-
-      try {
-        const response = await apiRequest('POST', '/api/compliance-items/import-csv', formData);
-        const result = await response.json();
-        toast({
-          title: "Import Successful",
-          description: result.message,
-        });
-        refetch();
-      } catch (error) {
-        toast({
-          title: "Import Failed",
-          description: "Failed to import CSV file",
-          variant: "destructive",
-        });
-      }
+      setSelectedFile(file);
+      setDuplicateHandling("skip");
+      setShowImportDialog(true);
     };
     input.click();
+  };
+
+  const handlePerformImport = async () => {
+    if (!selectedFile) return;
+
+    setIsImporting(true);
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('duplicateHandling', duplicateHandling);
+
+    try {
+      const response = await apiRequest('POST', '/api/compliance-items/import-csv', formData);
+      const result = await response.json();
+      
+      // Build detailed message
+      let description = result.message;
+      if (result.skippedItems && result.skippedItems.length > 0) {
+        const skippedList = result.skippedItems.slice(0, 3).map((item: any) => 
+          `Row ${item.row}: ${item.commitment}`
+        ).join('\n');
+        description += `\n\nSkipped items:\n${skippedList}`;
+        if (result.skippedItems.length > 3) {
+          description += `\n...and ${result.skippedItems.length - 3} more`;
+        }
+      }
+      
+      toast({
+        title: "Import Complete",
+        description,
+      });
+      
+      setShowImportDialog(false);
+      setSelectedFile(null);
+      refetch();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to import CSV file";
+      toast({
+        title: "Import Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handleSendAlerts = async () => {
@@ -430,6 +467,90 @@ export default function Compliance() {
           }}
         />
       )}
+
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="sm:max-w-[500px]" data-testid="dialog-csv-import">
+          <DialogHeader>
+            <DialogTitle>Import Compliance Items</DialogTitle>
+            <DialogDescription>
+              Configure how to handle duplicate items during import
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>File selected:</strong> {selectedFile?.name}
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Duplicate Handling</Label>
+              <p className="text-sm text-muted-foreground">
+                Duplicates are matched by: Category + Commitment + Customer + Due Date
+              </p>
+              
+              <RadioGroup 
+                value={duplicateHandling} 
+                onValueChange={(value) => setDuplicateHandling(value as DuplicateHandling)}
+                data-testid="radio-duplicate-handling"
+              >
+                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <RadioGroupItem value="skip" id="skip" />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="skip" className="font-medium cursor-pointer">
+                      Skip Duplicates (Recommended)
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Leave existing items unchanged and skip duplicate rows from the CSV
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <RadioGroupItem value="update" id="update" />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="update" className="font-medium cursor-pointer">
+                      Update Duplicates
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Overwrite existing items with data from the CSV file
+                    </p>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {duplicateHandling === "update" && (
+              <Alert variant="destructive">
+                <FileWarning className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Warning:</strong> Updating duplicates will overwrite existing compliance data
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowImportDialog(false)}
+              disabled={isImporting}
+              data-testid="button-cancel-import"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handlePerformImport}
+              disabled={!selectedFile || isImporting}
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? "Importing..." : "Import"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
