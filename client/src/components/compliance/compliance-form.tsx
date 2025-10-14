@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import ComplianceComments from "./compliance-comments";
 
 const formSchema = z.object({
   customerId: z.string().min(1, "Organization is required"),
@@ -321,6 +322,12 @@ export default function ComplianceForm({ onClose, onSuccess, item }: ComplianceF
                   </FormItem>
                 )}
               />
+            )}
+            
+            {isEditing && item && (
+              <div className="pt-6 border-t">
+                <ComplianceComments complianceItemId={item.id} />
+              </div>
             )}
             
             <div className="flex justify-end space-x-3 pt-4">
