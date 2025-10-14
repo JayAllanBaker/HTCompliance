@@ -2,7 +2,7 @@
 
 ## Overview
 
-BizGov is an internal compliance, billing, and contract lifecycle management application for Health Trixss LLC. The system provides a centralized hub for tracking compliance obligations, managing billable events, maintaining contract milestones, storing audit evidence, and syncing invoice data from QuickBooks Online. Built with a React frontend and Express backend, the application emphasizes audit readiness, automated alerting, and data portability through JSON export/restore capabilities.
+BizGov is an internal compliance, billing, and contract lifecycle management application for Health Trixss LLC. The system provides a centralized hub for tracking compliance obligations, managing billable events, maintaining contract milestones, storing audit evidence, and syncing invoice data from QuickBooks Online. Built with a React frontend and Express backend, the application emphasizes audit readiness, automated alerting, data portability through JSON export/restore capabilities, and collaborative features including timestamped comments on compliance items for team communication and audit trails.
 
 ## User Preferences
 
@@ -45,6 +45,7 @@ Preferred communication style: Simple, everyday language.
 - `customers`: Client/customer records
 - `contracts`: Contract lifecycle management
 - `compliance_items`: Compliance obligations and tracking
+- `compliance_comments`: Timestamped comments on compliance items with user attribution
 - `billable_events`: Billing records linked to contracts/compliance
 - `evidence`: Immutable document storage
 - `audit_log`: Comprehensive activity tracking
