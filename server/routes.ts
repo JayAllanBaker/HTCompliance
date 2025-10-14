@@ -356,29 +356,42 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      // Get duplicate handling strategy from request (default: skip)
+      const duplicateHandling = req.body.duplicateHandling === 'update' ? 'update' : 'skip';
+
       const csvData = await parseCSV(req.file.path);
-      const validatedItems = await validateComplianceCSV(csvData);
+      const result = await validateComplianceCSV(csvData, duplicateHandling);
       
-      const createdItems = [];
-      for (const item of validatedItems) {
-        const createdItem = await storage.createComplianceItem(item);
-        createdItems.push(createdItem);
-        
-        // Audit log for each imported item
+      // Audit log for import operation
+      for (const item of result.items) {
         await storage.createAuditLog({
           userId: req.user?.id,
-          action: "IMPORT",
+          action: duplicateHandling === 'update' && result.updated > 0 ? "UPDATE" : "IMPORT",
           entityType: "compliance_item",
-          entityId: createdItem.id,
-          newValues: JSON.stringify(createdItem),
+          entityId: item.id,
+          newValues: JSON.stringify(item),
           ipAddress: req.ip,
           userAgent: req.get("User-Agent"),
         });
       }
       
+      // Build success message
+      const messages = [];
+      if (result.imported > 0) messages.push(`${result.imported} imported`);
+      if (result.updated > 0) messages.push(`${result.updated} updated`);
+      if (result.skipped > 0) messages.push(`${result.skipped} skipped`);
+      
+      const message = messages.length > 0 
+        ? `Successfully processed: ${messages.join(', ')}`
+        : 'No items processed';
+      
       res.json({ 
-        message: `Successfully imported ${createdItems.length} compliance items`,
-        items: createdItems 
+        message,
+        imported: result.imported,
+        updated: result.updated,
+        skipped: result.skipped,
+        skippedItems: result.skippedItems,
+        items: result.items 
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to import CSV";

@@ -14,6 +14,20 @@ interface CSVRow {
   Customer?: string;
 }
 
+export type DuplicateHandling = 'skip' | 'update';
+
+export interface ImportResult {
+  imported: number;
+  updated: number;
+  skipped: number;
+  skippedItems: Array<{
+    row: number;
+    commitment: string;
+    reason: string;
+  }>;
+  items: any[];
+}
+
 export async function parseCSV(filePath: string): Promise<CSVRow[]> {
   return new Promise((resolve, reject) => {
     const fileContent = fs.readFileSync(filePath, 'utf8');
@@ -35,9 +49,44 @@ export async function parseCSV(filePath: string): Promise<CSVRow[]> {
   });
 }
 
-export async function validateComplianceCSV(csvData: CSVRow[]): Promise<InsertComplianceItem[]> {
-  const validatedItems: InsertComplianceItem[] = [];
+function compareDates(date1: Date | null | undefined, date2: Date | null | undefined): boolean {
+  const d1 = date1 ?? null;
+  const d2 = date2 ?? null;
+  
+  if (d1 === null && d2 === null) return true;
+  if (d1 === null || d2 === null) return false;
+  
+  // Compare only date parts (ignore time)
+  return d1.toISOString().split('T')[0] === d2.toISOString().split('T')[0];
+}
+
+async function findDuplicate(item: InsertComplianceItem): Promise<any | null> {
+  // Get all compliance items for this customer
+  const result = await storage.getComplianceItems();
+  
+  // Find duplicate based on: category + commitment + customer + due date
+  const duplicate = result.items.find((existing: any) => 
+    existing.customerId === item.customerId &&
+    existing.category === item.category &&
+    existing.commitment.toLowerCase().trim() === item.commitment.toLowerCase().trim() &&
+    compareDates(existing.dueDate, item.dueDate)
+  );
+  
+  return duplicate || null;
+}
+
+export async function validateComplianceCSV(
+  csvData: CSVRow[], 
+  duplicateHandling: DuplicateHandling = 'skip'
+): Promise<ImportResult> {
   const errors: string[] = [];
+  const result: ImportResult = {
+    imported: 0,
+    updated: 0,
+    skipped: 0,
+    skippedItems: [],
+    items: []
+  };
   
   // Get all organizations to validate customer references
   const organizations = await storage.getOrganizations();
@@ -147,7 +196,30 @@ export async function validateComplianceCSV(csvData: CSVRow[]): Promise<InsertCo
         dueDate,
       };
       
-      validatedItems.push(validatedItem);
+      // Check for duplicates
+      const duplicate = await findDuplicate(validatedItem);
+      
+      if (duplicate) {
+        if (duplicateHandling === 'skip') {
+          // Skip this item
+          result.skipped++;
+          result.skippedItems.push({
+            row: rowNumber,
+            commitment: row.Commitment,
+            reason: `Duplicate found (ID: ${duplicate.id})`
+          });
+        } else if (duplicateHandling === 'update') {
+          // Update existing item
+          const updatedItem = await storage.updateComplianceItem(duplicate.id, validatedItem);
+          result.updated++;
+          result.items.push(updatedItem);
+        }
+      } else {
+        // Create new item
+        const createdItem = await storage.createComplianceItem(validatedItem);
+        result.imported++;
+        result.items.push(createdItem);
+      }
       
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -159,7 +231,7 @@ export async function validateComplianceCSV(csvData: CSVRow[]): Promise<InsertCo
     throw new Error(`CSV validation failed with ${errors.length} errors:\n${errors.join('\n')}`);
   }
   
-  return validatedItems;
+  return result;
 }
 
 // Utility function to transform the provided CSV data format
