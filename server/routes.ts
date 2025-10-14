@@ -2,8 +2,20 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
-import { insertOrganizationSchema, insertContractSchema, insertComplianceItemSchema, insertBillableEventSchema, insertEvidenceSchema, insertUserSchema } from "../shared/schema";
+import { db } from "./db";
+import { 
+  insertOrganizationSchema, 
+  insertContractSchema, 
+  insertComplianceItemSchema, 
+  insertComplianceCommentSchema,
+  insertBillableEventSchema, 
+  insertEvidenceSchema, 
+  insertUserSchema,
+  complianceComments,
+  users
+} from "../shared/schema";
 import { z } from "zod";
+import { eq, desc } from "drizzle-orm";
 import multer from "multer";
 import { parseCSV, validateComplianceCSV } from "./services/csv-import";
 import { sendEmailAlert } from "./services/email-service";
@@ -371,6 +383,119 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to import CSV";
       res.status(500).json({ error: message });
+    }
+  });
+
+  // Compliance comments routes
+  app.get("/api/compliance-items/:id/comments", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const comments = await db
+        .select({
+          id: complianceComments.id,
+          complianceItemId: complianceComments.complianceItemId,
+          userId: complianceComments.userId,
+          comment: complianceComments.comment,
+          createdAt: complianceComments.createdAt,
+          userName: users.fullName,
+          username: users.username,
+        })
+        .from(complianceComments)
+        .innerJoin(users, eq(complianceComments.userId, users.id))
+        .where(eq(complianceComments.complianceItemId, id))
+        .orderBy(desc(complianceComments.createdAt));
+      
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/compliance-items/:id/comments", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertComplianceCommentSchema.parse({
+        complianceItemId: id,
+        userId: req.user?.id,
+        comment: req.body.comment,
+      });
+      
+      const [comment] = await db
+        .insert(complianceComments)
+        .values(validatedData)
+        .returning();
+      
+      // Fetch comment with user details
+      const [commentWithUser] = await db
+        .select({
+          id: complianceComments.id,
+          complianceItemId: complianceComments.complianceItemId,
+          userId: complianceComments.userId,
+          comment: complianceComments.comment,
+          createdAt: complianceComments.createdAt,
+          userName: users.fullName,
+          username: users.username,
+        })
+        .from(complianceComments)
+        .innerJoin(users, eq(complianceComments.userId, users.id))
+        .where(eq(complianceComments.id, comment.id));
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "compliance_comment",
+        entityId: comment.id,
+        newValues: JSON.stringify(comment),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(201).json(commentWithUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create comment" });
+      }
+    }
+  });
+
+  app.delete("/api/comments/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get comment first to check ownership
+      const [comment] = await db
+        .select()
+        .from(complianceComments)
+        .where(eq(complianceComments.id, id));
+      
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      
+      // Only allow deletion by comment owner or admin
+      if (comment.userId !== req.user?.id && req.user?.role !== "admin") {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      
+      await db.delete(complianceComments).where(eq(complianceComments.id, id));
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "compliance_comment",
+        entityId: id,
+        oldValues: JSON.stringify(comment),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete comment" });
     }
   });
 
