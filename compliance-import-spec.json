@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BizGov Compliance Import CSV Format Specification",
+  "description": "JSON specification for CSV compliance item import format with validation rules and examples",
+  "version": "1.0.0",
+  "format": {
+    "type": "CSV",
+    "encoding": "UTF-8",
+    "delimiter": ",",
+    "hasHeader": true,
+    "headerRow": 1
+  },
+  "columns": [
+    {
+      "name": "Category",
+      "required": true,
+      "type": "string",
+      "description": "Compliance item category",
+      "validValues": [
+        "Marketing Agreement",
+        "Billing",
+        "Deliverable",
+        "Compliance",
+        "End-of-Term"
+      ],
+      "examples": ["Marketing Agreement", "Billing", "Compliance"],
+      "errorMessage": "Must be one of: Marketing Agreement, Billing, Deliverable, Compliance, End-of-Term"
+    },
+    {
+      "name": "Type",
+      "required": false,
+      "type": "string",
+      "description": "Compliance item type or subcategory (free text)",
+      "maxLength": 200,
+      "examples": ["Contract Review", "Monthly Report", "Annual Audit", ""],
+      "defaultValue": ""
+    },
+    {
+      "name": "Commitment",
+      "required": true,
+      "type": "string",
+      "description": "The compliance commitment or obligation title",
+      "maxLength": 500,
+      "examples": [
+        "Submit quarterly financial report",
+        "Annual compliance audit",
+        "Monthly invoice submission"
+      ],
+      "errorMessage": "Commitment is required and cannot be empty"
+    },
+    {
+      "name": "Description",
+      "required": false,
+      "type": "string",
+      "description": "Detailed description of the compliance item",
+      "maxLength": 2000,
+      "examples": [
+        "Submit comprehensive financial report by end of quarter",
+        "Complete annual compliance audit with external auditor",
+        ""
+      ],
+      "defaultValue": null
+    },
+    {
+      "name": "Responsible Party",
+      "required": true,
+      "type": "string",
+      "description": "Name or title of person/team responsible for the compliance item",
+      "maxLength": 200,
+      "examples": [
+        "John Doe",
+        "Finance Team",
+        "Compliance Officer",
+        "Legal Department"
+      ],
+      "errorMessage": "Responsible Party is required"
+    },
+    {
+      "name": "Status",
+      "required": true,
+      "type": "string",
+      "description": "Current status of the compliance item",
+      "validValues": ["pending", "complete", "overdue", "na"],
+      "validValuesAlias": {
+        "pending": ["Pending", "PENDING", "In Progress", "Todo"],
+        "complete": ["Complete", "COMPLETE", "Done", "Completed"],
+        "overdue": ["Overdue", "OVERDUE", "Late", "Past Due"],
+        "na": ["N/A", "NA", "Not Applicable", "n/a"]
+      },
+      "examples": ["pending", "complete", "overdue", "na"],
+      "defaultValue": "pending",
+      "errorMessage": "Must be one of: pending, complete, overdue, na (case-insensitive)"
+    },
+    {
+      "name": "Due Date",
+      "required": false,
+      "type": "date",
+      "description": "Due date for the compliance item",
+      "formats": [
+        {
+          "format": "MM/DD/YYYY",
+          "example": "12/31/2024",
+          "description": "US date format with slashes"
+        },
+        {
+          "format": "YYYY-MM-DD",
+          "example": "2024-12-31",
+          "description": "ISO date format with hyphens"
+        }
+      ],
+      "examples": ["12/31/2024", "2024-12-31", "01/15/2025", ""],
+      "defaultValue": null,
+      "errorMessage": "Invalid date format. Use MM/DD/YYYY or YYYY-MM-DD",
+      "notes": [
+        "Leave empty for no due date",
+        "Dates are parsed in local timezone",
+        "Invalid dates will cause row to be rejected"
+      ]
+    },
+    {
+      "name": "Customer",
+      "required": false,
+      "type": "string",
+      "description": "Organization/Customer name or code. If not found, a new organization will be created.",
+      "examples": ["CCAH", "Acme Corp", "Health Systems Inc", ""],
+      "defaultValue": "CCAH",
+      "behavior": [
+        "Searches by organization name (case-insensitive)",
+        "If not found, searches by organization code (case-insensitive)",
+        "If still not found, creates new organization with auto-generated code",
+        "Defaults to 'CCAH' if column is empty or missing"
+      ],
+      "notes": [
+        "Organization matching is case-insensitive",
+        "Whitespace is trimmed",
+        "New organizations are created as active"
+      ]
+    }
+  ],
+  "validationRules": [
+    {
+      "rule": "required_fields",
+      "description": "Category, Commitment, Responsible Party, and Status are required",
+      "enforcement": "Row is rejected if any required field is missing"
+    },
+    {
+      "rule": "enum_validation",
+      "description": "Category and Status must match predefined values",
+      "enforcement": "Row is rejected if values don't match valid options"
+    },
+    {
+      "rule": "date_format",
+      "description": "Due Date must be in MM/DD/YYYY or YYYY-MM-DD format",
+      "enforcement": "Row is rejected if date format is invalid"
+    },
+    {
+      "rule": "organization_lookup",
+      "description": "Customer field is matched against existing organizations",
+      "enforcement": "New organization is auto-created if not found"
+    },
+    {
+      "rule": "status_normalization",
+      "description": "Status values are converted to lowercase",
+      "enforcement": "Automatic conversion during import"
+    }
+  ],
+  "examples": [
+    {
+      "description": "Complete CSV with all fields",
+      "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer\nMarketing Agreement,Contract Review,Submit quarterly report,Q4 financial summary,Finance Team,pending,12/31/2024,CCAH\nBilling,Invoice,Monthly invoice submission,Submit monthly billing,Billing Dept,complete,01/15/2025,Acme Corp\nCompliance,Audit,Annual compliance audit,External audit review,Compliance Officer,overdue,2024-11-30,Health Systems Inc"
+    },
+    {
+      "description": "Minimal CSV with required fields only",
+      "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer\nCompliance,,Annual review,,John Doe,pending,,\nBilling,,Invoice submission,,Jane Smith,complete,,"
+    },
+    {
+      "description": "CSV with various status values (case-insensitive)",
+      "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer\nCompliance,,Security audit,,Security Team,PENDING,12/31/2024,\nBilling,,Payment processing,,Finance,Complete,01/15/2025,\nDeliverable,,Product delivery,,Operations,Overdue,2024-11-01,\nMarketing Agreement,,Review agreement,,Legal,N/A,,"
+    }
+  ],
+  "errorHandling": {
+    "strategy": "fail-fast",
+    "description": "Import stops on first validation error and returns all detected errors",
+    "errorFormat": {
+      "type": "array",
+      "elements": "Row {rowNumber}: {errorMessage}"
+    },
+    "errorExamples": [
+      "Row 3: Category is required",
+      "Row 5: Invalid category \"Unknown\". Must be one of: Marketing Agreement, Billing, Deliverable, Compliance, End-of-Term",
+      "Row 7: Invalid due date format \"31-12-2024\". Use MM/DD/YYYY or YYYY-MM-DD",
+      "Row 10: Responsible Party is required"
+    ]
+  },
+  "bestPractices": [
+    {
+      "practice": "Use UTF-8 encoding",
+      "reason": "Ensures special characters are properly handled"
+    },
+    {
+      "practice": "Include all column headers even if optional",
+      "reason": "Makes CSV structure clear and prevents column misalignment"
+    },
+    {
+      "practice": "Use consistent date format throughout file",
+      "reason": "Reduces parsing errors and improves readability"
+    },
+    {
+      "practice": "Validate CSV before import",
+      "reason": "Catch errors early and fix them in bulk"
+    },
+    {
+      "practice": "Use organization codes in Customer field",
+      "reason": "More reliable matching than full names"
+    },
+    {
+      "practice": "Quote fields containing commas or quotes",
+      "reason": "Prevents CSV parsing errors"
+    }
+  ],
+  "commonErrors": [
+    {
+      "error": "Invalid category",
+      "cause": "Using category not in predefined list",
+      "solution": "Use exact category names: Marketing Agreement, Billing, Deliverable, Compliance, End-of-Term"
+    },
+    {
+      "error": "Invalid date format",
+      "cause": "Using unsupported date format like DD/MM/YYYY or DD-MM-YYYY",
+      "solution": "Use MM/DD/YYYY or YYYY-MM-DD format only"
+    },
+    {
+      "error": "Missing required fields",
+      "cause": "Empty values in Category, Commitment, Responsible Party, or Status columns",
+      "solution": "Ensure all required fields have values"
+    },
+    {
+      "error": "Invalid status",
+      "cause": "Using status value not in list",
+      "solution": "Use: pending, complete, overdue, or na (case-insensitive)"
+    }
+  ],
+  "sampleTemplate": {
+    "description": "Copy-paste ready CSV template",
+    "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer\nMarketing Agreement,Contract Review,Review marketing contract,Annual contract review,Legal Team,pending,12/31/2024,CCAH\nBilling,Invoice,Submit monthly invoice,Monthly billing submission,Finance Dept,pending,01/15/2025,CCAH\nCompliance,Audit,Complete annual audit,External compliance audit,Compliance Officer,pending,03/31/2025,CCAH\nDeliverable,Report,Quarterly report,Q4 performance report,Operations Manager,pending,01/31/2025,CCAH"
+  }
+}
