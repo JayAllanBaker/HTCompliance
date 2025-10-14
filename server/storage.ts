@@ -11,7 +11,7 @@ import {
 } from "../shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, gte, lte, like, count, sql } from "drizzle-orm";
-import session, { Store } from "express-session";
+import session, { Store, MemoryStore } from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -122,10 +122,15 @@ export class DatabaseStorage implements IStorage {
   sessionStore: Store;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
-    });
+    // Using MemoryStore temporarily to bypass Neon control plane issues
+    // TODO: Switch back to PostgresSessionStore when database connection is stable
+    this.sessionStore = new MemoryStore();
+    
+    // Original PostgreSQL session store (disabled temporarily):
+    // this.sessionStore = new PostgresSessionStore({ 
+    //   pool, 
+    //   createTableIfMissing: true 
+    // });
   }
 
   // User methods
