@@ -79,7 +79,16 @@ Preferred communication style: Simple, everyday language.
 
 **Email Service Integration**: Microsoft Graph API integration using MSAL (Microsoft Authentication Library) for sending compliance alerts. The system uses client credentials flow with configured Azure AD app registration (tenant, client ID, and secret in environment variables).
 
-**CSV Import Service**: PapaParse library handles CSV parsing for bulk compliance item imports with validation against existing customer records.
+**CSV Import Service**: PapaParse library handles CSV parsing for bulk compliance item imports with validation against existing customer records. The system includes a comprehensive JSON format specification (`compliance-import-spec.json`) that documents all CSV columns, validation rules, valid values, error handling, and best practices. Two API endpoints serve this specification:
+- `GET /api/csv/spec` - Returns the complete JSON format specification with validation rules, examples, and error handling
+- `GET /api/csv/template` - Downloads a ready-to-use CSV template with sample data
+
+The specification includes detailed documentation for:
+- Required vs optional columns (Category, Commitment, Responsible Party, Status are required)
+- Valid enum values (Category: Marketing Agreement, Billing, Deliverable, Compliance, End-of-Term; Status: pending, complete, overdue, na)
+- Date format requirements (MM/DD/YYYY or YYYY-MM-DD)
+- Organization lookup behavior (auto-creates new organizations if not found)
+- Comprehensive error messages with row numbers for validation failures
 
 **File Storage**: Currently uses local filesystem storage (uploads directory) for evidence documents. The system tracks file metadata in the database with references to filesystem paths.
 
