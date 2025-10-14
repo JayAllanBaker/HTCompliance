@@ -42,8 +42,17 @@ export default function AdminPage() {
     qb_prod_redirect_uri: "",
   });
 
-  const { data: users, isLoading } = useQuery<UserWithoutPassword[]>({
+  const { data: users, isLoading, error, isError } = useQuery<UserWithoutPassword[]>({
     queryKey: ["/api/users"],
+    retry: 2,
+    onError: (err: Error) => {
+      console.error("Failed to load users:", err);
+      toast({
+        title: "Error Loading Users",
+        description: err.message || "Failed to fetch users. Please refresh the page.",
+        variant: "destructive"
+      });
+    }
   });
 
   // Fetch QB settings
@@ -291,6 +300,15 @@ export default function AdminPage() {
               <CardContent>
                 {isLoading ? (
                   <div className="text-center py-8 text-muted-foreground">Loading users...</div>
+                ) : isError ? (
+                  <div className="text-center py-8">
+                    <p className="text-destructive mb-2">Failed to load users</p>
+                    <p className="text-sm text-muted-foreground">{error?.message || "Unknown error occurred"}</p>
+                  </div>
+                ) : !users || users.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No users found. This might be a loading error. Try refreshing the page.
+                  </div>
                 ) : (
                   <div className="border rounded-lg">
                     <Table>
@@ -304,7 +322,7 @@ export default function AdminPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {users?.map((user) => (
+                        {users.map((user) => (
                           <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                             <TableCell className="font-medium">{user.username}</TableCell>
                             <TableCell>{user.fullName || "-"}</TableCell>
