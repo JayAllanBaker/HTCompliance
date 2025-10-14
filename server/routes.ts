@@ -717,6 +717,35 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // CSV Import Specification and Template
+  app.get("/api/csv/spec", async (req, res) => {
+    try {
+      const fs = await import("fs");
+      const spec = JSON.parse(fs.readFileSync("compliance-import-spec.json", "utf8"));
+      res.json(spec);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load CSV specification" });
+    }
+  });
+
+  app.get("/api/csv/template", async (req, res) => {
+    try {
+      const csvTemplate = [
+        "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer",
+        "Marketing Agreement,Contract Review,Review marketing contract,Annual contract review,Legal Team,pending,12/31/2024,CCAH",
+        "Billing,Invoice,Submit monthly invoice,Monthly billing submission,Finance Dept,pending,01/15/2025,CCAH",
+        "Compliance,Audit,Complete annual audit,External compliance audit,Compliance Officer,pending,03/31/2025,CCAH",
+        "Deliverable,Report,Quarterly report,Q4 performance report,Operations Manager,pending,01/31/2025,CCAH"
+      ].join('\n');
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=compliance-import-template.csv");
+      res.send(csvTemplate);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate CSV template" });
+    }
+  });
+
   // Email alerts
   app.post("/api/email-alerts/send", async (req, res) => {
     try {

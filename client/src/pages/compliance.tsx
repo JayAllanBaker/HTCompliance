@@ -39,6 +39,39 @@ export default function Compliance() {
     queryKey: ["/api/organizations"],
   });
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await apiRequest('GET', '/api/csv/template');
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to download template' }));
+        throw new Error(errorData.error || 'Failed to download template');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'compliance-import-template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Template Downloaded",
+        description: "CSV template downloaded successfully",
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download CSV template';
+      toast({
+        title: "Download Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCSVImport = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -131,6 +164,15 @@ export default function Compliance() {
               </div>
               
               <div className="flex items-center space-x-3">
+                <Button 
+                  variant="outline" 
+                  onClick={handleDownloadTemplate}
+                  data-testid="button-download-csv-template"
+                  title="Download CSV import template with format specification"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  CSV Template
+                </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleCSVImport}

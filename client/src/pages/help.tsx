@@ -171,17 +171,41 @@ export default function HelpPage() {
           answer: (
             <div className="space-y-3">
               <ol className="list-decimal pl-5 space-y-2">
-                <li>Click <strong>"Compliance"</strong> → <strong>"Import CSV"</strong> button</li>
-                <li>Download the sample CSV template</li>
-                <li>Fill in your data following the format</li>
-                <li>Upload your completed CSV</li>
-                <li>Review validation results</li>
-                <li>Items are automatically created</li>
+                <li>Click <strong>"Compliance"</strong> → <strong>"CSV Template"</strong> to download the template with format specification</li>
+                <li>Open the downloaded CSV template in Excel or text editor</li>
+                <li>Fill in your compliance data following the format (see Required Fields below)</li>
+                <li>Save the file as CSV (UTF-8 encoding recommended)</li>
+                <li>Click <strong>"Import CSV"</strong> and select your file</li>
+                <li>Review validation results - errors will show specific row numbers</li>
+                <li>Valid items are automatically created</li>
               </ol>
               
+              <div className="bg-muted p-4 rounded-md space-y-3">
+                <p className="font-semibold">Required CSV Columns:</p>
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  <li><strong>Category</strong> (required): Marketing Agreement, Billing, Deliverable, Compliance, or End-of-Term</li>
+                  <li><strong>Type</strong> (optional): Free text subcategory</li>
+                  <li><strong>Commitment</strong> (required): The compliance obligation title</li>
+                  <li><strong>Description</strong> (optional): Detailed description</li>
+                  <li><strong>Responsible Party</strong> (required): Person or team responsible</li>
+                  <li><strong>Status</strong> (required): pending, complete, overdue, or na (case-insensitive)</li>
+                  <li><strong>Due Date</strong> (optional): MM/DD/YYYY or YYYY-MM-DD format</li>
+                  <li><strong>Customer</strong> (optional): Organization name/code (defaults to CCAH)</li>
+                </ul>
+              </div>
+
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold mb-1">Format Specification:</p>
+                  <p>The CSV Template button downloads a pre-formatted file with examples. A complete JSON format specification is available at <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">/api/csv/spec</code> with validation rules, examples, and error handling details.</p>
+                </div>
+              </div>
+              
               <div className="bg-muted p-3 rounded-md">
+                <p className="text-sm font-semibold mb-2">Example CSV Header:</p>
                 <p className="text-sm font-mono overflow-x-auto">
-                  Customer Code,Category,Type,Commitment,Description,Responsible Party,Due Date,Status
+                  Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer
                 </p>
               </div>
             </div>
