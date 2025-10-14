@@ -72,12 +72,9 @@ function compareDates(date1: Date | null | undefined, date2: Date | null | undef
   return d1.toISOString().split('T')[0] === d2.toISOString().split('T')[0];
 }
 
-async function findDuplicate(item: InsertComplianceItem): Promise<any | null> {
-  // Get all compliance items for this customer
-  const result = await storage.getComplianceItems();
-  
+function findDuplicate(item: InsertComplianceItem, existingItems: any[]): any | null {
   // Find duplicate based on: category + commitment + customer + due date
-  const duplicate = result.items.find((existing: any) => 
+  const duplicate = existingItems.find((existing: any) => 
     existing.customerId === item.customerId &&
     existing.category === item.category &&
     existing.commitment.toLowerCase().trim() === item.commitment.toLowerCase().trim() &&
@@ -104,6 +101,10 @@ export async function validateComplianceCSV(
   const organizations = await storage.getOrganizations();
   const organizationMap = new Map(organizations.map(org => [org.name.toLowerCase(), org.id]));
   const organizationCodes = new Map(organizations.map(org => [org.code.toLowerCase(), org.id]));
+  
+  // Fetch all existing compliance items once at the beginning for duplicate detection
+  const existingItemsResult = await storage.getComplianceItems();
+  let existingItems = existingItemsResult.items;
   
   for (let i = 0; i < csvData.length; i++) {
     const row = csvData[i];
@@ -209,7 +210,7 @@ export async function validateComplianceCSV(
       };
       
       // Check for duplicates
-      const duplicate = await findDuplicate(validatedItem);
+      const duplicate = findDuplicate(validatedItem, existingItems);
       
       if (duplicate) {
         if (duplicateHandling === 'skip') {
@@ -225,12 +226,16 @@ export async function validateComplianceCSV(
           const updatedItem = await storage.updateComplianceItem(duplicate.id, validatedItem);
           result.updated++;
           result.items.push(updatedItem);
+          // Update the existing items array to reflect the change
+          existingItems = existingItems.map(item => item.id === updatedItem.id ? updatedItem : item);
         }
       } else {
         // Create new item
         const createdItem = await storage.createComplianceItem(validatedItem);
         result.imported++;
         result.items.push(createdItem);
+        // Add to existing items array for subsequent duplicate checks
+        existingItems.push(createdItem);
       }
       
     } catch (error) {
