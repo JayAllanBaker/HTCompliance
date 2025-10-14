@@ -32,17 +32,29 @@ export async function parseCSV(filePath: string): Promise<CSVRow[]> {
   return new Promise((resolve, reject) => {
     const fileContent = fs.readFileSync(filePath, 'utf8');
     
+    console.log('[CSV Import] File path:', filePath);
+    console.log('[CSV Import] File content length:', fileContent.length);
+    console.log('[CSV Import] First 200 chars:', fileContent.substring(0, 200));
+    
     Papa.parse(fileContent, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
+        console.log('[CSV Import] Parse results:', {
+          rowCount: results.data.length,
+          errorCount: results.errors.length,
+          meta: results.meta
+        });
+        
         if (results.errors.length > 0) {
+          console.error('[CSV Import] Parse errors:', results.errors);
           reject(new Error(`CSV parsing errors: ${results.errors.map(e => e.message).join(', ')}`));
         } else {
           resolve(results.data as CSVRow[]);
         }
       },
       error: (error: Error) => {
+        console.error('[CSV Import] Parse error:', error);
         reject(new Error(`CSV parsing failed: ${error.message}`));
       }
     });

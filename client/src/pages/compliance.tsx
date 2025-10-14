@@ -82,17 +82,16 @@ export default function Compliance() {
   };
 
   const handleCSVImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+    setSelectedFile(null);
+    setDuplicateHandling("skip");
+    setShowImportDialog(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
       setSelectedFile(file);
-      setDuplicateHandling("skip");
-      setShowImportDialog(true);
-    };
-    input.click();
+    }
   };
 
   const handlePerformImport = async () => {
@@ -473,17 +472,28 @@ export default function Compliance() {
           <DialogHeader>
             <DialogTitle>Import Compliance Items</DialogTitle>
             <DialogDescription>
-              Configure how to handle duplicate items during import
+              Select a CSV file and choose how to handle duplicates
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <strong>File selected:</strong> {selectedFile?.name}
-              </AlertDescription>
-            </Alert>
+            <div className="space-y-2">
+              <Label htmlFor="csv-file" className="text-base font-semibold">
+                CSV File
+              </Label>
+              <Input
+                id="csv-file"
+                type="file"
+                accept=".csv"
+                onChange={handleFileSelect}
+                data-testid="input-csv-file"
+              />
+              {selectedFile && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: <strong>{selectedFile.name}</strong>
+                </p>
+              )}
+            </div>
 
             <div className="space-y-3">
               <Label className="text-base font-semibold">Duplicate Handling</Label>

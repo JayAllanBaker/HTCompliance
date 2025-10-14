@@ -200,7 +200,7 @@
       "skipped": "Number of duplicate rows skipped",
       "skippedDetails": "List of skipped items with row number and commitment text"
     },
-    "examples": [
+    "duplicateScenarios": [
       {
         "scenario": "Same commitment exists with same customer and due date",
         "csvRow": "Compliance,,Annual audit,,John Doe,pending,12/31/2024,CCAH",
