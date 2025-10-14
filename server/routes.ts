@@ -1080,20 +1080,26 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/admin/qb-detected-redirect", requireAdmin, async (req: Request, res: Response) => {
     try {
       let detectedRedirectUri = '';
+      let isReplit = false;
       
       // Auto-detect based on environment (same logic as service)
       if (process.env.REPLIT_DEV_DOMAIN) {
         detectedRedirectUri = `https://${process.env.REPLIT_DEV_DOMAIN}/api/quickbooks/callback`;
+        isReplit = true;
       } else if (process.env.REPLIT_DOMAINS) {
         const domain = process.env.REPLIT_DOMAINS.split(',')[0];
         detectedRedirectUri = `https://${domain}/api/quickbooks/callback`;
+        isReplit = true;
       } else {
-        detectedRedirectUri = 'http://localhost:5000/api/quickbooks/callback';
+        // For Docker/localhost, use the request host if available
+        const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+        const host = req.headers.host || 'localhost:5000';
+        detectedRedirectUri = `${protocol}://${host}/api/quickbooks/callback`;
       }
       
       res.json({ 
         detectedRedirectUri,
-        isReplit: !!(process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS),
+        isReplit,
         replitDevDomain: process.env.REPLIT_DEV_DOMAIN || null,
         replitDomains: process.env.REPLIT_DOMAINS || null,
       });
