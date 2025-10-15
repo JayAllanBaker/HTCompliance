@@ -26,9 +26,9 @@ Preferred communication style: Simple, everyday language.
 
 **Server Framework**: Express.js with TypeScript running in ESM mode, providing a lightweight and flexible API layer.
 
-**Authentication**: Passport.js with local strategy using scrypt for password hashing. Sessions are persisted to PostgreSQL using connect-pg-simple. The system supports role-based access control (admin/user roles).
+**Authentication**: Passport.js with local strategy using scrypt for password hashing. Session storage is environment-aware: MemoryStore for Neon (Replit), PostgreSQL sessions for Docker. The system supports role-based access control (admin/user roles).
 
-**Database Layer**: Drizzle ORM with the Neon serverless PostgreSQL driver. The schema-first approach uses Drizzle Kit for migrations stored in the `/migrations` directory.
+**Database Layer**: Drizzle ORM with dual database support - Neon serverless driver for Replit, standard PostgreSQL driver for Docker. The schema-first approach uses Drizzle Kit for migrations stored in the `/migrations` directory.
 
 **API Design**: RESTful endpoints organized by resource (customers, contracts, compliance-items, billable-events, evidence, audit-log). All mutations create audit log entries for compliance tracking.
 
@@ -38,7 +38,9 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 
-**Primary Database**: PostgreSQL via Neon serverless driver with WebSocket support for connection pooling.
+**Primary Database**: Dual database support with automatic detection:
+- **Replit**: Neon serverless PostgreSQL with WebSocket support
+- **Docker**: Standard PostgreSQL 16 with persistent volumes
 
 **Schema Design**: The database uses UUID primary keys with the following core tables:
 - `users`: Authentication and RBAC
@@ -51,17 +53,19 @@ Preferred communication style: Simple, everyday language.
 - `audit_log`: Comprehensive activity tracking
 - `email_alerts`: Alert history and tracking
 
-**Session Storage**: PostgreSQL-backed sessions using connect-pg-simple for persistence across server restarts.
+**Session Storage**: Environment-aware session persistence:
+- **Replit (Neon)**: MemoryStore - sessions lost on restart (acceptable for development)
+- **Docker (PostgreSQL)**: PostgreSQL-backed sessions using connect-pg-simple for persistence
 
 **Enums**: PostgreSQL enums enforce data integrity for roles, statuses, categories, and evidence types.
 
-**Design Rationale**: PostgreSQL provides ACID compliance critical for financial and compliance data. UUIDs prevent enumeration attacks and support distributed systems. The audit log table creates an immutable trail for compliance requirements.
+**Design Rationale**: PostgreSQL provides ACID compliance critical for financial and compliance data. UUIDs prevent enumeration attacks and support distributed systems. The audit log table creates an immutable trail for compliance requirements. The dual database setup enables seamless deployment on both Replit (Neon) and Docker (standard PostgreSQL) without code changes.
 
 ### Authentication & Authorization
 
 **Authentication Method**: Local username/password authentication with session-based auth using express-session. Passwords are hashed using Node.js crypto scrypt with random salts.
 
-**Session Management**: Server-side sessions stored in PostgreSQL with configurable secrets and security settings (secure cookies in production, trust proxy enabled).
+**Session Management**: Environment-aware session storage with configurable secrets and security settings (secure cookies in production, trust proxy enabled). Uses MemoryStore for Neon/Replit, PostgreSQL sessions for Docker deployments.
 
 **Authorization Model**: Role-based access control (RBAC) with two roles:
 - Admin: Full system access including user management and database operations

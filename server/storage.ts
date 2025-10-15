@@ -122,15 +122,22 @@ export class DatabaseStorage implements IStorage {
   sessionStore: Store;
 
   constructor() {
-    // Using MemoryStore temporarily to bypass Neon control plane issues
-    // TODO: Switch back to PostgresSessionStore when database connection is stable
-    this.sessionStore = new MemoryStore();
+    // Check if using Neon serverless or standard PostgreSQL
+    const isNeon = process.env.DATABASE_URL?.includes('neon.tech') || false;
     
-    // Original PostgreSQL session store (disabled temporarily):
-    // this.sessionStore = new PostgresSessionStore({ 
-    //   pool, 
-    //   createTableIfMissing: true 
-    // });
+    if (isNeon) {
+      // Use MemoryStore for Neon serverless (connect-pg-simple doesn't work well with Neon)
+      // Sessions will be lost on server restart in Replit, but this is acceptable for development
+      console.log('[Session] Using MemoryStore for Neon serverless database');
+      this.sessionStore = new MemoryStore();
+    } else {
+      // Use PostgreSQL session store for standard PostgreSQL (Docker)
+      console.log('[Session] Using PostgreSQL session store for standard PostgreSQL');
+      this.sessionStore = new PostgresSessionStore({ 
+        pool, 
+        createTableIfMissing: true 
+      });
+    }
   }
 
   // User methods
