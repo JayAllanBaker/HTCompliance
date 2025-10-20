@@ -181,6 +181,24 @@ export default function Compliance() {
     }
   };
 
+  // Helper function to check if an item is overdue
+  const isOverdue = (item: ComplianceItem) => {
+    if (item.status !== 'pending' || !item.dueDate) return false;
+    const dueDate = new Date(item.dueDate);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Compare dates only, ignore time
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < now;
+  };
+
+  // Calculate statistics with correct overdue logic
+  const stats = {
+    total: complianceData?.total || 0,
+    pending: complianceData?.items?.filter((item: ComplianceItem) => item.status === 'pending').length || 0,
+    complete: complianceData?.items?.filter((item: ComplianceItem) => item.status === 'complete').length || 0,
+    overdue: complianceData?.items?.filter((item: ComplianceItem) => isOverdue(item)).length || 0,
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -387,7 +405,7 @@ export default function Compliance() {
                     </div>
                     <div className="ml-4">
                       <p className="text-2xl font-bold text-foreground" data-testid="stat-total-items">
-                        {complianceData?.total || 0}
+                        {stats.total}
                       </p>
                       <p className="text-sm text-muted-foreground">Total Items</p>
                     </div>
@@ -403,7 +421,7 @@ export default function Compliance() {
                     </div>
                     <div className="ml-4">
                       <p className="text-2xl font-bold text-foreground" data-testid="stat-pending-items">
-                        {complianceData?.items?.filter((item: any) => item.status === 'pending').length || 0}
+                        {stats.pending}
                       </p>
                       <p className="text-sm text-muted-foreground">Pending</p>
                     </div>
@@ -419,7 +437,7 @@ export default function Compliance() {
                     </div>
                     <div className="ml-4">
                       <p className="text-2xl font-bold text-foreground" data-testid="stat-complete-items">
-                        {complianceData?.items?.filter((item: any) => item.status === 'complete').length || 0}
+                        {stats.complete}
                       </p>
                       <p className="text-sm text-muted-foreground">Complete</p>
                     </div>
@@ -435,7 +453,7 @@ export default function Compliance() {
                     </div>
                     <div className="ml-4">
                       <p className="text-2xl font-bold text-foreground" data-testid="stat-overdue-items">
-                        {complianceData?.items?.filter((item: any) => item.status === 'overdue').length || 0}
+                        {stats.overdue}
                       </p>
                       <p className="text-sm text-muted-foreground">Overdue</p>
                     </div>
