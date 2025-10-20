@@ -3,27 +3,84 @@ import axios from 'axios';
 import { ComplianceItem } from '../../shared/schema';
 import { storage } from '../storage';
 
-const clientApp = new ConfidentialClientApplication({
-  auth: {
-    clientId: process.env.AZURE_CLIENT_ID || '3a4ad2ca-55a1-4ceb-a786-2b0fe30f0b2c',
-    clientSecret: process.env.AZURE_CLIENT_SECRET || 'WRr8Q~D5VDZzWwQNXf7DiAJwLYqRYMCt3pTbcaGu',
-    authority: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID || 'd676934a-eb4a-495f-8608-5efe266912ff'}`,
-  },
-});
+// Dynamic credential loading - do NOT initialize MSAL client at module load time
+// This allows credentials to be updated in the database without restarting the server
+
+interface AzureCredentials {
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  senderEmail: string;
+}
+
+async function getAzureCredentials(): Promise<AzureCredentials> {
+  try {
+    // Try to load from database first
+    const allSettings = await storage.getAllSystemSettings();
+    const azureSettings = allSettings.filter(s => 
+      s.key.startsWith('azure_') || s.key === 'sender_email'
+    );
+    
+    const settingsMap = azureSettings.reduce((acc, setting) => {
+      acc[setting.key] = setting.value || '';
+      return acc;
+    }, {} as Record<string, string>);
+    
+    // Use database settings if available, fallback to env vars
+    const tenantId = settingsMap['azure_tenant_id'] 
+      || process.env.AZURE_TENANT_ID 
+      || '';
+    
+    const clientId = settingsMap['azure_client_id'] 
+      || process.env.AZURE_CLIENT_ID 
+      || '';
+    
+    const clientSecret = settingsMap['azure_client_secret'] 
+      || process.env.AZURE_CLIENT_SECRET 
+      || '';
+    
+    const senderEmail = settingsMap['sender_email'] 
+      || process.env.SENDER_EMAIL 
+      || 'noreply@healthtrixss.com';
+    
+    // Validate credentials
+    if (!tenantId || !clientId || !clientSecret) {
+      throw new Error(
+        'Azure email credentials not configured. Please configure them in Admin Settings > Email Configuration.'
+      );
+    }
+    
+    return { tenantId, clientId, clientSecret, senderEmail };
+  } catch (error) {
+    console.error('Error loading Azure credentials:', error);
+    throw error;
+  }
+}
 
 async function getAccessToken(): Promise<string> {
   try {
+    const credentials = await getAzureCredentials();
+    
+    // Create MSAL client dynamically with current credentials
+    const clientApp = new ConfidentialClientApplication({
+      auth: {
+        clientId: credentials.clientId,
+        clientSecret: credentials.clientSecret,
+        authority: `https://login.microsoftonline.com/${credentials.tenantId}`,
+      },
+    });
+    
     const response = await clientApp.acquireTokenByClientCredential({
       scopes: ['https://graph.microsoft.com/.default'],
     });
     
     if (!response?.accessToken) {
-      throw new Error('Failed to acquire access token');
+      throw new Error('Failed to acquire access token from Microsoft Graph API');
     }
     
     return response.accessToken;
   } catch (error) {
-    console.error('Error acquiring token:', error);
+    console.error('Error acquiring Microsoft Graph API token:', error);
     throw error;
   }
 }
@@ -34,6 +91,7 @@ export async function sendEmailAlert(
 ): Promise<void> {
   try {
     const accessToken = await getAccessToken();
+    const credentials = await getAzureCredentials();
     
     // Determine recipient email based on responsible party or default
     const recipientEmail = getRecipientEmail(complianceItem.responsibleParty);
@@ -55,7 +113,7 @@ export async function sendEmailAlert(
     
     try {
       // Send email via Microsoft Graph
-      await sendEmail(accessToken, recipientEmail, subject, body);
+      await sendEmail(accessToken, credentials.senderEmail, recipientEmail, subject, body);
       
       // Update alert status to sent
       await storage.updateEmailAlertStatus(emailAlert.id, 'sent');
@@ -77,14 +135,30 @@ export async function sendEmailAlert(
   }
 }
 
+export async function sendTestEmail(recipientEmail: string): Promise<void> {
+  try {
+    const accessToken = await getAccessToken();
+    const credentials = await getAzureCredentials();
+    
+    const subject = '✅ BizGov Test Email - Configuration Successful';
+    const body = generateTestEmailBody();
+    
+    await sendEmail(accessToken, credentials.senderEmail, recipientEmail, subject, body);
+    
+    console.log(`Test email sent successfully to ${recipientEmail}`);
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    throw error;
+  }
+}
+
 async function sendEmail(
   accessToken: string,
+  senderEmail: string,
   to: string,
   subject: string,
   body: string
 ): Promise<void> {
-  const senderEmail = process.env.SENDER_EMAIL || 'noreply@healthtrixss.com';
-  
   const message = {
     message: {
       subject,
@@ -120,7 +194,8 @@ async function sendEmail(
     
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      throw new Error(`Microsoft Graph API error: ${error.response?.data?.error?.message || error.message}`);
+      const errorDetails = error.response?.data?.error?.message || error.message;
+      throw new Error(`Microsoft Graph API error: ${errorDetails}`);
     }
     throw error;
   }
@@ -136,6 +211,80 @@ function getRecipientEmail(responsibleParty: string): string {
   };
   
   return emailMap[responsibleParty] || process.env.DEFAULT_ALERT_EMAIL || 'admin@healthtrixss.com';
+}
+
+function generateTestEmailBody(): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Open Sans', Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #2E456B 0%, #277493 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .logo { display: flex; align-items: center; margin-bottom: 10px; }
+        .logo-icon { width: 40px; height: 40px; background: #FEA002; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 12px; }
+        .content { background: white; padding: 30px; border: 1px solid #e0e0e0; }
+        .success-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; color: white; font-weight: bold; font-size: 14px; margin-bottom: 20px; background-color: #28a745; }
+        .info-box { background: #f8f9fa; border-left: 4px solid #277493; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .footer { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; text-align: center; color: #666; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">
+            <div class="logo-icon">HT</div>
+            <div>
+              <h2 style="margin: 0; font-size: 24px;">BizGov Email Test</h2>
+              <p style="margin: 0; opacity: 0.9;">Health Trixss Compliance Hub</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="content">
+          <div class="success-badge">✅ CONFIGURATION SUCCESSFUL</div>
+          
+          <h3>Email Configuration Test Successful!</h3>
+          <p>Congratulations! Your Azure email configuration is working correctly. BizGov can now send compliance alerts through Microsoft Graph API.</p>
+          
+          <div class="info-box">
+            <h4 style="margin-top: 0; color: #277493;">✓ What This Means</h4>
+            <ul style="margin: 10px 0;">
+              <li>Azure AD authentication is configured correctly</li>
+              <li>Microsoft Graph API permissions are granted</li>
+              <li>Email sending functionality is operational</li>
+              <li>Compliance alerts will be delivered automatically</li>
+            </ul>
+          </div>
+          
+          <p><strong>Next Steps:</strong></p>
+          <ul>
+            <li>Set up compliance items with due dates</li>
+            <li>Configure responsible parties and their email addresses</li>
+            <li>Automatic alerts will be sent for upcoming and overdue items</li>
+          </ul>
+        </div>
+        
+        <div class="footer">
+          <p>This is a test email from the BizGov Compliance Hub.</p>
+          <p>Health Trixss LLC | Compliance Management System</p>
+          <p style="font-size: 12px; margin-top: 10px;">
+            Sent on ${new Date().toLocaleString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZoneName: 'short'
+            })}
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 }
 
 function generateEmailBody(complianceItem: ComplianceItem, alertType: 'upcoming' | 'overdue'): string {

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, UserPlus, Pencil, Trash2, Database, AlertTriangle, Key, Activity, RefreshCw, CheckCircle, XCircle, AlertCircle as AlertCircleIcon } from "lucide-react";
+import { Settings, UserPlus, Pencil, Trash2, Database, AlertTriangle, Key, Activity, RefreshCw, CheckCircle, XCircle, AlertCircle as AlertCircleIcon, Mail, Send } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
@@ -41,6 +41,15 @@ export default function AdminPage() {
     qb_prod_client_secret: "",
     qb_prod_redirect_uri: "",
   });
+
+  const [azureSettings, setAzureSettings] = useState({
+    azure_tenant_id: "",
+    azure_client_id: "",
+    azure_client_secret: "",
+    sender_email: "",
+  });
+
+  const [testEmailAddress, setTestEmailAddress] = useState("");
 
   const { data: users, isLoading, error, isError } = useQuery<UserWithoutPassword[]>({
     queryKey: ["/api/users"],
@@ -86,6 +95,11 @@ export default function AdminPage() {
     queryKey: ["/api/admin/qb-detected-redirect"],
   });
 
+  // Fetch Azure settings
+  const { data: azureSettingsData } = useQuery<Record<string, { value: string; description?: string | null }>>({
+    queryKey: ["/api/admin/azure-settings"],
+  });
+
   useEffect(() => {
     if (qbSettingsData) {
       setQbSettings({
@@ -99,6 +113,17 @@ export default function AdminPage() {
       });
     }
   }, [qbSettingsData]);
+
+  useEffect(() => {
+    if (azureSettingsData) {
+      setAzureSettings({
+        azure_tenant_id: azureSettingsData.azure_tenant_id?.value || "",
+        azure_client_id: azureSettingsData.azure_client_id?.value || "",
+        azure_client_secret: "", // Always empty for security (write-only)
+        sender_email: azureSettingsData.sender_email?.value || "",
+      });
+    }
+  }, [azureSettingsData]);
 
   const createUserMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -223,6 +248,61 @@ export default function AdminPage() {
       toast({
         title: "Save Failed",
         description: error.message || "Failed to save QuickBooks settings.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveAzureSettingsMutation = useMutation({
+    mutationFn: async (settings: typeof azureSettings) => {
+      const payload = {
+        azure_tenant_id: settings.azure_tenant_id,
+        azure_client_id: settings.azure_client_id,
+        sender_email: settings.sender_email,
+        // Only include secret if user entered new value (write-only)
+        ...(settings.azure_client_secret ? { azure_client_secret: settings.azure_client_secret } : {}),
+      };
+      
+      const response = await apiRequest("POST", "/api/admin/azure-settings", payload);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/azure-settings"] });
+      // Clear secret field after save for security
+      setAzureSettings(prev => ({ 
+        ...prev, 
+        azure_client_secret: ""
+      }));
+      toast({
+        title: "Settings Saved",
+        description: "Azure email settings have been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save Azure email settings.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendTestEmailMutation = useMutation({
+    mutationFn: async (recipientEmail: string) => {
+      const response = await apiRequest("POST", "/api/admin/azure-test-email", { recipientEmail });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Test Email Sent",
+        description: "Check your inbox to verify the email configuration is working.",
+      });
+      setTestEmailAddress("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Test Email Failed",
+        description: error.message || "Failed to send test email. Check your Azure configuration.",
         variant: "destructive",
       });
     },
@@ -634,6 +714,132 @@ export default function AdminPage() {
                     <Key className="mr-2 h-4 w-4" />
                     {saveQBSettingsMutation.isPending ? "Saving..." : "Save QuickBooks Settings"}
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Azure Email Configuration Card */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Mail className="mr-2 h-5 w-5" />
+                  Azure Email Configuration
+                </CardTitle>
+                <CardDescription>
+                  Configure Microsoft Graph API for sending compliance email alerts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="azure_tenant_id">Azure AD Tenant ID</Label>
+                    <Input
+                      id="azure_tenant_id"
+                      type="text"
+                      placeholder="Enter your Azure AD Tenant ID (e.g., xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)"
+                      value={azureSettings.azure_tenant_id}
+                      onChange={(e) => setAzureSettings({ ...azureSettings, azure_tenant_id: e.target.value })}
+                      data-testid="input-azure-tenant-id"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Found in Azure Portal → Azure Active Directory → Overview → Tenant ID
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="azure_client_id">Application (Client) ID</Label>
+                    <Input
+                      id="azure_client_id"
+                      type="text"
+                      placeholder="Enter your Azure AD Application Client ID"
+                      value={azureSettings.azure_client_id}
+                      onChange={(e) => setAzureSettings({ ...azureSettings, azure_client_id: e.target.value })}
+                      data-testid="input-azure-client-id"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Found in Azure Portal → App Registrations → Your App → Overview → Application (client) ID
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="azure_client_secret">Client Secret</Label>
+                    <Input
+                      id="azure_client_secret"
+                      type="password"
+                      placeholder={azureSettingsData?.azure_client_secret?.value === "********" 
+                        ? "Leave empty to keep current secret" 
+                        : "Enter Azure AD Application Client Secret"}
+                      value={azureSettings.azure_client_secret}
+                      onChange={(e) => setAzureSettings({ ...azureSettings, azure_client_secret: e.target.value })}
+                      data-testid="input-azure-client-secret"
+                    />
+                    {azureSettingsData?.azure_client_secret?.value === "********" && (
+                      <p className="text-xs text-muted-foreground">
+                        Secret is already configured. Enter a new value only if you want to update it.
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Found in Azure Portal → App Registrations → Your App → Certificates & secrets
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sender_email">Sender Email Address</Label>
+                    <Input
+                      id="sender_email"
+                      type="email"
+                      placeholder="Enter the email address to send from (e.g., noreply@healthtrixss.com)"
+                      value={azureSettings.sender_email}
+                      onChange={(e) => setAzureSettings({ ...azureSettings, sender_email: e.target.value })}
+                      data-testid="input-sender-email"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This email must have Mail.Send permissions in your Azure AD application
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Save settings before sending a test email
+                    </p>
+                    <Button
+                      onClick={() => saveAzureSettingsMutation.mutate(azureSettings)}
+                      disabled={saveAzureSettingsMutation.isPending}
+                      data-testid="button-save-azure-settings"
+                    >
+                      <Key className="mr-2 h-4 w-4" />
+                      {saveAzureSettingsMutation.isPending ? "Saving..." : "Save Email Settings"}
+                    </Button>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-3 flex items-center">
+                      <Send className="mr-2 h-4 w-4" />
+                      Test Email Configuration
+                    </h4>
+                    <div className="flex gap-2">
+                      <Input
+                        type="email"
+                        placeholder="Enter recipient email address"
+                        value={testEmailAddress}
+                        onChange={(e) => setTestEmailAddress(e.target.value)}
+                        data-testid="input-test-email-address"
+                      />
+                      <Button
+                        onClick={() => sendTestEmailMutation.mutate(testEmailAddress)}
+                        disabled={sendTestEmailMutation.isPending || !testEmailAddress}
+                        data-testid="button-send-test-email"
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        {sendTestEmailMutation.isPending ? "Sending..." : "Send Test"}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Sends a test email to verify your Azure configuration is working correctly
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

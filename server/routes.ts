@@ -1286,6 +1286,156 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin routes - Azure Email Settings
+  app.get("/api/admin/azure-settings", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Get all Azure-related settings
+      const allSettings = await storage.getAllSystemSettings();
+      const azureSettings = allSettings.filter(s => s.key.startsWith('azure_') || s.key === 'sender_email');
+      
+      // Convert to object for easier consumption
+      const settingsObj = azureSettings.reduce((acc, setting) => {
+        // SECURITY: Never expose client secrets in cleartext
+        const isSecret = setting.key.includes('client_secret');
+        const value = isSecret && setting.value 
+          ? '********' // Mask secrets
+          : setting.value || '';
+        
+        acc[setting.key] = {
+          value,
+          description: setting.description,
+        };
+        return acc;
+      }, {} as Record<string, { value: string; description?: string | null }>);
+      
+      res.json(settingsObj);
+    } catch (error) {
+      console.error('Error fetching Azure settings:', error);
+      res.status(500).json({ error: 'Failed to fetch Azure email settings' });
+    }
+  });
+
+  app.post("/api/admin/azure-settings", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const azureSettingsSchema = z.object({
+        azure_tenant_id: z.string().optional(),
+        azure_client_id: z.string().optional(),
+        azure_client_secret: z.string().optional(),
+        sender_email: z.string().email().optional().or(z.literal('')),
+      });
+      
+      const validationResult = azureSettingsSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: 'Invalid Azure email settings', 
+          details: validationResult.error.errors 
+        });
+      }
+      
+      const data = validationResult.data;
+      
+      // Upsert Tenant ID
+      if (data.azure_tenant_id !== undefined) {
+        await storage.upsertSystemSetting({
+          key: 'azure_tenant_id',
+          value: data.azure_tenant_id,
+          isEncrypted: false,
+          description: 'Azure AD Tenant ID',
+        });
+      }
+      
+      // Upsert Client ID
+      if (data.azure_client_id !== undefined) {
+        await storage.upsertSystemSetting({
+          key: 'azure_client_id',
+          value: data.azure_client_id,
+          isEncrypted: false,
+          description: 'Azure AD Application Client ID',
+        });
+      }
+      
+      // Upsert Client Secret (write-only - empty string means keep existing)
+      if (data.azure_client_secret !== undefined && data.azure_client_secret !== '') {
+        await storage.upsertSystemSetting({
+          key: 'azure_client_secret',
+          value: data.azure_client_secret,
+          isEncrypted: true,
+          description: 'Azure AD Application Client Secret (encrypted)',
+        });
+      }
+      
+      // Upsert Sender Email
+      if (data.sender_email !== undefined) {
+        await storage.upsertSystemSetting({
+          key: 'sender_email',
+          value: data.sender_email,
+          isEncrypted: false,
+          description: 'Email address for sending compliance alerts',
+        });
+      }
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: 'UPDATE',
+        entityType: 'system_settings',
+        entityId: 'azure_settings',
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json({ message: 'Azure email settings updated successfully' });
+    } catch (error) {
+      console.error('Error updating Azure settings:', error);
+      res.status(500).json({ error: 'Failed to update Azure email settings' });
+    }
+  });
+
+  // Test Azure email configuration
+  app.post("/api/admin/azure-test-email", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const testEmailSchema = z.object({
+        recipientEmail: z.string().email(),
+      });
+      
+      const validationResult = testEmailSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: 'Invalid email address', 
+          details: validationResult.error.errors 
+        });
+      }
+      
+      const { recipientEmail } = validationResult.data;
+      
+      // Dynamically import email service to get fresh credentials
+      const { sendTestEmail } = await import('./services/email-service');
+      
+      // Send test email
+      await sendTestEmail(recipientEmail);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: 'TEST',
+        entityType: 'azure_email',
+        entityId: recipientEmail,
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json({ message: 'Test email sent successfully' });
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ 
+        error: 'Failed to send test email',
+        details: errorMessage
+      });
+    }
+  });
+
   // QuickBooks Health Check
   app.get("/api/admin/qb-health", requireAdmin, async (req: Request, res: Response) => {
     try {
