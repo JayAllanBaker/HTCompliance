@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { ClipboardCheck, AlertTriangle, Calendar, DollarSign } from "lucide-react";
+import { ClipboardCheck, AlertTriangle, Calendar, ListChecks } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface KPICardsProps {
@@ -62,7 +62,7 @@ export default function KPICards({ metrics, isLoading }: KPICardsProps) {
     {
       title: "Total Items",
       value: metrics?.totalItems || 0,
-      icon: DollarSign,
+      icon: ListChecks,
       iconColor: "text-green-600",
       bgColor: "bg-green-100",
       testId: "kpi-total-items",

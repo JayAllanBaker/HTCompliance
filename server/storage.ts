@@ -399,11 +399,29 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
+    // For compliance rate: only count items that should be completed by now
+    const [itemsDueByNow] = await db
+      .select({ count: count() })
+      .from(complianceItems)
+      .where(lte(complianceItems.dueDate, now));
+    
+    const [completedDueByNow] = await db
+      .select({ count: count() })
+      .from(complianceItems)
+      .where(
+        and(
+          eq(complianceItems.status, "complete"),
+          lte(complianceItems.dueDate, now)
+        )
+      );
+
     const totalItems = total.count;
     const completedItems = completed.count;
     const overdueItems = overdue.count;
     const upcomingItems = upcoming.count;
-    const complianceRate = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+    const itemsDueTodayOrPast = itemsDueByNow.count;
+    const completedDueTodayOrPast = completedDueByNow.count;
+    const complianceRate = itemsDueTodayOrPast > 0 ? (completedDueTodayOrPast / itemsDueTodayOrPast) * 100 : 0;
 
     return {
       totalItems,
