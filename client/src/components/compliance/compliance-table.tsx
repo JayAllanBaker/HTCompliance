@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Organization, ComplianceItem } from "@shared/schema";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Check, RefreshCw } from "lucide-react";
+import { Edit, Check, RefreshCw, Settings2 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface ComplianceTableProps {
   data: ComplianceItem[];
@@ -17,6 +24,26 @@ interface ComplianceTableProps {
   onEdit?: (item: ComplianceItem) => void;
   showCustomerColumn?: boolean;
 }
+
+type ColumnKey = 'dueDate' | 'commitment' | 'category' | 'organization' | 'responsible' | 'status';
+
+interface ColumnConfig {
+  key: ColumnKey;
+  label: string;
+  defaultVisible: boolean;
+  alwaysVisible?: boolean;
+}
+
+const COLUMNS: ColumnConfig[] = [
+  { key: 'dueDate', label: 'Due Date', defaultVisible: true, alwaysVisible: true },
+  { key: 'commitment', label: 'Commitment', defaultVisible: true, alwaysVisible: true },
+  { key: 'category', label: 'Category', defaultVisible: true },
+  { key: 'organization', label: 'Organization', defaultVisible: true },
+  { key: 'responsible', label: 'Responsible', defaultVisible: true },
+  { key: 'status', label: 'Status', defaultVisible: true },
+];
+
+const STORAGE_KEY = 'compliance-table-columns';
 
 export default function ComplianceTable({ 
   data, 
@@ -27,6 +54,34 @@ export default function ComplianceTable({
 }: ComplianceTableProps) {
   const { toast } = useToast();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
+  const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>(() => {
+    // Load from localStorage or use defaults
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        // Fallback to defaults if parsing fails
+      }
+    }
+    // Initialize with defaults
+    return COLUMNS.reduce((acc, col) => {
+      acc[col.key] = col.defaultVisible;
+      return acc;
+    }, {} as Record<ColumnKey, boolean>);
+  });
+
+  // Save to localStorage whenever column visibility changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
+
+  const toggleColumn = (key: ColumnKey) => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   const { data: organizations } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
@@ -163,15 +218,56 @@ export default function ComplianceTable({
 
   return (
     <div className="overflow-x-auto">
+      <div className="flex justify-end mb-3">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" data-testid="button-column-settings">
+              <Settings2 className="w-4 h-4 mr-2" />
+              Columns
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56" align="end">
+            <div className="space-y-3">
+              <div className="font-semibold text-sm">Toggle Columns</div>
+              {COLUMNS.map((column) => {
+                const isOrgColumn = column.key === 'organization';
+                const shouldShow = !isOrgColumn || showCustomerColumn;
+                
+                if (!shouldShow) return null;
+                
+                return (
+                  <div key={column.key} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`column-${column.key}`}
+                      checked={visibleColumns[column.key]}
+                      onCheckedChange={() => toggleColumn(column.key)}
+                      disabled={column.alwaysVisible}
+                      data-testid={`checkbox-column-${column.key}`}
+                    />
+                    <Label
+                      htmlFor={`column-${column.key}`}
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      {column.label}
+                      {column.alwaysVisible && " (required)"}
+                    </Label>
+                  </div>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+      
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Due Date</TableHead>
-            <TableHead>Commitment</TableHead>
-            <TableHead>Category</TableHead>
-            {showCustomerColumn && <TableHead>Organization</TableHead>}
-            <TableHead>Responsible</TableHead>
-            <TableHead>Status</TableHead>
+            {visibleColumns.dueDate && <TableHead>Due Date</TableHead>}
+            {visibleColumns.commitment && <TableHead>Commitment</TableHead>}
+            {visibleColumns.category && <TableHead>Category</TableHead>}
+            {showCustomerColumn && visibleColumns.organization && <TableHead>Organization</TableHead>}
+            {visibleColumns.responsible && <TableHead>Responsible</TableHead>}
+            {visibleColumns.status && <TableHead>Status</TableHead>}
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -182,50 +278,60 @@ export default function ComplianceTable({
               className="table-hover"
               data-testid={`row-compliance-${item.id}`}
             >
-              <TableCell className="whitespace-nowrap">
-                <div className="flex items-center">
-                  <div 
-                    className={`w-2 h-2 rounded-full mr-3 ${getUrgencyIndicator(item.dueDate, item.status)}`}
-                  />
-                  <span className="text-sm font-medium text-foreground">
-                    {formatDate(item.dueDate)}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="text-sm text-foreground font-medium">
-                  {item.commitment}
-                </div>
-                {item.description && (
-                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {item.description}
+              {visibleColumns.dueDate && (
+                <TableCell className="whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div 
+                      className={`w-2 h-2 rounded-full mr-3 ${getUrgencyIndicator(item.dueDate, item.status)}`}
+                    />
+                    <span className="text-sm font-medium text-foreground">
+                      {formatDate(item.dueDate)}
+                    </span>
                   </div>
-                )}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                <Badge 
-                  variant="secondary"
-                  className={getCategoryColor(item.category)}
-                >
-                  {item.category}
-                </Badge>
-              </TableCell>
-              {showCustomerColumn && (
+                </TableCell>
+              )}
+              {visibleColumns.commitment && (
+                <TableCell>
+                  <div className="text-sm text-foreground font-medium">
+                    {item.commitment}
+                  </div>
+                  {item.description && (
+                    <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {item.description}
+                    </div>
+                  )}
+                </TableCell>
+              )}
+              {visibleColumns.category && (
+                <TableCell className="whitespace-nowrap">
+                  <Badge 
+                    variant="secondary"
+                    className={getCategoryColor(item.category)}
+                  >
+                    {item.category}
+                  </Badge>
+                </TableCell>
+              )}
+              {showCustomerColumn && visibleColumns.organization && (
                 <TableCell className="whitespace-nowrap text-sm text-foreground">
                   {getOrganizationName(item.customerId)}
                 </TableCell>
               )}
-              <TableCell className="whitespace-nowrap text-sm text-foreground">
-                {item.responsibleParty}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                <Badge 
-                  variant="secondary"
-                  className={getStatusColor(item.status)}
-                >
-                  {item.status.toUpperCase()}
-                </Badge>
-              </TableCell>
+              {visibleColumns.responsible && (
+                <TableCell className="whitespace-nowrap text-sm text-foreground">
+                  {item.responsibleParty}
+                </TableCell>
+              )}
+              {visibleColumns.status && (
+                <TableCell className="whitespace-nowrap">
+                  <Badge 
+                    variant="secondary"
+                    className={getStatusColor(item.status)}
+                  >
+                    {item.status.toUpperCase()}
+                  </Badge>
+                </TableCell>
+              )}
               <TableCell className="text-right">
                 <div className="flex items-center justify-end space-x-2">
                   <Button 
