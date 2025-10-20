@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Evidence, ComplianceItem, BillableEvent } from "@shared/schema";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
+import ComplianceItemSelector from "@/components/evidence/compliance-item-selector";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Upload, Shield, File, Download, Search, Eye } from "lucide-react";
+import { Plus, Upload, Shield, File, Download, Search, Eye, X } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,8 +37,10 @@ export default function EvidenceLocker() {
   const { toast } = useToast();
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showComplianceSelector, setShowComplianceSelector] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [selectedComplianceLabel, setSelectedComplianceLabel] = useState<string>("");
   const [filters, setFilters] = useState({
     type: "",
     search: "",
@@ -603,21 +606,34 @@ export default function EvidenceLocker() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Related Compliance Item (Optional)</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-compliance-item">
-                            <SelectValue placeholder="Select compliance item..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">No compliance item</SelectItem>
-                          {complianceItems?.items?.map((item: any) => (
-                            <SelectItem key={item.id} value={item.id}>
-                              {item.commitment}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={() => setShowComplianceSelector(true)}
+                          data-testid="button-select-compliance-item"
+                        >
+                          {selectedComplianceLabel || "Select compliance item..."}
+                        </Button>
+                        {field.value && field.value !== "__none__" && (
+                          <div className="flex items-center justify-between text-sm text-muted-foreground bg-muted p-2 rounded">
+                            <span className="truncate">{selectedComplianceLabel}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                field.onChange("__none__");
+                                setSelectedComplianceLabel("");
+                              }}
+                              data-testid="button-clear-compliance-item"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -744,6 +760,17 @@ export default function EvidenceLocker() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Compliance Item Selector Dialog */}
+      <ComplianceItemSelector
+        open={showComplianceSelector}
+        onOpenChange={setShowComplianceSelector}
+        onSelect={(itemId, itemLabel) => {
+          form.setValue("complianceItemId", itemId || "__none__");
+          setSelectedComplianceLabel(itemLabel);
+        }}
+        selectedId={form.watch("complianceItemId")}
+      />
     </div>
   );
 }
