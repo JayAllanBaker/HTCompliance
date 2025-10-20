@@ -247,6 +247,7 @@ export default function Dashboard() {
                     isLoading={complianceLoading}
                     onRefresh={refetch}
                     onEdit={setEditingItem}
+                    showCustomerColumn={true}
                   />
                 </CardContent>
               </Card>
