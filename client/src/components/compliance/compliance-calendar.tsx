@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ComplianceItem, Customer } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
+import { ComplianceItem, Organization } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, parseISO } from "date-fns";
 import {
   Dialog,
@@ -12,15 +13,61 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface ComplianceCalendarProps {
   items: ComplianceItem[];
-  customers?: Customer[];
+  customers?: Organization[];
+  onRefresh?: () => void;
 }
 
-export default function ComplianceCalendar({ items, customers }: ComplianceCalendarProps) {
+export default function ComplianceCalendar({ items, customers, onRefresh }: ComplianceCalendarProps) {
+  const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ itemId, status }: { itemId: string; status: string }) => {
+      const updates: any = { status };
+      if (status === "complete") {
+        updates.completedAt = new Date().toISOString();
+      }
+      const response = await apiRequest("PUT", `/api/compliance-items/${itemId}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/compliance-items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      onRefresh?.();
+      toast({
+        title: "Status Updated",
+        description: "Compliance item status has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update compliance item status.",
+        variant: "destructive",
+      });
+    },
+    onSettled: (_, __, variables) => {
+      setUpdatingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.itemId);
+        return newSet;
+      });
+    },
+  });
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -244,6 +291,52 @@ export default function ComplianceCalendar({ items, customers }: ComplianceCalen
                     <p className="text-sm text-muted-foreground">{item.description}</p>
                   </div>
                 )}
+
+                {/* Status Change Controls */}
+                <div className="mt-4 pt-4 border-t flex items-center gap-3">
+                  <div className="flex-1">
+                    <label className="text-sm text-muted-foreground mb-1.5 block">
+                      Change Status:
+                    </label>
+                    <Select
+                      value={item.status}
+                      onValueChange={(value) => {
+                        setUpdatingItems(prev => new Set(prev).add(item.id));
+                        updateStatusMutation.mutate({ itemId: item.id, status: value });
+                      }}
+                      disabled={updatingItems.has(item.id)}
+                    >
+                      <SelectTrigger 
+                        className="w-full"
+                        data-testid={`select-status-${item.id}`}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="complete">Complete</SelectItem>
+                        <SelectItem value="overdue">Overdue</SelectItem>
+                        <SelectItem value="na">N/A</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {item.status !== "complete" && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="mt-6"
+                      onClick={() => {
+                        setUpdatingItems(prev => new Set(prev).add(item.id));
+                        updateStatusMutation.mutate({ itemId: item.id, status: "complete" });
+                      }}
+                      disabled={updatingItems.has(item.id)}
+                      data-testid={`button-mark-complete-${item.id}`}
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Mark Complete
+                    </Button>
+                  )}
+                </div>
               </Card>
             ))}
           </div>

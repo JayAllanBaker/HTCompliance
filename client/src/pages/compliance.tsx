@@ -363,6 +363,7 @@ export default function Compliance() {
                 <ComplianceCalendar 
                   items={complianceData?.items || []}
                   customers={organizations}
+                  onRefresh={refetch}
                 />
               </div>
             )}

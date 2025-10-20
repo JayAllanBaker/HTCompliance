@@ -259,6 +259,7 @@ export default function Dashboard() {
                 <ComplianceCalendar 
                   items={complianceData?.items || []}
                   customers={organizations}
+                  onRefresh={refetch}
                 />
               </div>
             )}
