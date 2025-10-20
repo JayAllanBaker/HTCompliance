@@ -18,7 +18,7 @@ The frontend uses React with TypeScript, Vite, and Wouter for routing. UI is bui
 
 **Frontend**: React with TypeScript, Vite, Wouter, shadcn/ui (Radix UI + Tailwind CSS), TanStack Query, React Hook Form, Zod.
 **Backend**: Express.js with TypeScript (ESM mode). Authentication uses Passport.js with a local strategy (scrypt hashing). Drizzle ORM supports both Neon serverless PostgreSQL (Replit) and standard PostgreSQL (Docker). RESTful APIs manage resources with audit logging for all mutations. Multer handles file uploads (10MB limit).
-**Data Storage**: Primary database is PostgreSQL (Neon for Replit, standard for Docker) with UUIDs for primary keys. Core tables include `users`, `customers`, `contracts`, `compliance_items`, `billable_events`, `evidence`, and `audit_log`. Session storage is memory-based for Replit and PostgreSQL-backed for Docker. PostgreSQL enums enforce data integrity.
+**Data Storage**: Primary database is PostgreSQL (Neon for Replit, standard for Docker) with UUIDs for primary keys. Core tables include `users`, `customers` (exposed as "organizations" in the API and UI), `contracts`, `compliance_items`, `billable_events`, `evidence`, and `audit_log`. Session storage is memory-based for Replit and PostgreSQL-backed for Docker. PostgreSQL enums enforce data integrity.
 **Authentication & Authorization**: Local username/password authentication with session-based auth (express-session). Passwords are scrypt-hashed. Role-based access control (RBAC) supports 'Admin' and 'User' roles. Admins have a dedicated panel for user management and database resets. Session security includes httpOnly, secure, and sameSite="lax" cookie settings.
 
 ### Feature Specifications
@@ -30,7 +30,7 @@ The frontend uses React with TypeScript, Vite, and Wouter for routing. UI is bui
 *   **Data Portability**: JSON export/restore with SHA-256 hash manifests.
 *   **User Collaboration**: Timestamped comments on compliance items.
 *   **Admin Panel**: User management, database reset functionality, and system configuration.
-*   **CSV Import**: Bulk import of compliance items with validation, duplicate detection, and handling options.
+*   **CSV Import**: Bulk import of compliance items with validation, duplicate detection, and handling options. CSV column header is "Organization" (legacy "Customer" still supported for backward compatibility).
 *   **Help System**: In-app searchable help center and external documentation (USER_GUIDE.md, DOCKER_SETUP.md).
 
 ### System Design Choices

@@ -11,7 +11,8 @@ interface CSVRow {
   'Responsible Party': string;
   Status: string;
   'Due Date': string;
-  Customer?: string;
+  Organization?: string; // Primary field name (matches UI)
+  Customer?: string;     // Legacy field name (backward compatibility)
 }
 
 export type DuplicateHandling = 'skip' | 'update';
@@ -169,9 +170,10 @@ export async function validateComplianceCSV(
         dueDate = parsedDate;
       }
       
-      // Find organization ID (customer field in CSV)
+      // Find organization ID (Organization or Customer field in CSV)
       let customerId: string;
-      const customerName = row.Customer || 'CCAH'; // Default to CCAH if not specified
+      // Prefer 'Organization' field, fall back to 'Customer' for backward compatibility
+      const customerName = row.Organization || row.Customer || 'CCAH';
       
       // Try to find organization by name first, then by code
       const orgIdByName = organizationMap.get(customerName.toLowerCase());
@@ -261,6 +263,6 @@ export function transformCCAHCSV(csvData: any[]): CSVRow[] {
     'Responsible Party': row['Responsible Party'] || '',
     Status: row.Status || 'pending',
     'Due Date': row['Due Date'] || '',
-    Customer: 'CCAH' // Default customer for the provided data
+    Organization: 'CCAH' // Default organization for the provided data
   }));
 }

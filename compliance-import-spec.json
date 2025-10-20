@@ -118,12 +118,13 @@
       ]
     },
     {
-      "name": "Customer",
+      "name": "Organization",
       "required": false,
       "type": "string",
-      "description": "Organization/Customer name or code. If not found, a new organization will be created.",
+      "description": "Organization name or code. If not found, a new organization will be created.",
       "examples": ["CCAH", "Acme Corp", "Health Systems Inc", ""],
       "defaultValue": "CCAH",
+      "aliases": ["Customer"],
       "behavior": [
         "Searches by organization name (case-insensitive)",
         "If not found, searches by organization code (case-insensitive)",
@@ -133,7 +134,8 @@
       "notes": [
         "Organization matching is case-insensitive",
         "Whitespace is trimmed",
-        "New organizations are created as active"
+        "New organizations are created as active",
+        "Legacy column name 'Customer' is still supported for backward compatibility"
       ]
     }
   ],
@@ -155,7 +157,7 @@
     },
     {
       "rule": "organization_lookup",
-      "description": "Customer field is matched against existing organizations",
+      "description": "Organization field (or legacy Customer field) is matched against existing organizations",
       "enforcement": "New organization is auto-created if not found"
     },
     {
@@ -165,12 +167,12 @@
     },
     {
       "rule": "duplicate_detection",
-      "description": "Duplicates are detected based on: Category + Commitment + Customer + Due Date",
+      "description": "Duplicates are detected based on: Category + Commitment + Organization + Due Date",
       "enforcement": "User choice: skip duplicates or update existing items",
       "matchingCriteria": [
         "Category must match exactly",
         "Commitment must match (case-insensitive, trimmed)",
-        "Customer/Organization ID must match",
+        "Organization ID must match",
         "Due Date must match (date only, time ignored)"
       ],
       "duplicateHandlingOptions": {
@@ -190,7 +192,7 @@
   ],
   "duplicateHandling": {
     "detectionMethod": "Exact match on key fields",
-    "keyFields": ["Category", "Commitment", "Customer", "Due Date"],
+    "keyFields": ["Category", "Commitment", "Organization", "Due Date"],
     "caseInsensitive": ["Commitment"],
     "options": ["skip", "update"],
     "defaultBehavior": "skip",
@@ -202,38 +204,38 @@
     },
     "duplicateScenarios": [
       {
-        "scenario": "Same commitment exists with same customer and due date",
+        "scenario": "Same commitment exists with same organization and due date",
         "csvRow": "Compliance,,Annual audit,,John Doe,pending,12/31/2024,CCAH",
-        "existingItem": "Category: Compliance, Commitment: Annual audit, Customer: CCAH, Due: 12/31/2024",
+        "existingItem": "Category: Compliance, Commitment: Annual audit, Organization: CCAH, Due: 12/31/2024",
         "skipResult": "Row skipped, existing item unchanged",
         "updateResult": "Existing item updated with new responsible party and status"
       },
       {
         "scenario": "Same commitment but different due date",
         "csvRow": "Compliance,,Annual audit,,Jane Doe,pending,01/31/2025,CCAH",
-        "existingItem": "Category: Compliance, Commitment: Annual audit, Customer: CCAH, Due: 12/31/2024",
+        "existingItem": "Category: Compliance, Commitment: Annual audit, Organization: CCAH, Due: 12/31/2024",
         "result": "Not a duplicate - new item created (different due date)"
       },
       {
-        "scenario": "Same commitment but different customer",
+        "scenario": "Same commitment but different organization",
         "csvRow": "Compliance,,Annual audit,,John Doe,pending,12/31/2024,Acme Corp",
-        "existingItem": "Category: Compliance, Commitment: Annual audit, Customer: CCAH, Due: 12/31/2024",
-        "result": "Not a duplicate - new item created (different customer)"
+        "existingItem": "Category: Compliance, Commitment: Annual audit, Organization: CCAH, Due: 12/31/2024",
+        "result": "Not a duplicate - new item created (different organization)"
       }
     ]
   },
   "examples": [
     {
       "description": "Complete CSV with all fields",
-      "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer\nMarketing Agreement,Contract Review,Submit quarterly report,Q4 financial summary,Finance Team,pending,12/31/2024,CCAH\nBilling,Invoice,Monthly invoice submission,Submit monthly billing,Billing Dept,complete,01/15/2025,Acme Corp\nCompliance,Audit,Annual compliance audit,External audit review,Compliance Officer,overdue,2024-11-30,Health Systems Inc"
+      "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Organization\nMarketing Agreement,Contract Review,Submit quarterly report,Q4 financial summary,Finance Team,pending,12/31/2024,CCAH\nBilling,Invoice,Monthly invoice submission,Submit monthly billing,Billing Dept,complete,01/15/2025,Acme Corp\nCompliance,Audit,Annual compliance audit,External audit review,Compliance Officer,overdue,2024-11-30,Health Systems Inc"
     },
     {
       "description": "Minimal CSV with required fields only",
-      "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer\nCompliance,,Annual review,,John Doe,pending,,\nBilling,,Invoice submission,,Jane Smith,complete,,"
+      "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Organization\nCompliance,,Annual review,,John Doe,pending,,\nBilling,,Invoice submission,,Jane Smith,complete,,"
     },
     {
       "description": "CSV with various status values (case-insensitive)",
-      "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer\nCompliance,,Security audit,,Security Team,PENDING,12/31/2024,\nBilling,,Payment processing,,Finance,Complete,01/15/2025,\nDeliverable,,Product delivery,,Operations,Overdue,2024-11-01,\nMarketing Agreement,,Review agreement,,Legal,N/A,,"
+      "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Organization\nCompliance,,Security audit,,Security Team,PENDING,12/31/2024,\nBilling,,Payment processing,,Finance,Complete,01/15/2025,\nDeliverable,,Product delivery,,Operations,Overdue,2024-11-01,\nMarketing Agreement,,Review agreement,,Legal,N/A,,"
     }
   ],
   "errorHandling": {
@@ -268,7 +270,7 @@
       "reason": "Catch errors early and fix them in bulk"
     },
     {
-      "practice": "Use organization codes in Customer field",
+      "practice": "Use organization codes in Organization field",
       "reason": "More reliable matching than full names"
     },
     {
@@ -312,6 +314,6 @@
   ],
   "sampleTemplate": {
     "description": "Copy-paste ready CSV template",
-    "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Customer\nMarketing Agreement,Contract Review,Review marketing contract,Annual contract review,Legal Team,pending,12/31/2024,CCAH\nBilling,Invoice,Submit monthly invoice,Monthly billing submission,Finance Dept,pending,01/15/2025,CCAH\nCompliance,Audit,Complete annual audit,External compliance audit,Compliance Officer,pending,03/31/2025,CCAH\nDeliverable,Report,Quarterly report,Q4 performance report,Operations Manager,pending,01/31/2025,CCAH"
+    "csv": "Category,Type,Commitment,Description,Responsible Party,Status,Due Date,Organization\nMarketing Agreement,Contract Review,Review marketing contract,Annual contract review,Legal Team,pending,12/31/2024,CCAH\nBilling,Invoice,Submit monthly invoice,Monthly billing submission,Finance Dept,pending,01/15/2025,CCAH\nCompliance,Audit,Complete annual audit,External compliance audit,Compliance Officer,pending,03/31/2025,CCAH\nDeliverable,Report,Quarterly report,Q4 performance report,Operations Manager,pending,01/31/2025,CCAH"
   }
 }
