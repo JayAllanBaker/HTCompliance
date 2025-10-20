@@ -90,15 +90,37 @@ export function setupAuth(app: Express) {
       password: await hashPassword(req.body.password),
     });
 
-    req.login(user, (err) => {
+    req.login(user, async (err) => {
       if (err) return next(err);
+      
+      // Audit log for registration (auto-login after register)
+      await storage.createAuditLog({
+        userId: user.id,
+        action: "LOGIN",
+        entityType: "user",
+        entityId: user.id,
+        newValues: JSON.stringify({ source: "registration" }),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
       const { password, ...sanitizedUser } = user;
       res.status(201).json(sanitizedUser);
     });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
+  app.post("/api/login", passport.authenticate("local"), async (req, res) => {
     if (req.user) {
+      // Audit log for successful login
+      await storage.createAuditLog({
+        userId: req.user.id,
+        action: "LOGIN",
+        entityType: "user",
+        entityId: req.user.id,
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
       const { password, ...sanitizedUser } = req.user;
       res.status(200).json(sanitizedUser);
     } else {
@@ -106,9 +128,24 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
+  app.post("/api/logout", async (req, res, next) => {
+    const userId = req.user?.id;
+    
+    req.logout(async (err) => {
       if (err) return next(err);
+      
+      // Audit log for logout
+      if (userId) {
+        await storage.createAuditLog({
+          userId: userId,
+          action: "LOGOUT",
+          entityType: "user",
+          entityId: userId,
+          ipAddress: req.ip,
+          userAgent: req.get("User-Agent"),
+        });
+      }
+      
       res.sendStatus(200);
     });
   });

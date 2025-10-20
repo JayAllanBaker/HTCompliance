@@ -23,15 +23,16 @@ The frontend uses React with TypeScript, Vite, and Wouter for routing. UI is bui
 
 ### Feature Specifications
 
-*   **Compliance Tracking**: Manages obligations, evidence, and audit trails.
+*   **Compliance Tracking**: Manages obligations, evidence, and audit trails with calendar views, inline status updates, and organization column visibility.
 *   **Billing Management**: Tracks billable events and integrates with QuickBooks.
 *   **Contract Lifecycle**: Manages contract milestones and associated data.
-*   **Audit Readiness**: Comprehensive audit logging for all system activities.
+*   **Audit Readiness**: Comprehensive end-to-end audit logging for all system activities including user authentication (login/logout), data mutations (create/update/delete), and administrative actions. Admins can review audit logs with advanced filtering by user, action type, entity type, and date range, with full pagination support.
 *   **Data Portability**: JSON export/restore with SHA-256 hash manifests.
 *   **User Collaboration**: Timestamped comments on compliance items.
-*   **Admin Panel**: User management, database reset functionality, and system configuration.
+*   **Admin Panel**: User management, database reset functionality, system configuration, and audit log review interface.
 *   **CSV Import**: Bulk import of compliance items with validation, duplicate detection, and handling options. CSV column header is "Organization" (legacy "Customer" still supported for backward compatibility).
 *   **Help System**: In-app searchable help center and external documentation (USER_GUIDE.md, DOCKER_SETUP.md).
+*   **Table Customization**: Users can toggle column visibility in compliance tables with preferences persisted in localStorage.
 
 ### System Design Choices
 

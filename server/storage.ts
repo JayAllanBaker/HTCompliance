@@ -77,6 +77,15 @@ export interface IStorage {
   // Audit log methods
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogs(entityId?: string, limit?: number): Promise<AuditLog[]>;
+  getAuditLogsWithFilters(filters: {
+    userId?: string;
+    action?: string;
+    entityType?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{ logs: AuditLog[]; total: number; }>;
   
   // Email alert methods
   createEmailAlert(alert: InsertEmailAlert): Promise<EmailAlert>;
@@ -473,6 +482,58 @@ export class DatabaseStorage implements IStorage {
         .limit(limit);
     }
     return await db.select().from(auditLog).orderBy(desc(auditLog.timestamp)).limit(limit);
+  }
+
+  async getAuditLogsWithFilters(filters: {
+    userId?: string;
+    action?: string;
+    entityType?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{ logs: AuditLog[]; total: number; }> {
+    const { userId, action, entityType, startDate, endDate, page = 1, pageSize = 50 } = filters;
+    
+    const whereConditions: any[] = [];
+    
+    if (userId) {
+      whereConditions.push(eq(auditLog.userId, userId));
+    }
+    if (action) {
+      whereConditions.push(eq(auditLog.action, action));
+    }
+    if (entityType) {
+      whereConditions.push(eq(auditLog.entityType, entityType));
+    }
+    if (startDate) {
+      whereConditions.push(sql`${auditLog.timestamp} >= ${startDate}`);
+    }
+    if (endDate) {
+      whereConditions.push(sql`${auditLog.timestamp} <= ${endDate}`);
+    }
+
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+    // Get total count
+    const [{ count: totalCount }] = await db
+      .select({ count: count() })
+      .from(auditLog)
+      .where(whereClause);
+
+    // Get paginated logs
+    const logs = await db
+      .select()
+      .from(auditLog)
+      .where(whereClause)
+      .orderBy(desc(auditLog.timestamp))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize);
+
+    return {
+      logs,
+      total: totalCount
+    };
   }
 
   // Email alert methods

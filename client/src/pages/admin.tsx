@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
+import AuditLogViewer from "@/components/admin/audit-log-viewer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -843,6 +844,9 @@ export default function AdminPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Audit Log Viewer */}
+            <AuditLogViewer />
 
             {/* Database Management Card */}
             <Card>

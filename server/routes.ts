@@ -1116,6 +1116,40 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin routes - Audit Logs
+  app.get("/api/admin/audit-logs", requireAdmin, async (req, res) => {
+    try {
+      const {
+        userId,
+        action,
+        entityType,
+        startDate,
+        endDate,
+        page = '1',
+        pageSize = '50'
+      } = req.query;
+
+      // Validate and clamp pagination params
+      const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+      const pageSizeNum = Math.min(200, Math.max(1, parseInt(pageSize as string, 10) || 50));
+
+      const result = await storage.getAuditLogsWithFilters({
+        userId: userId as string | undefined,
+        action: action as string | undefined,
+        entityType: entityType as string | undefined,
+        startDate: startDate as string | undefined,
+        endDate: endDate as string | undefined,
+        page: pageNum,
+        pageSize: pageSizeNum,
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("Failed to fetch audit logs:", error);
+      res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
   // Admin routes - QuickBooks Settings
   app.get("/api/admin/qb-settings", requireAdmin, async (req: Request, res: Response) => {
     try {
