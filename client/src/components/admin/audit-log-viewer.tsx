@@ -154,7 +154,7 @@ export default function AuditLogViewer() {
               <Select
                 value={filters.userId}
                 onValueChange={(value) => {
-                  setFilters({ ...filters, userId: value });
+                  setFilters({ ...filters, userId: value === "all" ? "" : value });
                   setPage(1);
                 }}
               >
@@ -162,7 +162,7 @@ export default function AuditLogViewer() {
                   <SelectValue placeholder="All users" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All users</SelectItem>
+                  <SelectItem value="all">All users</SelectItem>
                   {users?.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.username}
@@ -177,7 +177,7 @@ export default function AuditLogViewer() {
               <Select
                 value={filters.action}
                 onValueChange={(value) => {
-                  setFilters({ ...filters, action: value });
+                  setFilters({ ...filters, action: value === "all" ? "" : value });
                   setPage(1);
                 }}
               >
@@ -185,7 +185,7 @@ export default function AuditLogViewer() {
                   <SelectValue placeholder="All actions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All actions</SelectItem>
+                  <SelectItem value="all">All actions</SelectItem>
                   {actions.map((action) => (
                     <SelectItem key={action} value={action}>
                       {action}
@@ -200,7 +200,7 @@ export default function AuditLogViewer() {
               <Select
                 value={filters.entityType}
                 onValueChange={(value) => {
-                  setFilters({ ...filters, entityType: value });
+                  setFilters({ ...filters, entityType: value === "all" ? "" : value });
                   setPage(1);
                 }}
               >
@@ -208,7 +208,7 @@ export default function AuditLogViewer() {
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="all">All types</SelectItem>
                   {entityTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type.replace(/_/g, " ")}
