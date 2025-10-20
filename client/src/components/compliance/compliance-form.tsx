@@ -135,7 +135,7 @@ export default function ComplianceForm({ onClose, onSuccess, item }: ComplianceF
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Organization</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-organization">
                           <SelectValue placeholder="Select organization..." />
