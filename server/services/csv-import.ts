@@ -189,6 +189,7 @@ export async function validateComplianceCSV(
           const newOrg = await storage.createOrganization({
             name: customerName,
             code: customerName.replace(/\s+/g, '_').toUpperCase(),
+            orgType: 'customer',
             isActive: true,
           });
           customerId = newOrg.id;

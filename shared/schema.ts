@@ -9,6 +9,7 @@ export const statusEnum = pgEnum("status", ["pending", "complete", "overdue", "n
 export const categoryEnum = pgEnum("category", ["Marketing Agreement", "Billing", "Deliverable", "Compliance", "End-of-Term"]);
 export const evidenceTypeEnum = pgEnum("evidence_type", ["document", "email", "screenshot", "report", "other"]);
 export const qbConnectionStatusEnum = pgEnum("qb_connection_status", ["connected", "disconnected", "error", "token_expired"]);
+export const orgTypeEnum = pgEnum("org_type", ["customer", "vendor", "contractor", "internal"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -28,6 +29,7 @@ export const organizations = pgTable("customers", {
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
   contactEmail: text("contact_email"),
+  orgType: orgTypeEnum("org_type").notNull().default("customer"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });

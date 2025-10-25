@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, Pencil, Trash2, Link as LinkIcon, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building2, Plus, Pencil, Trash2, Link as LinkIcon, Search, Filter } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Organization, QuickbooksConnection } from "@shared/schema";
@@ -32,10 +33,12 @@ export default function OrganizationsPage() {
     name: "",
     code: "",
     contactEmail: "",
+    orgType: "customer" as "customer" | "vendor" | "contractor" | "internal",
     isActive: true
   });
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [qbCustomers, setQbCustomers] = useState<QBCustomer[]>([]);
+  const [orgTypeFilter, setOrgTypeFilter] = useState<string>("all");
 
   const { data: organizations, isLoading } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
@@ -55,7 +58,7 @@ export default function OrganizationsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/organizations"] });
       setIsCreateDialogOpen(false);
-      setFormData({ name: "", code: "", contactEmail: "", isActive: true });
+      setFormData({ name: "", code: "", contactEmail: "", orgType: "customer", isActive: true });
       toast({
         title: "Organization Created",
         description: "Organization has been created successfully.",
@@ -115,7 +118,7 @@ export default function OrganizationsPage() {
   });
 
   const handleCreateClick = () => {
-    setFormData({ name: "", code: "", contactEmail: "", isActive: true });
+    setFormData({ name: "", code: "", contactEmail: "", orgType: "customer", isActive: true });
     setIsCreateDialogOpen(true);
   };
 
@@ -125,6 +128,7 @@ export default function OrganizationsPage() {
       name: organization.name,
       code: organization.code,
       contactEmail: organization.contactEmail || "",
+      orgType: organization.orgType || "customer",
       isActive: organization.isActive
     });
     setIsEditDialogOpen(true);
@@ -304,10 +308,29 @@ export default function OrganizationsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Organizations</CardTitle>
-                <CardDescription>
-                  All client organizations in the system
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Organizations</CardTitle>
+                    <CardDescription>
+                      All client organizations in the system
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <Select value={orgTypeFilter} onValueChange={setOrgTypeFilter}>
+                      <SelectTrigger className="w-[180px]" data-testid="select-org-type-filter">
+                        <SelectValue placeholder="Filter by type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="customer">Customer</SelectItem>
+                        <SelectItem value="vendor">Vendor</SelectItem>
+                        <SelectItem value="contractor">Contractor</SelectItem>
+                        <SelectItem value="internal">Internal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -322,6 +345,7 @@ export default function OrganizationsPage() {
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Code</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead>Contact Email</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>QuickBooks</TableHead>
@@ -329,13 +353,31 @@ export default function OrganizationsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {organizations.map((org) => (
+                      {organizations
+                        .filter(org => orgTypeFilter === "all" || org.orgType === orgTypeFilter)
+                        .map((org) => (
                         <TableRow key={org.id} data-testid={`row-organization-${org.id}`}>
                           <TableCell className="font-medium" data-testid={`text-org-name-${org.id}`}>
                             {org.name}
                           </TableCell>
                           <TableCell data-testid={`text-org-code-${org.id}`}>
                             {org.code}
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={
+                                org.orgType === "customer" ? "default" :
+                                org.orgType === "vendor" ? "secondary" :
+                                org.orgType === "contractor" ? "outline" :
+                                "default"
+                              }
+                              className={
+                                org.orgType === "internal" ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100" : ""
+                              }
+                              data-testid={`badge-org-type-${org.id}`}
+                            >
+                              {org.orgType ? org.orgType.charAt(0).toUpperCase() + org.orgType.slice(1) : "Customer"}
+                            </Badge>
                           </TableCell>
                           <TableCell data-testid={`text-org-email-${org.id}`}>
                             {org.contactEmail || "-"}
@@ -436,6 +478,23 @@ export default function OrganizationsPage() {
                   required
                   data-testid="input-org-code"
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="orgType">Organization Type *</Label>
+                <Select
+                  value={formData.orgType}
+                  onValueChange={(value) => setFormData({ ...formData, orgType: value as typeof formData.orgType })}
+                >
+                  <SelectTrigger id="orgType" data-testid="select-org-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="vendor">Vendor</SelectItem>
+                    <SelectItem value="contractor">Contractor</SelectItem>
+                    <SelectItem value="internal">Internal</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="contactEmail">Contact Email</Label>
@@ -652,6 +711,23 @@ export default function OrganizationsPage() {
                   required
                   data-testid="input-edit-org-code"
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-orgType">Organization Type *</Label>
+                <Select
+                  value={formData.orgType}
+                  onValueChange={(value) => setFormData({ ...formData, orgType: value as typeof formData.orgType })}
+                >
+                  <SelectTrigger id="edit-orgType" data-testid="select-edit-org-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="vendor">Vendor</SelectItem>
+                    <SelectItem value="contractor">Contractor</SelectItem>
+                    <SelectItem value="internal">Internal</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-contactEmail">Contact Email</Label>
