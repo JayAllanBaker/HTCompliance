@@ -6,7 +6,7 @@ import { z } from "zod";
 // Enums
 export const roleEnum = pgEnum("role", ["admin", "user"]);
 export const statusEnum = pgEnum("status", ["pending", "complete", "overdue", "na"]);
-export const categoryEnum = pgEnum("category", ["Marketing Agreement", "Billing", "Deliverable", "Compliance", "End-of-Term"]);
+export const categoryEnum = pgEnum("category", ["Marketing Agreement", "Billing", "Deliverable", "Compliance", "End-of-Term", "Accounts Payable"]);
 export const evidenceTypeEnum = pgEnum("evidence_type", ["document", "email", "screenshot", "report", "contract-and-amendment", "other"]);
 export const qbConnectionStatusEnum = pgEnum("qb_connection_status", ["connected", "disconnected", "error", "token_expired"]);
 export const orgTypeEnum = pgEnum("org_type", ["customer", "vendor", "contractor", "internal"]);
