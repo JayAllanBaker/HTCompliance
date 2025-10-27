@@ -55,7 +55,7 @@ export default function Compliance() {
   }), [filters.search, filters.customerId, filters.category]);
   
   const { data: calendarData, refetch: refetchCalendar } = useQuery<{ items: ComplianceItem[]; total: number }>({
-    queryKey: ["/api/compliance-items/calendar", calendarFilters],
+    queryKey: ["/api/compliance-items", { ...calendarFilters, _view: "calendar" }],
     enabled: viewMode === "calendar",
   });
 
