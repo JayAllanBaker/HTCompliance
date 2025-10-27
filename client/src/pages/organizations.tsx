@@ -10,10 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Pencil, Trash2, Link as LinkIcon, Search, Filter } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Link as LinkIcon, Search, Filter, FileText } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Organization, QuickbooksConnection } from "@shared/schema";
+import OrganizationNotes from "@/components/organizations/organization-notes";
 
 interface QBCustomer {
   Id: string;
@@ -28,6 +29,7 @@ export default function OrganizationsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isQBDialogOpen, setIsQBDialogOpen] = useState(false);
   const [isCustomerSearchOpen, setIsCustomerSearchOpen] = useState(false);
+  const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -132,6 +134,11 @@ export default function OrganizationsPage() {
       isActive: organization.isActive
     });
     setIsEditDialogOpen(true);
+  };
+
+  const handleNotesClick = (organization: Organization) => {
+    setSelectedOrganization(organization);
+    setIsNotesDialogOpen(true);
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -419,6 +426,15 @@ export default function OrganizationsPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleNotesClick(org)}
+                                data-testid={`button-view-notes-${org.id}`}
+                                title="View Notes"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -758,6 +774,21 @@ export default function OrganizationsPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notes Dialog */}
+      <Dialog open={isNotesDialogOpen} onOpenChange={setIsNotesDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Organization Notes</DialogTitle>
+            <DialogDescription>
+              View and manage notes for {selectedOrganization?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedOrganization && (
+            <OrganizationNotes organizationId={selectedOrganization.id} />
+          )}
         </DialogContent>
       </Dialog>
     </div>
