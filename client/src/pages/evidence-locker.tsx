@@ -10,10 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Upload, Shield, File, Download, Search, Eye, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, Upload, Shield, File, Download, Search, Eye, X, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,6 +40,8 @@ export default function EvidenceLocker() {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showComplianceSelector, setShowComplianceSelector] = useState(false);
+  const [showNoFileWarning, setShowNoFileWarning] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<EvidenceFormData | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [selectedComplianceLabel, setSelectedComplianceLabel] = useState<string>("");
@@ -140,7 +143,29 @@ export default function EvidenceLocker() {
   });
 
   const onSubmit = (data: EvidenceFormData) => {
+    // Check if no file is attached
+    if (!selectedFile) {
+      // Show warning dialog
+      setPendingFormData(data);
+      setShowNoFileWarning(true);
+      return;
+    }
+    
+    // File is attached, proceed normally
     uploadMutation.mutate({ ...data, file: selectedFile || undefined });
+  };
+
+  const handleProceedWithoutFile = () => {
+    if (pendingFormData) {
+      uploadMutation.mutate({ ...pendingFormData, file: undefined });
+      setShowNoFileWarning(false);
+      setPendingFormData(null);
+    }
+  };
+
+  const handleCancelNoFile = () => {
+    setShowNoFileWarning(false);
+    setPendingFormData(null);
   };
 
   const handleExport = async () => {
@@ -810,6 +835,39 @@ export default function EvidenceLocker() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* No File Warning Dialog */}
+      <AlertDialog open={showNoFileWarning} onOpenChange={setShowNoFileWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 text-yellow-600 dark:text-yellow-500" />
+              <AlertDialogTitle data-testid="alert-no-file-title">No File Attached</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription data-testid="alert-no-file-description">
+              You are creating an evidence record without attaching a file. This will create a metadata-only entry.
+              You can add or update the file later if needed.
+              <br /><br />
+              Do you want to proceed without a file?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={handleCancelNoFile}
+              data-testid="button-cancel-no-file"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleProceedWithoutFile}
+              className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-600 dark:hover:bg-yellow-700"
+              data-testid="button-proceed-no-file"
+            >
+              Proceed Without File
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Compliance Item Selector Dialog */}
       <ComplianceItemSelector
