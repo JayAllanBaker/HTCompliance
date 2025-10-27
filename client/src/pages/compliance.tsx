@@ -44,6 +44,13 @@ export default function Compliance() {
     queryKey: ["/api/compliance-items", filters],
   });
 
+  // Separate query for calendar view - fetch all items regardless of status filter
+  const calendarFilters = { ...filters, status: "" };
+  const { data: calendarData, refetch: refetchCalendar } = useQuery<{ items: ComplianceItem[]; total: number }>({
+    queryKey: ["/api/compliance-items", calendarFilters],
+    enabled: viewMode === "calendar",
+  });
+
   const { data: organizations } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
   });
@@ -379,9 +386,9 @@ export default function Compliance() {
             {viewMode === "calendar" && (
               <div className="mb-6">
                 <ComplianceCalendar 
-                  items={complianceData?.items || []}
+                  items={calendarData?.items || []}
                   customers={organizations}
-                  onRefresh={refetch}
+                  onRefresh={refetchCalendar}
                 />
               </div>
             )}
