@@ -45,9 +45,17 @@ export default function Compliance() {
   });
 
   // Separate query for calendar view - fetch all items regardless of status filter
-  const calendarFilters = useMemo(() => ({ ...filters, status: "" }), [filters]);
+  const calendarFilters = useMemo(() => ({ 
+    search: filters.search,
+    customerId: filters.customerId,
+    category: filters.category,
+    status: "", // Always empty for calendar
+    limit: 1000, // Get all items for calendar
+    offset: 0 
+  }), [filters.search, filters.customerId, filters.category]);
+  
   const { data: calendarData, refetch: refetchCalendar } = useQuery<{ items: ComplianceItem[]; total: number }>({
-    queryKey: ["/api/compliance-items", calendarFilters],
+    queryKey: ["/api/compliance-items/calendar", calendarFilters],
     enabled: viewMode === "calendar",
   });
 
