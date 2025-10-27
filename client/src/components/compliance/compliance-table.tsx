@@ -1,5 +1,6 @@
 import { useState, useEffect, Fragment } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import type { Organization, ComplianceItem, Evidence } from "@shared/schema";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -396,9 +397,10 @@ export default function ComplianceTable({
                     ) : (
                       <div className="ml-7 space-y-2">
                         {expandedEvidence.map((evidence) => (
-                          <div
+                          <Link
                             key={evidence.id}
-                            className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                            href="/evidence-locker"
+                            className="flex items-center justify-between p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
                             data-testid={`evidence-item-${evidence.id}`}
                           >
                             <div className="flex-1">
@@ -410,7 +412,7 @@ export default function ComplianceTable({
                             <Badge variant="secondary">
                               {evidence.evidenceType}
                             </Badge>
-                          </div>
+                          </Link>
                         ))}
                       </div>
                     )}
