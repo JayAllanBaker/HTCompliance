@@ -10,12 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, Eye, FileText, ChevronDown, ChevronRight, Shield } from "lucide-react";
 import ContractForm from "@/components/contracts/contract-form";
+import ContractDetailDialog from "@/components/contracts/contract-detail-dialog";
 import { format } from "date-fns";
 
 export default function Contracts() {
   const [showNewContractForm, setShowNewContractForm] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
+  const [detailContract, setDetailContract] = useState<Contract | null>(null);
   const [expandedContractId, setExpandedContractId] = useState<string | null>(null);
 
   const { data: contracts, isLoading, refetch } = useQuery<Contract[]>({
@@ -141,7 +143,13 @@ export default function Contracts() {
                                 </Button>
                               </TableCell>
                               <TableCell className="font-medium">
-                                {contract.title}
+                                <button
+                                  onClick={() => setDetailContract(contract)}
+                                  className="text-left hover:text-primary transition-colors hover:underline cursor-pointer"
+                                  data-testid={`button-contract-title-${contract.id}`}
+                                >
+                                  {contract.title}
+                                </button>
                               </TableCell>
                               <TableCell>
                                 {getOrganizationName(contract.customerId)}
@@ -165,7 +173,7 @@ export default function Contracts() {
                                   <Button 
                                     variant="ghost" 
                                     size="sm"
-                                    onClick={() => setViewingContract(contract)}
+                                    onClick={() => setDetailContract(contract)}
                                     data-testid={`button-view-${contract.id}`}
                                   >
                                     <Eye className="h-4 w-4" />
@@ -317,6 +325,16 @@ export default function Contracts() {
           }}
         />
       )}
+
+      <ContractDetailDialog
+        contract={detailContract}
+        onClose={() => setDetailContract(null)}
+        onEdit={() => {
+          setEditingContract(detailContract);
+          setDetailContract(null);
+        }}
+        organizationName={detailContract ? getOrganizationName(detailContract.customerId) : undefined}
+      />
     </div>
   );
 }
