@@ -129,7 +129,7 @@ export async function validateComplianceCSV(
       }
       
       // Validate category enum
-      const validCategories = ['Marketing Agreement', 'Billing', 'Deliverable', 'Compliance', 'End-of-Term'];
+      const validCategories = ['Marketing Agreement', 'Billing', 'Deliverable', 'Compliance', 'End-of-Term', 'Accounts Payable'];
       if (!validCategories.includes(row.Category)) {
         errors.push(`Row ${rowNumber}: Invalid category "${row.Category}". Must be one of: ${validCategories.join(', ')}`);
         continue;
