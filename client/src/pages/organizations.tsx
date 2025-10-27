@@ -1,5 +1,6 @@
 import { useState, Fragment } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -610,9 +611,10 @@ export default function OrganizationsPage() {
                                   ) : (
                                     <div className="ml-7 space-y-2">
                                       {expandedEvidence.map((evidence) => (
-                                        <div
+                                        <Link
                                           key={evidence.id}
-                                          className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                                          href="/evidence-locker"
+                                          className="flex items-center justify-between p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
                                           data-testid={`evidence-item-${evidence.id}`}
                                         >
                                           <div className="flex-1">
@@ -624,7 +626,7 @@ export default function OrganizationsPage() {
                                           <Badge variant="secondary">
                                             {evidence.evidenceType}
                                           </Badge>
-                                        </div>
+                                        </Link>
                                       ))}
                                     </div>
                                   )}
