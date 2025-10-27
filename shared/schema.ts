@@ -7,7 +7,7 @@ import { z } from "zod";
 export const roleEnum = pgEnum("role", ["admin", "user"]);
 export const statusEnum = pgEnum("status", ["pending", "complete", "overdue", "na"]);
 export const categoryEnum = pgEnum("category", ["Marketing Agreement", "Billing", "Deliverable", "Compliance", "End-of-Term"]);
-export const evidenceTypeEnum = pgEnum("evidence_type", ["document", "email", "screenshot", "report", "other"]);
+export const evidenceTypeEnum = pgEnum("evidence_type", ["document", "email", "screenshot", "report", "contract-and-amendment", "other"]);
 export const qbConnectionStatusEnum = pgEnum("qb_connection_status", ["connected", "disconnected", "error", "token_expired"]);
 export const orgTypeEnum = pgEnum("org_type", ["customer", "vendor", "contractor", "internal"]);
 
@@ -106,6 +106,7 @@ export const evidence = pgTable("evidence", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   complianceItemId: varchar("compliance_item_id").references(() => complianceItems.id),
   billableEventId: varchar("billable_event_id").references(() => billableEvents.id),
+  contractId: varchar("contract_id").references(() => contracts.id),
   title: text("title").notNull(),
   description: text("description"),
   evidenceType: evidenceTypeEnum("evidence_type").notNull(),
@@ -217,6 +218,7 @@ export const contractsRelations = relations(contracts, ({ one, many }) => ({
   }),
   complianceItems: many(complianceItems),
   billableEvents: many(billableEvents),
+  evidence: many(evidence),
 }));
 
 export const complianceItemsRelations = relations(complianceItems, ({ one, many }) => ({
@@ -280,6 +282,10 @@ export const evidenceRelations = relations(evidence, ({ one }) => ({
   billableEvent: one(billableEvents, {
     fields: [evidence.billableEventId],
     references: [billableEvents.id],
+  }),
+  contract: one(contracts, {
+    fields: [evidence.contractId],
+    references: [contracts.id],
   }),
   uploadedByUser: one(users, {
     fields: [evidence.uploadedBy],
