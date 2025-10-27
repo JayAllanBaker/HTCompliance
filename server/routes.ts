@@ -776,7 +776,7 @@ export function registerRoutes(app: Express): Server {
       const updatedEvidence = await storage.updateEvidence(req.params.id, updateData);
 
       // Audit log
-      const action = oldEvidence.filePath ? "UPDATE_FILE" : "ADD_FILE";
+      const action = oldEvidence.filePath ? "file_replaced" : "file_added";
 
       await storage.createAuditLog({
         userId: req.user?.id,

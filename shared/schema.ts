@@ -362,6 +362,11 @@ export const insertBillableEventSchema = createInsertSchema(billableEvents).omit
 export const insertEvidenceSchema = createInsertSchema(evidence).omit({
   id: true,
   createdAt: true,
+}).extend({
+  filePath: z.string().optional(),
+  fileHash: z.string().optional(),
+  originalFilename: z.string().optional(),
+  mimeType: z.string().optional(),
 });
 
 export const insertAuditLogSchema = createInsertSchema(auditLog).omit({
