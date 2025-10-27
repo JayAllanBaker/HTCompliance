@@ -325,7 +325,7 @@ export const insertContractSchema = createInsertSchema(contracts).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  maxAmount: z.union([z.string(), z.number()]).optional().transform(val => val?.toString()),
+  maxAmount: z.union([z.string(), z.number(), z.null()]).optional().transform(val => val ? val.toString() : null),
 });
 
 export const insertComplianceItemSchema = createInsertSchema(complianceItems).omit({
