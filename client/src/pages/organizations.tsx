@@ -572,26 +572,19 @@ export default function OrganizationsPage() {
                                           data-testid={`compliance-item-${item.id}`}
                                         >
                                           <div className="flex-1">
-                                            <div className="font-medium">{item.title}</div>
+                                            <div className="font-medium">{item.commitment}</div>
                                             <div className="text-sm text-muted-foreground">
-                                              Due: {new Date(item.dueDate).toLocaleDateString()}
+                                              Due: {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'No due date'}
                                             </div>
                                           </div>
                                           <Badge 
                                             variant={
-                                              item.status === "completed" ? "default" :
-                                              item.status === "in-progress" ? "secondary" :
+                                              item.status === "complete" ? "default" :
+                                              item.status === "overdue" ? "destructive" :
                                               "outline"
                                             }
-                                            className={
-                                              item.status === "pending" && new Date(item.dueDate) < new Date()
-                                                ? "bg-destructive text-destructive-foreground"
-                                                : ""
-                                            }
                                           >
-                                            {item.status === "completed" ? "Completed" :
-                                             item.status === "in-progress" ? "In Progress" :
-                                             new Date(item.dueDate) < new Date() ? "Overdue" : "Pending"}
+                                            {item.status.toUpperCase()}
                                           </Badge>
                                         </div>
                                       ))}
