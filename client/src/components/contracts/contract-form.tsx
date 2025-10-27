@@ -62,7 +62,7 @@ export default function ContractForm({ onClose, onSuccess, contract }: ContractF
         ...data,
         startDate: data.startDate.toISOString(),
         endDate: data.endDate?.toISOString() || null,
-        maxAmount: data.maxAmount ? parseFloat(data.maxAmount) : null,
+        maxAmount: data.maxAmount && data.maxAmount.trim() !== "" ? parseFloat(data.maxAmount) : null,
       };
       
       if (isEditing) {
