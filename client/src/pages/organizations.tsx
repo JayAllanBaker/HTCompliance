@@ -10,10 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Pencil, Trash2, Link as LinkIcon, Search, Filter, FileText } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Link as LinkIcon, Search, Filter, FileText, ChevronDown, ChevronRight, FileSignature, ClipboardList } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Organization, QuickbooksConnection } from "@shared/schema";
+import type { Organization, QuickbooksConnection, Contract, ComplianceItem } from "@shared/schema";
 import OrganizationNotes from "@/components/organizations/organization-notes";
 
 interface QBCustomer {
@@ -41,6 +41,7 @@ export default function OrganizationsPage() {
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [qbCustomers, setQbCustomers] = useState<QBCustomer[]>([]);
   const [orgTypeFilter, setOrgTypeFilter] = useState<string>("all");
+  const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
 
   const { data: organizations, isLoading } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
@@ -51,6 +52,30 @@ export default function OrganizationsPage() {
     queryKey: ["/api/quickbooks/connections"],
     enabled: !!organizations && organizations.length > 0,
   });
+
+  // Fetch contracts for expanded organization
+  const { data: expandedContracts = [] } = useQuery<Contract[]>({
+    queryKey: ["/api/contracts", { organizationId: expandedOrgId }],
+    queryFn: async () => {
+      const response = await fetch(`/api/contracts?organizationId=${expandedOrgId}`);
+      if (!response.ok) throw new Error("Failed to fetch contracts");
+      return response.json();
+    },
+    enabled: !!expandedOrgId,
+  });
+
+  // Fetch compliance items for expanded organization
+  const { data: expandedComplianceData } = useQuery<{ items: ComplianceItem[], total: number }>({
+    queryKey: ["/api/compliance-items", { organizationId: expandedOrgId }],
+    queryFn: async () => {
+      const response = await fetch(`/api/compliance-items?organizationId=${expandedOrgId}`);
+      if (!response.ok) throw new Error("Failed to fetch compliance items");
+      return response.json();
+    },
+    enabled: !!expandedOrgId,
+  });
+
+  const expandedComplianceItems = expandedComplianceData?.items || [];
 
   const createOrganizationMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
