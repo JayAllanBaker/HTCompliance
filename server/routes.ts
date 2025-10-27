@@ -814,6 +814,7 @@ export function registerRoutes(app: Express): Server {
         id: e.id,
         complianceItemId: e.complianceItemId,
         billableEventId: e.billableEventId,
+        contractId: e.contractId,
         title: e.title,
         description: e.description,
         evidenceType: e.evidenceType,
@@ -821,6 +822,7 @@ export function registerRoutes(app: Express): Server {
         mimeType: e.mimeType,
         uploadedBy: e.uploadedBy,
         createdAt: e.createdAt?.toISOString(),
+        hasFile: !!e.filePath && !!e.originalFilename,
       }));
       
       // Create archive
