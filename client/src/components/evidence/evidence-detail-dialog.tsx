@@ -1,13 +1,14 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield, Download, File, Calendar, Building2, FileSignature, ClipboardList, X } from "lucide-react";
+import { Shield, Download, File, Calendar, Building2, FileSignature, ClipboardList, X, Edit } from "lucide-react";
 import { format } from "date-fns";
 import type { Evidence } from "@shared/schema";
 
 interface EvidenceDetailDialogProps {
   evidence: Evidence | null;
   onClose: () => void;
+  onEdit?: () => void;
   organizationName?: string;
   contractTitle?: string;
   complianceItemTitle?: string;
@@ -16,6 +17,7 @@ interface EvidenceDetailDialogProps {
 export default function EvidenceDetailDialog({
   evidence,
   onClose,
+  onEdit,
   organizationName,
   contractTitle,
   complianceItemTitle
@@ -156,18 +158,37 @@ export default function EvidenceDetailDialog({
               <label className="text-xs text-muted-foreground uppercase tracking-wide">Created</label>
               <div className="flex items-center gap-1 mt-1 text-sm">
                 <Calendar className="h-3 w-3 text-muted-foreground" />
-                <span>{format(new Date(evidence.createdAt), 'MMM dd, yyyy HH:mm')}</span>
+                <span>
+                  {evidence.createdAt 
+                    ? format(new Date(evidence.createdAt), 'MMM dd, yyyy HH:mm')
+                    : 'Not available'
+                  }
+                </span>
               </div>
             </div>
             <div>
               <label className="text-xs text-muted-foreground uppercase tracking-wide">Last Updated</label>
               <div className="flex items-center gap-1 mt-1 text-sm">
                 <Calendar className="h-3 w-3 text-muted-foreground" />
-                <span>{format(new Date(evidence.updatedAt), 'MMM dd, yyyy HH:mm')}</span>
+                <span>
+                  {evidence.updatedAt 
+                    ? format(new Date(evidence.updatedAt), 'MMM dd, yyyy HH:mm')
+                    : 'Not available'
+                  }
+                </span>
               </div>
             </div>
           </div>
         </div>
+
+        {onEdit && (
+          <DialogFooter className="border-t pt-4">
+            <Button onClick={onEdit} data-testid="button-edit-evidence">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Evidence
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
