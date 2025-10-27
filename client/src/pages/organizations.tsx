@@ -10,10 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Pencil, Trash2, Link as LinkIcon, Search, Filter, FileText, ChevronDown, ChevronRight, FileSignature, ClipboardList } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Link as LinkIcon, Search, Filter, FileText, ChevronDown, ChevronRight, FileSignature, ClipboardList, Shield } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Organization, QuickbooksConnection, Contract, ComplianceItem } from "@shared/schema";
+import type { Organization, QuickbooksConnection, Contract, ComplianceItem, Evidence } from "@shared/schema";
 import OrganizationNotes from "@/components/organizations/organization-notes";
 
 interface QBCustomer {
@@ -76,6 +76,21 @@ export default function OrganizationsPage() {
   });
 
   const expandedComplianceItems = expandedComplianceData?.items || [];
+
+  // Fetch evidence for expanded organization
+  const { data: allEvidence = [] } = useQuery<Evidence[]>({
+    queryKey: ["/api/evidence"],
+    enabled: !!expandedOrgId,
+  });
+
+  // Filter evidence for this organization (related to its contracts or compliance items)
+  const expandedEvidence = allEvidence.filter(evidence => {
+    // Evidence linked to contracts of this org
+    const linkedToContract = expandedContracts.some(contract => contract.id === evidence.contractId);
+    // Evidence linked to compliance items of this org
+    const linkedToCompliance = expandedComplianceItems.some(item => item.id === evidence.complianceItemId);
+    return linkedToContract || linkedToCompliance;
+  });
 
   const createOrganizationMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -576,6 +591,38 @@ export default function OrganizationsPage() {
                                             {item.status === "completed" ? "Completed" :
                                              item.status === "in-progress" ? "In Progress" :
                                              new Date(item.dueDate) < new Date() ? "Overdue" : "Pending"}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Evidence Items Section */}
+                                <div>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <Shield className="h-5 w-5 text-primary" />
+                                    <h3 className="font-semibold text-lg">Evidence</h3>
+                                    <Badge variant="outline">{expandedEvidence.length}</Badge>
+                                  </div>
+                                  {expandedEvidence.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground ml-7">No evidence found for this organization.</p>
+                                  ) : (
+                                    <div className="ml-7 space-y-2">
+                                      {expandedEvidence.map((evidence) => (
+                                        <div
+                                          key={evidence.id}
+                                          className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                                          data-testid={`evidence-item-${evidence.id}`}
+                                        >
+                                          <div className="flex-1">
+                                            <div className="font-medium">{evidence.title}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                              {evidence.evidenceType} • {evidence.filePath ? 'Has file' : 'No file'}
+                                            </div>
+                                          </div>
+                                          <Badge variant="secondary">
+                                            {evidence.evidenceType}
                                           </Badge>
                                         </div>
                                       ))}
