@@ -41,9 +41,12 @@ export default function EvidenceLocker() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showComplianceSelector, setShowComplianceSelector] = useState(false);
   const [showNoFileWarning, setShowNoFileWarning] = useState(false);
+  const [showFileUpdateDialog, setShowFileUpdateDialog] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<EvidenceFormData | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [updateFile, setUpdateFile] = useState<File | null>(null);
+  const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
   const [selectedComplianceLabel, setSelectedComplianceLabel] = useState<string>("");
   const [filters, setFilters] = useState({
     type: "",
@@ -142,6 +145,33 @@ export default function EvidenceLocker() {
     },
   });
 
+  const updateFileMutation = useMutation({
+    mutationFn: async ({ evidenceId, file }: { evidenceId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await apiRequest("PUT", `/api/evidence/${evidenceId}/file`, formData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/evidence"] });
+      toast({
+        title: "File Updated",
+        description: "Evidence file has been updated successfully.",
+      });
+      setShowFileUpdateDialog(false);
+      setUpdateFile(null);
+      setSelectedEvidence(null);
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update evidence file.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: EvidenceFormData) => {
     // Check if no file is attached
     if (!selectedFile) {
@@ -204,6 +234,18 @@ export default function EvidenceLocker() {
   const handleImport = () => {
     if (importFile) {
       importMutation.mutate(importFile);
+    }
+  };
+
+  const handleOpenFileUpdate = (evidence: Evidence) => {
+    setSelectedEvidence(evidence);
+    setUpdateFile(null);
+    setShowFileUpdateDialog(true);
+  };
+
+  const handleSubmitFileUpdate = () => {
+    if (selectedEvidence && updateFile) {
+      updateFileMutation.mutate({ evidenceId: selectedEvidence.id, file: updateFile });
     }
   };
 
@@ -554,8 +596,17 @@ export default function EvidenceLocker() {
                                     </Button>
                                   </>
                                 )}
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleOpenFileUpdate(item)}
+                                  title={item.filePath ? "Replace file" : "Upload file"}
+                                  data-testid={`button-update-file-${item.id}`}
+                                >
+                                  <Upload className="h-4 w-4" />
+                                </Button>
                                 {!item.filePath && (
-                                  <span className="text-sm text-muted-foreground">No file</span>
+                                  <span className="text-sm text-muted-foreground italic">No file</span>
                                 )}
                               </div>
                             </TableCell>
@@ -868,6 +919,69 @@ export default function EvidenceLocker() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* File Update Dialog */}
+      <Dialog open={showFileUpdateDialog} onOpenChange={setShowFileUpdateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle data-testid="dialog-update-file-title">
+              {selectedEvidence?.filePath ? 'Replace Evidence File' : 'Upload Evidence File'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedEvidence?.filePath 
+                ? 'Upload a new file to replace the existing one. The old file will be deleted.'
+                : 'Upload a file to attach to this evidence record.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {selectedEvidence && (
+              <div className="bg-muted p-3 rounded-lg">
+                <p className="text-sm font-medium">{selectedEvidence.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedEvidence.filePath ? `Current file: ${selectedEvidence.originalFilename}` : 'No file attached'}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select File</label>
+              <Input 
+                type="file"
+                onChange={(e) => setUpdateFile(e.target.files?.[0] || null)}
+                data-testid="input-update-file"
+              />
+              {updateFile && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {updateFile.name} ({(updateFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowFileUpdateDialog(false);
+                setUpdateFile(null);
+                setSelectedEvidence(null);
+              }}
+              data-testid="button-cancel-update-file"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmitFileUpdate}
+              disabled={!updateFile || updateFileMutation.isPending}
+              data-testid="button-submit-update-file"
+            >
+              {updateFileMutation.isPending ? "Uploading..." : (selectedEvidence?.filePath ? "Replace File" : "Upload File")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Compliance Item Selector Dialog */}
       <ComplianceItemSelector
