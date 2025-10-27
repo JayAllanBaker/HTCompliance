@@ -75,6 +75,15 @@ export const complianceComments = pgTable("compliance_comments", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Organization Notes table
+export const organizationNotes = pgTable("organization_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  organizationId: varchar("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  note: text("note").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Billable Events table
 export const billableEvents = pgTable("billable_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -193,6 +202,7 @@ export const organizationsRelations = relations(organizations, ({ many, one }) =
   contracts: many(contracts),
   complianceItems: many(complianceItems),
   billableEvents: many(billableEvents),
+  notes: many(organizationNotes),
   quickbooksConnection: one(quickbooksConnections, {
     fields: [organizations.id],
     references: [quickbooksConnections.organizationId],
@@ -231,6 +241,17 @@ export const complianceCommentsRelations = relations(complianceComments, ({ one 
   }),
   user: one(users, {
     fields: [complianceComments.userId],
+    references: [users.id],
+  }),
+}));
+
+export const organizationNotesRelations = relations(organizationNotes, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [organizationNotes.organizationId],
+    references: [organizations.id],
+  }),
+  user: one(users, {
+    fields: [organizationNotes.userId],
     references: [users.id],
   }),
 }));
@@ -318,6 +339,11 @@ export const insertComplianceCommentSchema = createInsertSchema(complianceCommen
   createdAt: true,
 });
 
+export const insertOrganizationNoteSchema = createInsertSchema(organizationNotes).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertBillableEventSchema = createInsertSchema(billableEvents).omit({
   id: true,
   createdAt: true,
@@ -374,6 +400,8 @@ export type ComplianceItem = typeof complianceItems.$inferSelect;
 export type InsertComplianceItem = z.infer<typeof insertComplianceItemSchema>;
 export type ComplianceComment = typeof complianceComments.$inferSelect;
 export type InsertComplianceComment = z.infer<typeof insertComplianceCommentSchema>;
+export type OrganizationNote = typeof organizationNotes.$inferSelect;
+export type InsertOrganizationNote = z.infer<typeof insertOrganizationNoteSchema>;
 export type BillableEvent = typeof billableEvents.$inferSelect;
 export type InsertBillableEvent = z.infer<typeof insertBillableEventSchema>;
 export type Evidence = typeof evidence.$inferSelect;
