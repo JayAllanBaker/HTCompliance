@@ -8,10 +8,12 @@ import {
   insertContractSchema, 
   insertComplianceItemSchema, 
   insertComplianceCommentSchema,
+  insertOrganizationNoteSchema,
   insertBillableEventSchema, 
   insertEvidenceSchema, 
   insertUserSchema,
   complianceComments,
+  organizationNotes,
   users
 } from "../shared/schema";
 import { z } from "zod";
@@ -509,6 +511,119 @@ export function registerRoutes(app: Express): Server {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete comment" });
+    }
+  });
+
+  // Organization notes routes
+  app.get("/api/organizations/:id/notes", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const notes = await db
+        .select({
+          id: organizationNotes.id,
+          organizationId: organizationNotes.organizationId,
+          userId: organizationNotes.userId,
+          note: organizationNotes.note,
+          createdAt: organizationNotes.createdAt,
+          userName: users.fullName,
+          username: users.username,
+        })
+        .from(organizationNotes)
+        .innerJoin(users, eq(organizationNotes.userId, users.id))
+        .where(eq(organizationNotes.organizationId, id))
+        .orderBy(desc(organizationNotes.createdAt));
+      
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch notes" });
+    }
+  });
+
+  app.post("/api/organizations/:id/notes", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertOrganizationNoteSchema.parse({
+        organizationId: id,
+        userId: req.user?.id,
+        note: req.body.note,
+      });
+      
+      const [note] = await db
+        .insert(organizationNotes)
+        .values(validatedData)
+        .returning();
+      
+      // Fetch note with user details
+      const [noteWithUser] = await db
+        .select({
+          id: organizationNotes.id,
+          organizationId: organizationNotes.organizationId,
+          userId: organizationNotes.userId,
+          note: organizationNotes.note,
+          createdAt: organizationNotes.createdAt,
+          userName: users.fullName,
+          username: users.username,
+        })
+        .from(organizationNotes)
+        .innerJoin(users, eq(organizationNotes.userId, users.id))
+        .where(eq(organizationNotes.id, note.id));
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "organization_note",
+        entityId: note.id,
+        newValues: JSON.stringify(note),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(201).json(noteWithUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create note" });
+      }
+    }
+  });
+
+  app.delete("/api/organization-notes/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get note first to check ownership
+      const [note] = await db
+        .select()
+        .from(organizationNotes)
+        .where(eq(organizationNotes.id, id));
+      
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      
+      // Only allow deletion by note owner or admin
+      if (note.userId !== req.user?.id && req.user?.role !== "admin") {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      
+      await db.delete(organizationNotes).where(eq(organizationNotes.id, id));
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "organization_note",
+        entityId: id,
+        oldValues: JSON.stringify(note),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete note" });
     }
   });
 
