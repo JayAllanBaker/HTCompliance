@@ -87,11 +87,20 @@ export default function ComplianceCalendar({ items, customers, onRefresh }: Comp
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   const getItemsForDate = (date: Date) => {
-    return items.filter(item => {
+    const dateItems = items.filter(item => {
       if (!item.dueDate) return false;
       const dueDate = typeof item.dueDate === 'string' ? parseISO(item.dueDate) : item.dueDate;
-      return isSameDay(dueDate, date);
+      const matches = isSameDay(dueDate, date);
+      return matches;
     });
+    if (dateItems.length > 0) {
+      console.log("[CALENDAR DEBUG] Items for date:", {
+        date: format(date, 'yyyy-MM-dd'),
+        count: dateItems.length,
+        itemIds: dateItems.map(i => i.id)
+      });
+    }
+    return dateItems;
   };
 
   const getItemsForSelectedDate = () => {
