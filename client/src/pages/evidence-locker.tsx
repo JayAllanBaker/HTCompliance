@@ -4,6 +4,7 @@ import type { Evidence, ComplianceItem, BillableEvent, Contract } from "@shared/
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import ComplianceItemSelector from "@/components/evidence/compliance-item-selector";
+import EvidenceDetailDialog from "@/components/evidence/evidence-detail-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ export default function EvidenceLocker() {
   const [updateFile, setUpdateFile] = useState<File | null>(null);
   const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
   const [selectedComplianceLabel, setSelectedComplianceLabel] = useState<string>("");
+  const [detailEvidence, setDetailEvidence] = useState<Evidence | null>(null);
   const [filters, setFilters] = useState({
     type: "",
     search: "",
@@ -528,7 +530,13 @@ export default function EvidenceLocker() {
                         {filteredEvidence.map((item: any) => (
                           <TableRow key={item.id} data-testid={`row-evidence-${item.id}`}>
                             <TableCell className="font-medium">
-                              {item.title}
+                              <button
+                                onClick={() => setDetailEvidence(item)}
+                                className="text-left w-full hover:text-primary transition-colors hover:underline"
+                                data-testid={`button-evidence-title-${item.id}`}
+                              >
+                                {item.title}
+                              </button>
                             </TableCell>
                             <TableCell>
                               <Badge 
@@ -992,6 +1000,37 @@ export default function EvidenceLocker() {
           setSelectedComplianceLabel(itemLabel);
         }}
         selectedId={form.watch("complianceItemId")}
+      />
+
+      {/* Evidence Detail Dialog */}
+      <EvidenceDetailDialog
+        evidence={detailEvidence}
+        onClose={() => setDetailEvidence(null)}
+        onEdit={() => {
+          if (detailEvidence) {
+            // Open the upload form in edit mode - prepopulate the form
+            form.reset({
+              title: detailEvidence.title,
+              description: detailEvidence.description || "",
+              evidenceType: detailEvidence.evidenceType as any,
+              complianceItemId: detailEvidence.complianceItemId || "",
+              billableEventId: detailEvidence.billableEventId || "",
+              contractId: detailEvidence.contractId || "",
+            });
+            setShowUploadForm(true);
+            setDetailEvidence(null);
+          }
+        }}
+        complianceItemTitle={
+          detailEvidence?.complianceItemId
+            ? complianceItems?.items.find((c) => c.id === detailEvidence.complianceItemId)?.commitment
+            : undefined
+        }
+        contractTitle={
+          detailEvidence?.contractId
+            ? contracts?.find((c) => c.id === detailEvidence.contractId)?.title
+            : undefined
+        }
       />
     </div>
   );
