@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Organization, ComplianceItem } from "@shared/schema";
 import Header from "@/components/layout/header";
@@ -45,7 +45,7 @@ export default function Compliance() {
   });
 
   // Separate query for calendar view - fetch all items regardless of status filter
-  const calendarFilters = { ...filters, status: "" };
+  const calendarFilters = useMemo(() => ({ ...filters, status: "" }), [filters]);
   const { data: calendarData, refetch: refetchCalendar } = useQuery<{ items: ComplianceItem[]; total: number }>({
     queryKey: ["/api/compliance-items", calendarFilters],
     enabled: viewMode === "calendar",
