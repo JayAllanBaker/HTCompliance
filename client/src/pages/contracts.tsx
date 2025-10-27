@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Organization, Contract } from "@shared/schema";
+import type { Organization, Contract, Evidence } from "@shared/schema";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Eye, FileText } from "lucide-react";
+import { Plus, Edit, Eye, FileText, ChevronDown, ChevronRight, Shield } from "lucide-react";
 import ContractForm from "@/components/contracts/contract-form";
 import { format } from "date-fns";
 
@@ -15,6 +15,7 @@ export default function Contracts() {
   const [showNewContractForm, setShowNewContractForm] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
+  const [expandedContractId, setExpandedContractId] = useState<string | null>(null);
 
   const { data: contracts, isLoading, refetch } = useQuery<Contract[]>({
     queryKey: ["/api/contracts"],
@@ -23,6 +24,15 @@ export default function Contracts() {
   const { data: organizations } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
   });
+
+  // Fetch evidence for expanded contract
+  const { data: allEvidence = [] } = useQuery<Evidence[]>({
+    queryKey: ["/api/evidence"],
+    enabled: !!expandedContractId,
+  });
+
+  // Filter evidence for the expanded contract
+  const expandedEvidence = allEvidence.filter(evidence => evidence.contractId === expandedContractId);
 
   const getOrganizationName = (customerId: string) => {
     const organization = organizations?.find((org) => org.id === customerId);
@@ -101,6 +111,7 @@ export default function Contracts() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-12"></TableHead>
                           <TableHead>Contract Title</TableHead>
                           <TableHead>Organization</TableHead>
                           <TableHead>Start Date</TableHead>
@@ -112,48 +123,101 @@ export default function Contracts() {
                       </TableHeader>
                       <TableBody>
                         {contracts?.map((contract) => (
-                          <TableRow key={contract.id} data-testid={`row-contract-${contract.id}`}>
-                            <TableCell className="font-medium">
-                              {contract.title}
-                            </TableCell>
-                            <TableCell>
-                              {getOrganizationName(contract.customerId)}
-                            </TableCell>
-                            <TableCell>
-                              {contract.startDate ? format(new Date(contract.startDate), 'MMM dd, yyyy') : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                              {contract.endDate ? format(new Date(contract.endDate), 'MMM dd, yyyy') : 'Ongoing'}
-                            </TableCell>
-                            <TableCell>
-                              {formatCurrency(contract.maxAmount)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={contract.isActive ? "default" : "secondary"}>
-                                {contract.isActive ? "Active" : "Inactive"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end space-x-2">
-                                <Button 
-                                  variant="ghost" 
+                          <Fragment key={contract.id}>
+                            <TableRow data-testid={`row-contract-${contract.id}`}>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
                                   size="sm"
-                                  onClick={() => setViewingContract(contract)}
-                                  data-testid={`button-view-${contract.id}`}
+                                  onClick={() => setExpandedContractId(expandedContractId === contract.id ? null : contract.id)}
+                                  data-testid={`button-expand-${contract.id}`}
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  {expandedContractId === contract.id ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => setEditingContract(contract)}
-                                  data-testid={`button-edit-${contract.id}`}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {contract.title}
+                              </TableCell>
+                              <TableCell>
+                                {getOrganizationName(contract.customerId)}
+                              </TableCell>
+                              <TableCell>
+                                {contract.startDate ? format(new Date(contract.startDate), 'MMM dd, yyyy') : 'N/A'}
+                              </TableCell>
+                              <TableCell>
+                                {contract.endDate ? format(new Date(contract.endDate), 'MMM dd, yyyy') : 'Ongoing'}
+                              </TableCell>
+                              <TableCell>
+                                {formatCurrency(contract.maxAmount)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={contract.isActive ? "default" : "secondary"}>
+                                  {contract.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end space-x-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => setViewingContract(contract)}
+                                    data-testid={`button-view-${contract.id}`}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => setEditingContract(contract)}
+                                    data-testid={`button-edit-${contract.id}`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+
+                            {expandedContractId === contract.id && (
+                              <TableRow data-testid={`row-expanded-${contract.id}`}>
+                                <TableCell colSpan={8} className="bg-muted/50 p-6">
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <Shield className="h-5 w-5 text-primary" />
+                                      <h3 className="font-semibold text-lg">Evidence</h3>
+                                      <Badge variant="outline">{expandedEvidence.length}</Badge>
+                                    </div>
+                                    {expandedEvidence.length === 0 ? (
+                                      <p className="text-sm text-muted-foreground ml-7">No evidence found for this contract.</p>
+                                    ) : (
+                                      <div className="ml-7 space-y-2">
+                                        {expandedEvidence.map((evidence) => (
+                                          <div
+                                            key={evidence.id}
+                                            className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                                            data-testid={`evidence-item-${evidence.id}`}
+                                          >
+                                            <div className="flex-1">
+                                              <div className="font-medium">{evidence.title}</div>
+                                              <div className="text-sm text-muted-foreground">
+                                                {evidence.evidenceType} • {evidence.filePath ? 'Has file' : 'No file'}
+                                              </div>
+                                            </div>
+                                            <Badge variant="secondary">
+                                              {evidence.evidenceType}
+                                            </Badge>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </Fragment>
                         ))}
                       </TableBody>
                     </Table>
