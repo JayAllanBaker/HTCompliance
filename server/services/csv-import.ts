@@ -112,6 +112,12 @@ export async function validateComplianceCSV(
     const rowNumber = i + 2; // +2 because array is 0-indexed and CSV has header
     
     try {
+      // Skip completely empty rows
+      const isEmptyRow = !row.Category && !row.Commitment && !row['Responsible Party'];
+      if (isEmptyRow) {
+        continue;
+      }
+      
       // Validate required fields
       if (!row.Category) {
         errors.push(`Row ${rowNumber}: Category is required`);
