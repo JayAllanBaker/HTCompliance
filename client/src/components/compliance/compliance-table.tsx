@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import ComplianceDetailDialog from "./compliance-detail-dialog";
 
 interface ComplianceTableProps {
   data: ComplianceItem[];
@@ -56,6 +57,7 @@ export default function ComplianceTable({
   const { toast } = useToast();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [detailItem, setDetailItem] = useState<ComplianceItem | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>(() => {
     // Load from localStorage or use defaults
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -318,14 +320,20 @@ export default function ComplianceTable({
               )}
               {visibleColumns.commitment && (
                 <TableCell>
-                  <div className="text-sm text-foreground font-medium">
-                    {item.commitment}
-                  </div>
-                  {item.description && (
-                    <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                      {item.description}
+                  <button
+                    onClick={() => setDetailItem(item)}
+                    className="text-left w-full hover:text-primary transition-colors"
+                    data-testid={`button-compliance-commitment-${item.id}`}
+                  >
+                    <div className="text-sm text-foreground font-medium hover:underline">
+                      {item.commitment}
                     </div>
-                  )}
+                    {item.description && (
+                      <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {item.description}
+                      </div>
+                    )}
+                  </button>
                 </TableCell>
               )}
               {visibleColumns.category && (
@@ -436,6 +444,18 @@ export default function ComplianceTable({
           </Button>
         )}
       </div>
+
+      <ComplianceDetailDialog
+        item={detailItem}
+        onClose={() => setDetailItem(null)}
+        onEdit={() => {
+          if (detailItem && onEdit) {
+            onEdit(detailItem);
+            setDetailItem(null);
+          }
+        }}
+        organizationName={detailItem ? getOrganizationName(detailItem.customerId) : undefined}
+      />
     </div>
   );
 }
