@@ -40,24 +40,28 @@ export default function Compliance() {
     offset: 0,
   });
 
-  const { data: complianceData, isLoading, refetch } = useQuery<{ items: ComplianceItem[]; total: number }>({
-    queryKey: ["/api/compliance-items", filters],
-  });
-
-  // Separate query for calendar view - fetch all items regardless of status filter
-  const calendarFilters = useMemo(() => ({ 
+  // Always fetch all items without status filter for calendar
+  const allItemsFilters = useMemo(() => ({ 
     search: filters.search,
     customerId: filters.customerId,
     category: filters.category,
-    status: "", // Always empty for calendar
-    limit: 1000, // Get all items for calendar
+    status: "", // No status filter
+    limit: 1000,
     offset: 0 
   }), [filters.search, filters.customerId, filters.category]);
-  
-  const { data: calendarData, refetch: refetchCalendar } = useQuery<{ items: ComplianceItem[]; total: number }>({
-    queryKey: ["/api/compliance-items", { ...calendarFilters, _view: "calendar" }],
-    enabled: viewMode === "calendar",
+
+  const { data: allItemsData, isLoading, refetch } = useQuery<{ items: ComplianceItem[]; total: number }>({
+    queryKey: ["/api/compliance-items", allItemsFilters],
   });
+
+  // Filter items client-side for table view when status filter is active
+  const complianceData = useMemo(() => {
+    if (!allItemsData || !filters.status) return allItemsData;
+    return {
+      items: allItemsData.items.filter(item => item.status === filters.status),
+      total: allItemsData.items.filter(item => item.status === filters.status).length
+    };
+  }, [allItemsData, filters.status]);
 
   const { data: organizations } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
@@ -394,9 +398,9 @@ export default function Compliance() {
             {viewMode === "calendar" && (
               <div className="mb-6">
                 <ComplianceCalendar 
-                  items={calendarData?.items || []}
+                  items={allItemsData?.items || []}
                   customers={organizations}
-                  onRefresh={refetchCalendar}
+                  onRefresh={refetch}
                 />
               </div>
             )}
