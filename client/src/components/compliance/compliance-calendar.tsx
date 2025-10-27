@@ -35,8 +35,16 @@ export default function ComplianceCalendar({ items, customers, onRefresh }: Comp
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
 
+  // DEBUG: Log when items prop changes
+  console.log("[CALENDAR DEBUG] Items received:", {
+    itemCount: items.length,
+    sampleItem: items[0],
+    timestamp: new Date().toISOString()
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ itemId, status }: { itemId: string; status: string }) => {
+      console.log("[CALENDAR DEBUG] Updating status:", { itemId, status });
       const updates: any = { status };
       if (status === "complete") {
         updates.completedAt = new Date().toISOString();
@@ -45,8 +53,10 @@ export default function ComplianceCalendar({ items, customers, onRefresh }: Comp
       return response.json();
     },
     onSuccess: () => {
+      console.log("[CALENDAR DEBUG] Status update success, invalidating queries");
       queryClient.invalidateQueries({ queryKey: ["/api/compliance-items"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      console.log("[CALENDAR DEBUG] Calling onRefresh");
       onRefresh?.();
       toast({
         title: "Status Updated",

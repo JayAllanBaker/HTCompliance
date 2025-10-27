@@ -54,13 +54,26 @@ export default function Compliance() {
     queryKey: ["/api/compliance-items", allItemsFilters],
   });
 
+  // DEBUG: Log when allItemsData changes
+  console.log("[DEBUG] allItemsData changed:", {
+    itemCount: allItemsData?.items?.length,
+    filters: allItemsFilters,
+    viewMode
+  });
+
   // Filter items client-side for table view when status filter is active
   const complianceData = useMemo(() => {
     if (!allItemsData || !filters.status) return allItemsData;
-    return {
+    const filtered = {
       items: allItemsData.items.filter(item => item.status === filters.status),
       total: allItemsData.items.filter(item => item.status === filters.status).length
     };
+    console.log("[DEBUG] complianceData filtered:", {
+      originalCount: allItemsData.items.length,
+      filteredCount: filtered.items.length,
+      statusFilter: filters.status
+    });
+    return filtered;
   }, [allItemsData, filters.status]);
 
   const { data: organizations } = useQuery<Organization[]>({
