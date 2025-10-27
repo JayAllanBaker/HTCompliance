@@ -292,11 +292,20 @@ export function registerRoutes(app: Express): Server {
       console.log("Update request body:", JSON.stringify(req.body, null, 2));
       
       // Convert date strings to Date objects before validation
-      const data = {
+      // Only include fields that are explicitly provided to avoid nullifying existing data
+      const data: any = {
         ...req.body,
-        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
-        completedAt: req.body.completedAt ? new Date(req.body.completedAt) : null,
       };
+      
+      // Only set dueDate if it was explicitly provided in the request
+      if (req.body.dueDate !== undefined) {
+        data.dueDate = req.body.dueDate ? new Date(req.body.dueDate) : null;
+      }
+      
+      // Only set completedAt if it was explicitly provided in the request
+      if (req.body.completedAt !== undefined) {
+        data.completedAt = req.body.completedAt ? new Date(req.body.completedAt) : null;
+      }
       
       console.log("Data after date conversion:", JSON.stringify(data, null, 2));
       const validatedData = insertComplianceItemSchema.partial().parse(data);
