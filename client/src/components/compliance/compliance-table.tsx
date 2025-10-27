@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Organization, ComplianceItem } from "@shared/schema";
+import type { Organization, ComplianceItem, Evidence } from "@shared/schema";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Check, RefreshCw, Settings2 } from "lucide-react";
+import { Edit, Check, RefreshCw, Settings2, ChevronDown, ChevronRight, Shield } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -54,6 +54,7 @@ export default function ComplianceTable({
 }: ComplianceTableProps) {
   const { toast } = useToast();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>(() => {
     // Load from localStorage or use defaults
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -86,6 +87,15 @@ export default function ComplianceTable({
   const { data: organizations } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
   });
+
+  // Fetch evidence for expanded compliance item
+  const { data: allEvidence = [] } = useQuery<Evidence[]>({
+    queryKey: ["/api/evidence"],
+    enabled: !!expandedItemId,
+  });
+
+  // Filter evidence for the expanded compliance item
+  const expandedEvidence = allEvidence.filter(evidence => evidence.complianceItemId === expandedItemId);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ itemId, status }: { itemId: string; status: string }) => {
@@ -262,6 +272,7 @@ export default function ComplianceTable({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12"></TableHead>
             {visibleColumns.dueDate && <TableHead>Due Date</TableHead>}
             {visibleColumns.commitment && <TableHead>Commitment</TableHead>}
             {visibleColumns.category && <TableHead>Category</TableHead>}
@@ -273,11 +284,25 @@ export default function ComplianceTable({
         </TableHeader>
         <TableBody>
           {data.map((item: any) => (
-            <TableRow 
-              key={item.id} 
-              className="table-hover"
-              data-testid={`row-compliance-${item.id}`}
-            >
+            <Fragment key={item.id}>
+              <TableRow 
+                className="table-hover"
+                data-testid={`row-compliance-${item.id}`}
+              >
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setExpandedItemId(expandedItemId === item.id ? null : item.id)}
+                    data-testid={`button-expand-${item.id}`}
+                  >
+                    {expandedItemId === item.id ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TableCell>
               {visibleColumns.dueDate && (
                 <TableCell className="whitespace-nowrap">
                   <div className="flex items-center">
@@ -356,6 +381,44 @@ export default function ComplianceTable({
                 </div>
               </TableCell>
             </TableRow>
+
+            {expandedItemId === item.id && (
+              <TableRow data-testid={`row-expanded-${item.id}`}>
+                <TableCell colSpan={8} className="bg-muted/50 p-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shield className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold text-lg">Evidence</h3>
+                      <Badge variant="outline">{expandedEvidence.length}</Badge>
+                    </div>
+                    {expandedEvidence.length === 0 ? (
+                      <p className="text-sm text-muted-foreground ml-7">No evidence found for this compliance item.</p>
+                    ) : (
+                      <div className="ml-7 space-y-2">
+                        {expandedEvidence.map((evidence) => (
+                          <div
+                            key={evidence.id}
+                            className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                            data-testid={`evidence-item-${evidence.id}`}
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium">{evidence.title}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {evidence.evidenceType} • {evidence.filePath ? 'Has file' : 'No file'}
+                              </div>
+                            </div>
+                            <Badge variant="secondary">
+                              {evidence.evidenceType}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </Fragment>
           ))}
         </TableBody>
       </Table>
