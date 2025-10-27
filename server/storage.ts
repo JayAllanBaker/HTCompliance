@@ -73,6 +73,7 @@ export interface IStorage {
   // Evidence methods
   getEvidence(complianceItemId?: string, billableEventId?: string): Promise<Evidence[]>;
   createEvidence(evidence: InsertEvidence): Promise<Evidence>;
+  updateEvidence(id: string, updates: Partial<InsertEvidence>): Promise<Evidence>;
   
   // Audit log methods
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
@@ -484,6 +485,15 @@ export class DatabaseStorage implements IStorage {
   async createEvidence(evidenceData: InsertEvidence): Promise<Evidence> {
     const [newEvidence] = await db.insert(evidence).values(evidenceData).returning();
     return newEvidence;
+  }
+
+  async updateEvidence(id: string, updates: Partial<InsertEvidence>): Promise<Evidence> {
+    const [updatedEvidence] = await db
+      .update(evidence)
+      .set(updates)
+      .where(eq(evidence.id, id))
+      .returning();
+    return updatedEvidence;
   }
 
   // Audit log methods

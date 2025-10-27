@@ -733,6 +733,78 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update evidence file (add or replace)
+  app.put("/api/evidence/:id/file", upload.single("file"), async (req, res) => {
+    try {
+      // Get existing evidence
+      const evidenceList = await storage.getEvidence();
+      const oldEvidence = evidenceList.find(e => e.id === req.params.id);
+      
+      if (!oldEvidence) {
+        return res.status(404).json({ error: "Evidence not found" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
+      }
+
+      const fs = await import("fs");
+      
+      // Delete old file if it exists
+      if (oldEvidence.filePath) {
+        try {
+          const path = await import("path");
+          const absolutePath = path.resolve(oldEvidence.filePath);
+          if (fs.existsSync(absolutePath)) {
+            fs.unlinkSync(absolutePath);
+            console.log(`Deleted old file: ${absolutePath}`);
+          }
+        } catch (err) {
+          console.error("Error deleting old file:", err);
+          // Continue anyway - don't fail the upload
+        }
+      }
+
+      // Update evidence with new file information
+      const updateData = {
+        filePath: req.file.path,
+        fileHash: "hash_placeholder", // In production, calculate actual hash
+        originalFilename: req.file.originalname,
+        mimeType: req.file.mimetype,
+      };
+
+      const updatedEvidence = await storage.updateEvidence(req.params.id, updateData);
+
+      // Audit log
+      const action = oldEvidence.filePath ? "UPDATE_FILE" : "ADD_FILE";
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action,
+        entityType: "evidence",
+        entityId: updatedEvidence.id,
+        oldValues: JSON.stringify({
+          filePath: oldEvidence.filePath,
+          originalFilename: oldEvidence.originalFilename,
+          mimeType: oldEvidence.mimeType,
+        }),
+        newValues: JSON.stringify({
+          filePath: updateData.filePath,
+          originalFilename: updateData.originalFilename,
+          mimeType: updateData.mimeType,
+          action: oldEvidence.filePath ? `Replaced: ${oldEvidence.originalFilename} → ${req.file.originalname}` : `Added: ${req.file.originalname}`,
+        }),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+
+      res.json(updatedEvidence);
+    } catch (error) {
+      console.error("Error updating evidence file:", error);
+      res.status(500).json({ error: "Failed to update evidence file" });
+    }
+  });
+
   app.get("/api/evidence/:id/download", async (req, res) => {
     try {
       const evidenceList = await storage.getEvidence();
