@@ -505,13 +505,13 @@ export default function OrganizationsPage() {
                                   <div className="flex items-center gap-2 mb-3">
                                     <FileSignature className="h-5 w-5 text-primary" />
                                     <h3 className="font-semibold text-lg">Contracts</h3>
-                                    <Badge variant="outline">{expandedContracts.filter(c => c.customerId === org.id).length}</Badge>
+                                    <Badge variant="outline">{expandedContracts.length}</Badge>
                                   </div>
-                                  {expandedContracts.filter(c => c.customerId === org.id).length === 0 ? (
+                                  {expandedContracts.length === 0 ? (
                                     <p className="text-sm text-muted-foreground ml-7">No contracts found for this organization.</p>
                                   ) : (
                                     <div className="ml-7 space-y-2">
-                                      {expandedContracts.filter(c => c.customerId === org.id).map((contract) => (
+                                      {expandedContracts.map((contract) => (
                                         <div
                                           key={contract.id}
                                           className="flex items-center justify-between p-3 bg-background rounded-lg border"
@@ -543,13 +543,13 @@ export default function OrganizationsPage() {
                                   <div className="flex items-center gap-2 mb-3">
                                     <ClipboardList className="h-5 w-5 text-primary" />
                                     <h3 className="font-semibold text-lg">Compliance Items</h3>
-                                    <Badge variant="outline">{expandedComplianceItems.filter(ci => ci.customerId === org.id).length}</Badge>
+                                    <Badge variant="outline">{expandedComplianceItems.length}</Badge>
                                   </div>
-                                  {expandedComplianceItems.filter(ci => ci.customerId === org.id).length === 0 ? (
+                                  {expandedComplianceItems.length === 0 ? (
                                     <p className="text-sm text-muted-foreground ml-7">No compliance items found for this organization.</p>
                                   ) : (
                                     <div className="ml-7 space-y-2">
-                                      {expandedComplianceItems.filter(ci => ci.customerId === org.id).map((item) => (
+                                      {expandedComplianceItems.map((item) => (
                                         <div
                                           key={item.id}
                                           className="flex items-center justify-between p-3 bg-background rounded-lg border"
