@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
@@ -375,6 +375,7 @@ export default function OrganizationsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12"></TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Code</TableHead>
                         <TableHead>Type</TableHead>
@@ -388,10 +389,25 @@ export default function OrganizationsPage() {
                       {organizations
                         .filter(org => orgTypeFilter === "all" || org.orgType === orgTypeFilter)
                         .map((org) => (
-                        <TableRow key={org.id} data-testid={`row-organization-${org.id}`}>
-                          <TableCell className="font-medium" data-testid={`text-org-name-${org.id}`}>
-                            {org.name}
-                          </TableCell>
+                        <Fragment key={org.id}>
+                          <TableRow data-testid={`row-organization-${org.id}`}>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedOrgId(expandedOrgId === org.id ? null : org.id)}
+                                data-testid={`button-expand-${org.id}`}
+                              >
+                                {expandedOrgId === org.id ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TableCell>
+                            <TableCell className="font-medium" data-testid={`text-org-name-${org.id}`}>
+                              {org.name}
+                            </TableCell>
                           <TableCell data-testid={`text-org-code-${org.id}`}>
                             {org.code}
                           </TableCell>
@@ -479,6 +495,98 @@ export default function OrganizationsPage() {
                             </div>
                           </TableCell>
                         </TableRow>
+                        
+                        {expandedOrgId === org.id && (
+                          <TableRow data-testid={`row-expanded-${org.id}`}>
+                            <TableCell colSpan={8} className="bg-muted/50 p-6">
+                              <div className="space-y-6">
+                                {/* Contracts Section */}
+                                <div>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <FileSignature className="h-5 w-5 text-primary" />
+                                    <h3 className="font-semibold text-lg">Contracts</h3>
+                                    <Badge variant="outline">{expandedContracts.filter(c => c.customerId === org.id).length}</Badge>
+                                  </div>
+                                  {expandedContracts.filter(c => c.customerId === org.id).length === 0 ? (
+                                    <p className="text-sm text-muted-foreground ml-7">No contracts found for this organization.</p>
+                                  ) : (
+                                    <div className="ml-7 space-y-2">
+                                      {expandedContracts.filter(c => c.customerId === org.id).map((contract) => (
+                                        <div
+                                          key={contract.id}
+                                          className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                                          data-testid={`contract-item-${contract.id}`}
+                                        >
+                                          <div className="flex-1">
+                                            <div className="font-medium">{contract.title}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                              {new Date(contract.startDate).toLocaleDateString()} 
+                                              {contract.endDate && ` - ${new Date(contract.endDate).toLocaleDateString()}`}
+                                            </div>
+                                          </div>
+                                          {contract.maxAmount && (
+                                            <div className="text-sm font-medium">
+                                              ${contract.maxAmount.toLocaleString()}
+                                            </div>
+                                          )}
+                                          <Badge variant={contract.isActive ? "default" : "secondary"} className="ml-3">
+                                            {contract.isActive ? "Active" : "Inactive"}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Compliance Items Section */}
+                                <div>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <ClipboardList className="h-5 w-5 text-primary" />
+                                    <h3 className="font-semibold text-lg">Compliance Items</h3>
+                                    <Badge variant="outline">{expandedComplianceItems.filter(ci => ci.customerId === org.id).length}</Badge>
+                                  </div>
+                                  {expandedComplianceItems.filter(ci => ci.customerId === org.id).length === 0 ? (
+                                    <p className="text-sm text-muted-foreground ml-7">No compliance items found for this organization.</p>
+                                  ) : (
+                                    <div className="ml-7 space-y-2">
+                                      {expandedComplianceItems.filter(ci => ci.customerId === org.id).map((item) => (
+                                        <div
+                                          key={item.id}
+                                          className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                                          data-testid={`compliance-item-${item.id}`}
+                                        >
+                                          <div className="flex-1">
+                                            <div className="font-medium">{item.title}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                              Due: {new Date(item.dueDate).toLocaleDateString()}
+                                            </div>
+                                          </div>
+                                          <Badge 
+                                            variant={
+                                              item.status === "completed" ? "default" :
+                                              item.status === "in-progress" ? "secondary" :
+                                              "outline"
+                                            }
+                                            className={
+                                              item.status === "pending" && new Date(item.dueDate) < new Date()
+                                                ? "bg-destructive text-destructive-foreground"
+                                                : ""
+                                            }
+                                          >
+                                            {item.status === "completed" ? "Completed" :
+                                             item.status === "in-progress" ? "In Progress" :
+                                             new Date(item.dueDate) < new Date() ? "Overdue" : "Pending"}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
                       ))}
                     </TableBody>
                   </Table>
