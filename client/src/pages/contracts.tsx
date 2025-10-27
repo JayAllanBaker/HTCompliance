@@ -1,5 +1,6 @@
 import { useState, Fragment } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import type { Organization, Contract, Evidence } from "@shared/schema";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
@@ -195,9 +196,10 @@ export default function Contracts() {
                                     ) : (
                                       <div className="ml-7 space-y-2">
                                         {expandedEvidence.map((evidence) => (
-                                          <div
+                                          <Link
                                             key={evidence.id}
-                                            className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                                            href="/evidence-locker"
+                                            className="flex items-center justify-between p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
                                             data-testid={`evidence-item-${evidence.id}`}
                                           >
                                             <div className="flex-1">
@@ -209,7 +211,7 @@ export default function Contracts() {
                                             <Badge variant="secondary">
                                               {evidence.evidenceType}
                                             </Badge>
-                                          </div>
+                                          </Link>
                                         ))}
                                       </div>
                                     )}
