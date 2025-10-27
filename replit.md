@@ -34,6 +34,7 @@ The frontend uses React with TypeScript, Vite, and Wouter for routing. UI is bui
 *   **Help System**: In-app searchable help center and external documentation (USER_GUIDE.md, DOCKER_SETUP.md).
 *   **Table Customization**: Users can toggle column visibility in compliance tables with preferences persisted in localStorage.
 *   **Dashboard KPIs**: Four key performance indicators displayed on the dashboard - Compliance Rate (ClipboardCheck icon), Overdue Items (AlertTriangle icon), Due This Week (Calendar icon), and Total Items (ListChecks icon).
+*   **Organization Details**: Expandable rows in the Organizations table allow users to view all associated contracts and compliance items by clicking a chevron button. Each expanded view shows contract details (title, dates, amount, status) and compliance items (title, due date, status) with badges indicating counts and statuses.
 
 ### System Design Choices
 
