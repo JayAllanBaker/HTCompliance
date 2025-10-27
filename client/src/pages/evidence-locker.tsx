@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import type { Evidence, ComplianceItem, BillableEvent } from "@shared/schema";
+import type { Evidence, ComplianceItem, BillableEvent, Contract } from "@shared/schema";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import ComplianceItemSelector from "@/components/evidence/compliance-item-selector";
@@ -25,9 +25,10 @@ import { useAuth } from "@/hooks/use-auth";
 const evidenceSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  evidenceType: z.enum(["document", "email", "screenshot", "report", "other"]),
+  evidenceType: z.enum(["document", "email", "screenshot", "report", "contract-and-amendment", "other"]),
   complianceItemId: z.string().optional(),
   billableEventId: z.string().optional(),
+  contractId: z.string().optional(),
 });
 
 type EvidenceFormData = z.infer<typeof evidenceSchema>;
@@ -54,6 +55,7 @@ export default function EvidenceLocker() {
       evidenceType: "document",
       complianceItemId: "",
       billableEventId: "",
+      contractId: "",
     },
   });
 
@@ -67,6 +69,10 @@ export default function EvidenceLocker() {
 
   const { data: billableEvents } = useQuery<BillableEvent[]>({
     queryKey: ["/api/billable-events"],
+  });
+
+  const { data: contracts } = useQuery<Contract[]>({
+    queryKey: ["/api/contracts"],
   });
 
   const uploadMutation = useMutation({
@@ -219,6 +225,8 @@ export default function EvidenceLocker() {
         return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
       case "report":
         return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
+      case "contract-and-amendment":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
       case "other":
         return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
       default:
@@ -236,6 +244,12 @@ export default function EvidenceLocker() {
     if (!id) return "N/A";
     const event = billableEvents?.find((event) => event.id === id);
     return event?.description || "Unknown Event";
+  };
+
+  const getContractTitle = (id: string | null) => {
+    if (!id) return "N/A";
+    const contract = contracts?.find((contract) => contract.id === id);
+    return contract?.title || "Unknown Contract";
   };
 
   const filteredEvidence = evidence?.filter((item) => {
@@ -390,6 +404,7 @@ export default function EvidenceLocker() {
                       <SelectItem value="email">Email</SelectItem>
                       <SelectItem value="screenshot">Screenshot</SelectItem>
                       <SelectItem value="report">Report</SelectItem>
+                      <SelectItem value="contract-and-amendment">Contract and Amendment</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
@@ -474,7 +489,13 @@ export default function EvidenceLocker() {
                                   {getBillableEventTitle(item.billableEventId)}
                                 </div>
                               )}
-                              {!item.complianceItemId && !item.billableEventId && (
+                              {item.contractId && (
+                                <div className="text-sm">
+                                  <span className="text-muted-foreground">Contract:</span><br />
+                                  {getContractTitle(item.contractId)}
+                                </div>
+                              )}
+                              {!item.complianceItemId && !item.billableEventId && !item.contractId && (
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
@@ -572,6 +593,7 @@ export default function EvidenceLocker() {
                         <SelectItem value="email">Email</SelectItem>
                         <SelectItem value="screenshot">Screenshot</SelectItem>
                         <SelectItem value="report">Report</SelectItem>
+                        <SelectItem value="contract-and-amendment">Contract and Amendment</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -656,6 +678,34 @@ export default function EvidenceLocker() {
                           {billableEvents?.map((event: any) => (
                             <SelectItem key={event.id} value={event.id}>
                               {event.description}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="contractId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Related Contract (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-contract">
+                            <SelectValue placeholder="Select contract..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">No contract</SelectItem>
+                          {contracts?.map((contract) => (
+                            <SelectItem key={contract.id} value={contract.id}>
+                              {contract.title}
                             </SelectItem>
                           ))}
                         </SelectContent>
