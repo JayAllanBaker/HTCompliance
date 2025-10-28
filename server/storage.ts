@@ -74,6 +74,7 @@ export interface IStorage {
   getEvidence(complianceItemId?: string, billableEventId?: string): Promise<Evidence[]>;
   createEvidence(evidence: InsertEvidence): Promise<Evidence>;
   updateEvidence(id: string, updates: Partial<InsertEvidence>): Promise<Evidence>;
+  deleteEvidence(id: string): Promise<void>;
   
   // Audit log methods
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
@@ -494,6 +495,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(evidence.id, id))
       .returning();
     return updatedEvidence;
+  }
+
+  async deleteEvidence(id: string): Promise<void> {
+    await db.delete(evidence).where(eq(evidence.id, id));
   }
 
   // Audit log methods

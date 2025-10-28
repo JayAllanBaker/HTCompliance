@@ -8,11 +8,13 @@ import {
   insertContractSchema, 
   insertComplianceItemSchema, 
   insertComplianceCommentSchema,
+  insertEvidenceCommentSchema,
   insertOrganizationNoteSchema,
   insertBillableEventSchema, 
   insertEvidenceSchema, 
   insertUserSchema,
   complianceComments,
+  evidenceComments,
   organizationNotes,
   users
 } from "../shared/schema";
@@ -523,6 +525,119 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Evidence comments routes
+  app.get("/api/evidence/:id/comments", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const comments = await db
+        .select({
+          id: evidenceComments.id,
+          evidenceId: evidenceComments.evidenceId,
+          userId: evidenceComments.userId,
+          comment: evidenceComments.comment,
+          createdAt: evidenceComments.createdAt,
+          userName: users.fullName,
+          username: users.username,
+        })
+        .from(evidenceComments)
+        .innerJoin(users, eq(evidenceComments.userId, users.id))
+        .where(eq(evidenceComments.evidenceId, id))
+        .orderBy(desc(evidenceComments.createdAt));
+      
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/evidence/:id/comments", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertEvidenceCommentSchema.parse({
+        evidenceId: id,
+        userId: req.user?.id,
+        comment: req.body.comment,
+      });
+      
+      const [comment] = await db
+        .insert(evidenceComments)
+        .values(validatedData)
+        .returning();
+      
+      // Fetch comment with user details
+      const [commentWithUser] = await db
+        .select({
+          id: evidenceComments.id,
+          evidenceId: evidenceComments.evidenceId,
+          userId: evidenceComments.userId,
+          comment: evidenceComments.comment,
+          createdAt: evidenceComments.createdAt,
+          userName: users.fullName,
+          username: users.username,
+        })
+        .from(evidenceComments)
+        .innerJoin(users, eq(evidenceComments.userId, users.id))
+        .where(eq(evidenceComments.id, comment.id));
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "evidence_comment",
+        entityId: comment.id,
+        newValues: JSON.stringify(comment),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(201).json(commentWithUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create comment" });
+      }
+    }
+  });
+
+  app.delete("/api/evidence-comments/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get comment first to check ownership
+      const [comment] = await db
+        .select()
+        .from(evidenceComments)
+        .where(eq(evidenceComments.id, id));
+      
+      if (!comment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      
+      // Only allow deletion by comment owner or admin
+      if (comment.userId !== req.user?.id && req.user?.role !== "admin") {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      
+      await db.delete(evidenceComments).where(eq(evidenceComments.id, id));
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "evidence_comment",
+        entityId: id,
+        oldValues: JSON.stringify(comment),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete comment" });
+    }
+  });
+
   // Organization notes routes
   app.get("/api/organizations/:id/notes", async (req, res) => {
     try {
@@ -730,6 +845,51 @@ export function registerRoutes(app: Express): Server {
         console.error("Non-Zod error:", error instanceof Error ? error.message : error);
         res.status(500).json({ error: "Failed to create evidence" });
       }
+    }
+  });
+
+  app.delete("/api/evidence/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const evidenceList = await storage.getEvidence();
+      const evidence = evidenceList.find(e => e.id === id);
+      
+      if (!evidence) {
+        return res.status(404).json({ error: "Evidence not found" });
+      }
+      
+      // Delete associated file if it exists
+      if (evidence.filePath) {
+        try {
+          const fs = await import("fs");
+          const path = await import("path");
+          const absolutePath = path.resolve(evidence.filePath);
+          if (fs.existsSync(absolutePath)) {
+            fs.unlinkSync(absolutePath);
+            console.log(`Deleted file: ${absolutePath}`);
+          }
+        } catch (err) {
+          console.error("Error deleting file:", err);
+          // Continue anyway - still delete the database record
+        }
+      }
+      
+      await storage.deleteEvidence(id);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "evidence",
+        entityId: id,
+        oldValues: JSON.stringify(evidence),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete evidence" });
     }
   });
 
