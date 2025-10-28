@@ -33,7 +33,7 @@ export default function Compliance() {
   const [isImporting, setIsImporting] = useState(false);
   const [filters, setFilters] = useState({
     search: "",
-    customerId: "",
+    organizationId: "",
     category: "",
     status: "",
     limit: 50,
@@ -43,12 +43,12 @@ export default function Compliance() {
   // Always fetch all items without status filter for calendar
   const allItemsFilters = useMemo(() => ({ 
     search: filters.search,
-    customerId: filters.customerId,
+    organizationId: filters.organizationId,
     category: filters.category,
     status: "", // No status filter
     limit: 1000,
     offset: 0 
-  }), [filters.search, filters.customerId, filters.category]);
+  }), [filters.search, filters.organizationId, filters.category]);
 
   const { data: allItemsData, isLoading, refetch } = useQuery<{ items: ComplianceItem[]; total: number }>({
     queryKey: ["/api/compliance-items", allItemsFilters],
@@ -289,7 +289,7 @@ export default function Compliance() {
                     </div>
                   </div>
                   
-                  <Select value={filters.customerId || "__all__"} onValueChange={(value) => setFilters(prev => ({ ...prev, customerId: value === "__all__" ? "" : value }))}>
+                  <Select value={filters.organizationId || "__all__"} onValueChange={(value) => setFilters(prev => ({ ...prev, organizationId: value === "__all__" ? "" : value }))}>
                     <SelectTrigger className="w-48" data-testid="select-organization-filter">
                       <SelectValue placeholder="All Organizations" />
                     </SelectTrigger>
