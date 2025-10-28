@@ -11,7 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Edit, Eye, FileText, ChevronDown, ChevronRight, Shield } from "lucide-react";
 import ContractForm from "@/components/contracts/contract-form";
 import ContractDetailDialog from "@/components/contracts/contract-detail-dialog";
+import EvidenceDetailDialog from "@/components/evidence/evidence-detail-dialog";
 import { format } from "date-fns";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Contracts() {
   const [showNewContractForm, setShowNewContractForm] = useState(false);
@@ -19,6 +21,7 @@ export default function Contracts() {
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
   const [detailContract, setDetailContract] = useState<Contract | null>(null);
   const [expandedContractId, setExpandedContractId] = useState<string | null>(null);
+  const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
 
   const { data: contracts, isLoading, refetch } = useQuery<Contract[]>({
     queryKey: ["/api/contracts"],
@@ -204,9 +207,9 @@ export default function Contracts() {
                                     ) : (
                                       <div className="ml-7 space-y-2">
                                         {expandedEvidence.map((evidence) => (
-                                          <Link
+                                          <div
                                             key={evidence.id}
-                                            href="/evidence-locker"
+                                            onClick={() => setSelectedEvidence(evidence)}
                                             className="flex items-center justify-between p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
                                             data-testid={`evidence-item-${evidence.id}`}
                                           >
@@ -219,7 +222,7 @@ export default function Contracts() {
                                             <Badge variant="secondary">
                                               {evidence.evidenceType}
                                             </Badge>
-                                          </Link>
+                                          </div>
                                         ))}
                                       </div>
                                     )}
@@ -334,6 +337,28 @@ export default function Contracts() {
           setDetailContract(null);
         }}
         organizationName={detailContract ? getOrganizationName(detailContract.customerId) : undefined}
+      />
+
+      <EvidenceDetailDialog
+        evidence={selectedEvidence}
+        onClose={() => setSelectedEvidence(null)}
+        onEdit={() => {
+          // Navigate to evidence locker to edit
+          window.location.href = `/evidence-locker`;
+        }}
+        onDelete={() => {
+          setSelectedEvidence(null);
+          queryClient.invalidateQueries({ queryKey: ["/api/evidence"] });
+        }}
+        organizationName={
+          selectedEvidence && selectedEvidence.contractId
+            ? (() => {
+                const contract = contracts?.find(c => c.id === selectedEvidence.contractId);
+                return contract ? getOrganizationName(contract.customerId) : undefined;
+              })()
+            : undefined
+        }
+        contractTitle={selectedEvidence ? contracts?.find(c => c.id === selectedEvidence.contractId)?.title : undefined}
       />
     </div>
   );
