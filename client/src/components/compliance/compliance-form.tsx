@@ -221,13 +221,26 @@ export default function ComplianceForm({ onClose, onSuccess, item, prefilledCust
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Type</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Enter type..." 
-                      {...field}
-                      data-testid="input-type"
-                    />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-type">
+                        <SelectValue placeholder="Select type..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Regulatory Filing">Regulatory Filing</SelectItem>
+                      <SelectItem value="Audit">Audit</SelectItem>
+                      <SelectItem value="Certification">Certification</SelectItem>
+                      <SelectItem value="License Renewal">License Renewal</SelectItem>
+                      <SelectItem value="Training">Training</SelectItem>
+                      <SelectItem value="Report Submission">Report Submission</SelectItem>
+                      <SelectItem value="Inspection">Inspection</SelectItem>
+                      <SelectItem value="Review">Review</SelectItem>
+                      <SelectItem value="Assessment">Assessment</SelectItem>
+                      <SelectItem value="Documentation">Documentation</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

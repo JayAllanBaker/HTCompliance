@@ -52,6 +52,24 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
+// Utility function to automatically update status to overdue if needed
+function checkAndUpdateOverdueStatus(item: any): any {
+  if (!item) return item;
+  
+  // If item is pending and has a due date that's in the past, mark as overdue
+  if (item.status === "pending" && item.dueDate) {
+    // Compare dates in UTC format to avoid timezone issues
+    const dueDateUTC = new Date(item.dueDate).toISOString().slice(0, 10);
+    const nowUTC = new Date().toISOString().slice(0, 10);
+    
+    if (dueDateUTC < nowUTC) {
+      return { ...item, status: "overdue" };
+    }
+  }
+  
+  return item;
+}
+
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
   setupAuth(app);
@@ -299,7 +317,9 @@ export function registerRoutes(app: Express): Server {
       }
 
       const result = await storage.getComplianceItems(filters);
-      res.json(result);
+      // Apply overdue status check to all items
+      const itemsWithOverdueCheck = result.items.map(checkAndUpdateOverdueStatus);
+      res.json({ ...result, items: itemsWithOverdueCheck });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch compliance items" });
     }
@@ -311,7 +331,9 @@ export function registerRoutes(app: Express): Server {
       if (!item) {
         return res.status(404).json({ error: "Compliance item not found" });
       }
-      res.json(item);
+      // Apply overdue status check
+      const itemWithOverdueCheck = checkAndUpdateOverdueStatus(item);
+      res.json(itemWithOverdueCheck);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch compliance item" });
     }
@@ -325,7 +347,11 @@ export function registerRoutes(app: Express): Server {
         dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
       };
       const validatedData = insertComplianceItemSchema.parse(data);
-      const item = await storage.createComplianceItem(validatedData);
+      
+      // Check if status should be automatically set to overdue
+      const itemDataWithOverdueCheck = checkAndUpdateOverdueStatus(validatedData);
+      
+      const item = await storage.createComplianceItem(itemDataWithOverdueCheck);
       
       // Audit log
       await storage.createAuditLog({
@@ -375,7 +401,11 @@ export function registerRoutes(app: Express): Server {
       
       console.log("Data after date conversion:", JSON.stringify(data, null, 2));
       const validatedData = insertComplianceItemSchema.partial().parse(data);
-      const updatedItem = await storage.updateComplianceItem(req.params.id, validatedData);
+      
+      // Check if status should be automatically set to overdue
+      const dataWithOverdueCheck = checkAndUpdateOverdueStatus({ ...oldItem, ...validatedData });
+      
+      const updatedItem = await storage.updateComplianceItem(req.params.id, dataWithOverdueCheck);
       
       // Audit log
       await storage.createAuditLog({
