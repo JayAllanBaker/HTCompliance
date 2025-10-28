@@ -206,6 +206,41 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch("/api/contracts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Convert date strings to Date objects if present
+      const data = {
+        ...req.body,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      };
+      
+      const validatedData = insertContractSchema.partial().parse(data);
+      const contract = await storage.updateContract(id, validatedData);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entityType: "contract",
+        entityId: contract.id,
+        newValues: JSON.stringify(contract),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json(contract);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update contract" });
+      }
+    }
+  });
+
   // Compliance item routes
   app.get("/api/compliance-items", async (req, res) => {
     try {

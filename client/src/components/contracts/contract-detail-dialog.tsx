@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ export default function ContractDetailDialog({
 }: ContractDetailDialogProps) {
   const { toast } = useToast();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [displayContract, setDisplayContract] = useState<Contract | null>(contract);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -38,6 +39,11 @@ export default function ContractDetailDialog({
     isActive: true,
   });
 
+  // Update display contract when prop changes
+  useEffect(() => {
+    setDisplayContract(contract);
+  }, [contract]);
+
   // Fetch organizations for the dropdown
   const { data: organizations = [] } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
@@ -47,13 +53,23 @@ export default function ContractDetailDialog({
   // Update contract mutation
   const updateContractMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return apiRequest("PATCH", `/api/contracts/${contract?.id}`, {
+      const response = await apiRequest("PATCH", `/api/contracts/${displayContract?.id}`, {
         ...data,
         maxAmount: data.maxAmount ? parseFloat(data.maxAmount) : null,
       });
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedContract: Contract) => {
+      // Update the displayed contract with the fresh data
+      setDisplayContract(updatedContract);
+      
+      // Invalidate both base and organization-scoped contract queries
       queryClient.invalidateQueries({ queryKey: ["/api/contracts"] });
+      if (updatedContract.customerId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/contracts", { organizationId: updatedContract.customerId }] 
+        });
+      }
       toast({
         title: "Contract updated",
         description: "The contract has been updated successfully.",
@@ -71,15 +87,15 @@ export default function ContractDetailDialog({
 
   // Initialize form when entering edit mode
   const handleEnterEditMode = () => {
-    if (!contract) return;
+    if (!displayContract) return;
     setFormData({
-      title: contract.title,
-      description: contract.description || "",
-      customerId: contract.customerId,
-      startDate: contract.startDate ? format(new Date(contract.startDate), 'yyyy-MM-dd') : "",
-      endDate: contract.endDate ? format(new Date(contract.endDate), 'yyyy-MM-dd') : "",
-      maxAmount: contract.maxAmount || "",
-      isActive: contract.isActive,
+      title: displayContract.title,
+      description: displayContract.description || "",
+      customerId: displayContract.customerId,
+      startDate: displayContract.startDate ? format(new Date(displayContract.startDate), 'yyyy-MM-dd') : "",
+      endDate: displayContract.endDate ? format(new Date(displayContract.endDate), 'yyyy-MM-dd') : "",
+      maxAmount: displayContract.maxAmount || "",
+      isActive: displayContract.isActive,
     });
     setIsEditMode(true);
   };
@@ -92,7 +108,7 @@ export default function ContractDetailDialog({
     setIsEditMode(false);
   };
 
-  if (!contract) return null;
+  if (!displayContract) return null;
 
   const formatCurrency = (amount: string | null) => {
     if (!amount) return "N/A";
@@ -102,8 +118,19 @@ export default function ContractDetailDialog({
     }).format(parseFloat(amount));
   };
 
+  const formatDate = (date: Date | string | null | undefined, formatString: string) => {
+    if (!date) return null;
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return null;
+      return format(dateObj, formatString);
+    } catch {
+      return null;
+    }
+  };
+
   return (
-    <Dialog open={!!contract} onOpenChange={onClose}>
+    <Dialog open={!!displayContract} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-contract-detail">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -111,29 +138,24 @@ export default function ContractDetailDialog({
               <FileSignature className="h-6 w-6 text-primary" />
               <div>
                 <DialogTitle className="text-2xl">
-                  {isEditMode ? "Edit Contract" : contract.title}
+                  {isEditMode ? "Edit Contract" : displayContract.title}
                 </DialogTitle>
                 <DialogDescription>
                   {isEditMode ? "Update contract information" : "Contract details and information"}
                 </DialogDescription>
               </div>
             </div>
-            <div className="flex gap-2">
-              {!isEditMode && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleEnterEditMode} 
-                  data-testid="button-edit-contract"
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
-                </Button>
-              )}
-              <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-close-contract-detail">
-                <X className="h-4 w-4" />
+            {!isEditMode && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleEnterEditMode} 
+                data-testid="button-edit-contract"
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
               </Button>
-            </div>
+            )}
           </div>
         </DialogHeader>
 
@@ -243,17 +265,17 @@ export default function ContractDetailDialog({
             <div>
               <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Status</label>
               <div className="mt-1">
-                <Badge variant={contract.isActive ? "default" : "secondary"}>
-                  {contract.isActive ? "Active" : "Inactive"}
+                <Badge variant={displayContract.isActive ? "default" : "secondary"}>
+                  {displayContract.isActive ? "Active" : "Inactive"}
                 </Badge>
               </div>
             </div>
 
             {/* Description */}
-            {contract.description && (
+            {displayContract.description && (
               <div>
                 <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Description</label>
-                <p className="mt-1 text-sm text-foreground whitespace-pre-wrap">{contract.description}</p>
+                <p className="mt-1 text-sm text-foreground whitespace-pre-wrap">{displayContract.description}</p>
               </div>
             )}
 
@@ -269,12 +291,12 @@ export default function ContractDetailDialog({
             )}
 
             {/* Maximum Amount */}
-            {contract.maxAmount && (
+            {displayContract.maxAmount && (
               <div>
                 <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Maximum Amount</label>
                 <div className="mt-1 flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
                   <DollarSign className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-lg">{formatCurrency(contract.maxAmount)}</span>
+                  <span className="font-semibold text-lg">{formatCurrency(displayContract.maxAmount)}</span>
                 </div>
               </div>
             )}
@@ -286,7 +308,7 @@ export default function ContractDetailDialog({
                 <div className="flex items-center gap-2 mt-1 p-3 bg-muted/50 rounded-lg">
                   <Calendar className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">
-                    {contract.startDate ? format(new Date(contract.startDate), 'MMM dd, yyyy') : 'Not set'}
+                    {formatDate(displayContract.startDate, 'MMM dd, yyyy') || 'Not set'}
                   </span>
                 </div>
               </div>
@@ -295,7 +317,7 @@ export default function ContractDetailDialog({
                 <div className="flex items-center gap-2 mt-1 p-3 bg-muted/50 rounded-lg">
                   <Calendar className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">
-                    {contract.endDate ? format(new Date(contract.endDate), 'MMM dd, yyyy') : 'Ongoing'}
+                    {formatDate(displayContract.endDate, 'MMM dd, yyyy') || 'Ongoing'}
                   </span>
                 </div>
               </div>
@@ -307,14 +329,14 @@ export default function ContractDetailDialog({
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Created</label>
                 <div className="flex items-center gap-1 mt-1 text-sm">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
-                  <span>{format(new Date(contract.createdAt), 'MMM dd, yyyy HH:mm')}</span>
+                  <span>{formatDate(displayContract.createdAt, 'MMM dd, yyyy HH:mm') || 'Not available'}</span>
                 </div>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Last Updated</label>
                 <div className="flex items-center gap-1 mt-1 text-sm">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
-                  <span>{format(new Date(contract.updatedAt), 'MMM dd, yyyy HH:mm')}</span>
+                  <span>{formatDate(displayContract.updatedAt, 'MMM dd, yyyy HH:mm') || 'Not available'}</span>
                 </div>
               </div>
             </div>
