@@ -27,7 +27,7 @@ The frontend uses React with TypeScript, Vite, and Wouter for routing. UI is bui
 *   **Billing Management**: Tracks billable events and integrates with QuickBooks.
 *   **Contract Lifecycle**: Manages contract milestones and associated data.
 *   **Audit Readiness**: Comprehensive end-to-end audit logging for all system activities including user authentication (login/logout), data mutations (create/update/delete), and administrative actions. Admins can review audit logs with advanced filtering by user, action type, entity type, and date range, with full pagination support.
-*   **Data Portability**: JSON export/restore with SHA-256 hash manifests.
+*   **Data Portability**: Unified export/import system that packages database data AND evidence files together in a single ZIP archive. This ensures evidence files remain properly linked to their database records after restoration, solving the critical issue where separate exports created orphaned records due to UUID regeneration. Legacy database-only JSON export/restore with SHA-256 hash manifests is still available but not recommended for complete system backups.
 *   **User Collaboration**: Timestamped comments on compliance items and organization notes for providing context about each organization.
 *   **Admin Panel**: User management, database reset functionality, system configuration, and audit log review interface.
 *   **CSV Import**: Bulk import of compliance items with validation, duplicate detection, and handling options. CSV column header is "Organization" (legacy "Customer" still supported for backward compatibility).
