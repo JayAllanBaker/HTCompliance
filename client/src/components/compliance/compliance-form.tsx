@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Organization, ComplianceItem, Contract } from "@shared/schema";
 import { useForm } from "react-hook-form";
@@ -97,6 +97,17 @@ export default function ComplianceForm({ onClose, onSuccess, item, prefilledCust
   // Watch the selected organization to filter contracts
   const selectedOrgId = form.watch("customerId");
   const selectedContractId = form.watch("contractId");
+  
+  // Clear contract when organization changes if the contract doesn't belong to the new org
+  useEffect(() => {
+    if (!contracts || !selectedContractId || !selectedOrgId) return;
+    
+    const selectedContract = contracts.find(c => c.id === selectedContractId);
+    if (selectedContract && selectedContract.customerId !== selectedOrgId) {
+      // Contract doesn't belong to the new organization, clear it
+      form.setValue("contractId", undefined);
+    }
+  }, [selectedOrgId, contracts, selectedContractId, form]);
   
   // Filter contracts by selected organization for better UX
   // Always include the currently selected contract even if it's from a different org
