@@ -241,7 +241,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete("/api/contracts/:id", async (req, res) => {
+  app.delete("/api/contracts/:id", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const contract = await storage.getContract(id);
@@ -922,7 +922,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete("/api/billable-events/:id", async (req, res) => {
+  app.delete("/api/billable-events/:id", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const event = await storage.getBillableEvent(id);
