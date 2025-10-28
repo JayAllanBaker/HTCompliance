@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Organization, QuickbooksConnection, Contract, ComplianceItem, Evidence } from "@shared/schema";
 import OrganizationNotes from "@/components/organizations/organization-notes";
+import EvidenceDetailDialog from "@/components/evidence/evidence-detail-dialog";
 
 interface QBCustomer {
   Id: string;
@@ -43,6 +44,7 @@ export default function OrganizationsPage() {
   const [qbCustomers, setQbCustomers] = useState<QBCustomer[]>([]);
   const [orgTypeFilter, setOrgTypeFilter] = useState<string>("all");
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
+  const [detailEvidence, setDetailEvidence] = useState<Evidence | null>(null);
 
   const { data: organizations, isLoading } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
@@ -604,14 +606,14 @@ export default function OrganizationsPage() {
                                   ) : (
                                     <div className="ml-7 space-y-2">
                                       {expandedEvidence.map((evidence) => (
-                                        <Link
+                                        <button
                                           key={evidence.id}
-                                          href="/evidence-locker"
-                                          className="flex items-center justify-between p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                                          onClick={() => setDetailEvidence(evidence)}
+                                          className="flex items-center justify-between p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer w-full text-left"
                                           data-testid={`evidence-item-${evidence.id}`}
                                         >
                                           <div className="flex-1">
-                                            <div className="font-medium">{evidence.title}</div>
+                                            <div className="font-medium hover:text-primary transition-colors">{evidence.title}</div>
                                             <div className="text-sm text-muted-foreground">
                                               {evidence.evidenceType} • {evidence.filePath ? 'Has file' : 'No file'}
                                             </div>
@@ -619,7 +621,7 @@ export default function OrganizationsPage() {
                                           <Badge variant="secondary">
                                             {evidence.evidenceType}
                                           </Badge>
-                                        </Link>
+                                        </button>
                                       ))}
                                     </div>
                                   )}
@@ -966,6 +968,31 @@ export default function OrganizationsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Evidence Detail Dialog */}
+      <EvidenceDetailDialog
+        evidence={detailEvidence}
+        onClose={() => setDetailEvidence(null)}
+        onEdit={() => {
+          // TODO: Add edit functionality if needed
+          setDetailEvidence(null);
+        }}
+        onDelete={() => {
+          setDetailEvidence(null);
+          queryClient.invalidateQueries({ queryKey: ["/api/evidence"] });
+        }}
+        complianceItemTitle={
+          detailEvidence?.complianceItemId
+            ? expandedComplianceItems.find((c) => c.id === detailEvidence.complianceItemId)?.commitment
+            : undefined
+        }
+        contractTitle={
+          detailEvidence?.contractId
+            ? expandedContracts.find((c) => c.id === detailEvidence.contractId)?.title
+            : undefined
+        }
+        organizationName={expandedOrgId ? organizations?.find((o) => o.id === expandedOrgId)?.name : undefined}
+      />
     </div>
   );
 }
