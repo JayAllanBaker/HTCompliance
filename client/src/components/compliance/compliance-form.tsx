@@ -22,7 +22,8 @@ import ComplianceComments from "./compliance-comments";
 
 const formSchema = z.object({
   customerId: z.string().min(1, "Organization is required"),
-  category: z.enum(["Marketing Agreement", "Billing", "Deliverable", "Compliance", "End-of-Term"]),
+  contractId: z.string().optional(),
+  category: z.enum(["Marketing Agreement", "Billing", "Deliverable", "Compliance", "End-of-Term", "Accounts Payable"]),
   type: z.string().min(1, "Type is required"),
   commitment: z.string().min(1, "Commitment is required"),
   description: z.string().optional(),
@@ -37,16 +38,19 @@ interface ComplianceFormProps {
   onClose: () => void;
   onSuccess: () => void;
   item?: ComplianceItem;
+  prefilledCustomerId?: string;
+  prefilledContractId?: string;
 }
 
-export default function ComplianceForm({ onClose, onSuccess, item }: ComplianceFormProps) {
+export default function ComplianceForm({ onClose, onSuccess, item, prefilledCustomerId, prefilledContractId }: ComplianceFormProps) {
   const { toast } = useToast();
   const isEditing = !!item;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customerId: item?.customerId || "",
+      customerId: item?.customerId || prefilledCustomerId || "",
+      contractId: item?.contractId || prefilledContractId || undefined,
       category: item?.category || "Compliance",
       type: item?.type || "",
       commitment: item?.commitment || "",
@@ -172,6 +176,7 @@ export default function ComplianceForm({ onClose, onSuccess, item }: ComplianceF
                         <SelectItem value="Deliverable">Deliverable</SelectItem>
                         <SelectItem value="Compliance">Compliance</SelectItem>
                         <SelectItem value="End-of-Term">End-of-Term</SelectItem>
+                        <SelectItem value="Accounts Payable">Accounts Payable</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

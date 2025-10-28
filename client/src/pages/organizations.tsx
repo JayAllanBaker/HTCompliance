@@ -18,6 +18,8 @@ import type { Organization, QuickbooksConnection, Contract, ComplianceItem, Evid
 import OrganizationNotes from "@/components/organizations/organization-notes";
 import EvidenceDetailDialog from "@/components/evidence/evidence-detail-dialog";
 import ContractDetailDialog from "@/components/contracts/contract-detail-dialog";
+import ContractForm from "@/components/contracts/contract-form";
+import ComplianceForm from "@/components/compliance/compliance-form";
 
 interface QBCustomer {
   Id: string;
@@ -47,6 +49,9 @@ export default function OrganizationsPage() {
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
   const [detailEvidence, setDetailEvidence] = useState<Evidence | null>(null);
   const [detailContract, setDetailContract] = useState<Contract | null>(null);
+  const [isCreateContractOpen, setIsCreateContractOpen] = useState(false);
+  const [isCreateComplianceOpen, setIsCreateComplianceOpen] = useState(false);
+  const [prefilledOrgId, setPrefilledOrgId] = useState<string | null>(null);
 
   const { data: organizations, isLoading } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
@@ -522,10 +527,23 @@ export default function OrganizationsPage() {
                               <div className="space-y-6">
                                 {/* Contracts Section */}
                                 <div>
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <FileSignature className="h-5 w-5 text-primary" />
-                                    <h3 className="font-semibold text-lg">Contracts</h3>
-                                    <Badge variant="outline">{expandedContracts.length}</Badge>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <FileSignature className="h-5 w-5 text-primary" />
+                                      <h3 className="font-semibold text-lg">Contracts</h3>
+                                      <Badge variant="outline">{expandedContracts.length}</Badge>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        setPrefilledOrgId(org.id);
+                                        setIsCreateContractOpen(true);
+                                      }}
+                                      data-testid={`button-add-contract-${org.id}`}
+                                    >
+                                      <Plus className="h-4 w-4 mr-1" />
+                                      Add Contract
+                                    </Button>
                                   </div>
                                   {expandedContracts.length === 0 ? (
                                     <p className="text-sm text-muted-foreground ml-7">No contracts found for this organization.</p>
@@ -561,10 +579,23 @@ export default function OrganizationsPage() {
 
                                 {/* Compliance Items Section */}
                                 <div>
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <ClipboardList className="h-5 w-5 text-primary" />
-                                    <h3 className="font-semibold text-lg">Compliance Items</h3>
-                                    <Badge variant="outline">{expandedComplianceItems.length}</Badge>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <ClipboardList className="h-5 w-5 text-primary" />
+                                      <h3 className="font-semibold text-lg">Compliance Items</h3>
+                                      <Badge variant="outline">{expandedComplianceItems.length}</Badge>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        setPrefilledOrgId(org.id);
+                                        setIsCreateComplianceOpen(true);
+                                      }}
+                                      data-testid={`button-add-compliance-${org.id}`}
+                                    >
+                                      <Plus className="h-4 w-4 mr-1" />
+                                      Add Compliance Item
+                                    </Button>
                                   </div>
                                   {expandedComplianceItems.length === 0 ? (
                                     <p className="text-sm text-muted-foreground ml-7">No compliance items found for this organization.</p>
@@ -1003,6 +1034,40 @@ export default function OrganizationsPage() {
         onClose={() => setDetailContract(null)}
         organizationName={detailContract ? organizations?.find((o) => o.id === detailContract.customerId)?.name : undefined}
       />
+
+      {/* Create Contract Form */}
+      {isCreateContractOpen && (
+        <ContractForm
+          prefilledCustomerId={prefilledOrgId || undefined}
+          onClose={() => {
+            setIsCreateContractOpen(false);
+            setPrefilledOrgId(null);
+          }}
+          onSuccess={() => {
+            setIsCreateContractOpen(false);
+            setPrefilledOrgId(null);
+            queryClient.invalidateQueries({ queryKey: ["/api/contracts"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/contracts", { organizationId: expandedOrgId }] });
+          }}
+        />
+      )}
+
+      {/* Create Compliance Item Form */}
+      {isCreateComplianceOpen && (
+        <ComplianceForm
+          prefilledCustomerId={prefilledOrgId || undefined}
+          onClose={() => {
+            setIsCreateComplianceOpen(false);
+            setPrefilledOrgId(null);
+          }}
+          onSuccess={() => {
+            setIsCreateComplianceOpen(false);
+            setPrefilledOrgId(null);
+            queryClient.invalidateQueries({ queryKey: ["/api/compliance-items"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/compliance-items", { organizationId: expandedOrgId }] });
+          }}
+        />
+      )}
     </div>
   );
 }

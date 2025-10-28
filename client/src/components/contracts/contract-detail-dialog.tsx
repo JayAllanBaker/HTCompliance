@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileSignature, Calendar, Building2, DollarSign, X, Edit, Save } from "lucide-react";
+import { FileSignature, Calendar, Building2, DollarSign, X, Edit, Save, Plus, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Contract, Organization } from "@shared/schema";
+import ComplianceForm from "@/components/compliance/compliance-form";
 
 interface ContractDetailDialogProps {
   contract: Contract | null;
@@ -29,6 +30,7 @@ export default function ContractDetailDialog({
   const { toast } = useToast();
   const [isEditMode, setIsEditMode] = useState(false);
   const [displayContract, setDisplayContract] = useState<Contract | null>(contract);
+  const [isCreateComplianceOpen, setIsCreateComplianceOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -130,6 +132,7 @@ export default function ContractDetailDialog({
   };
 
   return (
+    <>
     <Dialog open={!!displayContract} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-contract-detail">
         <DialogHeader>
@@ -146,15 +149,26 @@ export default function ContractDetailDialog({
               </div>
             </div>
             {!isEditMode && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleEnterEditMode} 
-                data-testid="button-edit-contract"
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Edit
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsCreateComplianceOpen(true)}
+                  data-testid="button-add-compliance-item"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Compliance
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleEnterEditMode} 
+                  data-testid="button-edit-contract"
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+              </div>
             )}
           </div>
         </DialogHeader>
@@ -366,5 +380,23 @@ export default function ContractDetailDialog({
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Create Compliance Item Form */}
+    {isCreateComplianceOpen && displayContract && (
+      <ComplianceForm
+        prefilledCustomerId={displayContract.customerId}
+        prefilledContractId={displayContract.id}
+        onClose={() => setIsCreateComplianceOpen(false)}
+        onSuccess={() => {
+          setIsCreateComplianceOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/compliance-items"] });
+          toast({
+            title: "Success",
+            description: "Compliance item created and linked to this contract.",
+          });
+        }}
+      />
+    )}
+    </>
   );
 }

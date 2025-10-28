@@ -33,16 +33,17 @@ interface ContractFormProps {
   onClose: () => void;
   onSuccess: () => void;
   contract?: Contract;
+  prefilledCustomerId?: string;
 }
 
-export default function ContractForm({ onClose, onSuccess, contract }: ContractFormProps) {
+export default function ContractForm({ onClose, onSuccess, contract, prefilledCustomerId }: ContractFormProps) {
   const { toast } = useToast();
   const isEditing = !!contract;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customerId: contract?.customerId || "",
+      customerId: contract?.customerId || prefilledCustomerId || "",
       title: contract?.title || "",
       description: contract?.description || "",
       startDate: contract?.startDate ? new Date(contract.startDate) : new Date(),
