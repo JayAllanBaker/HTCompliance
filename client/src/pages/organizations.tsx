@@ -383,6 +383,8 @@ export default function OrganizationsPage() {
                         <SelectItem value="vendor">Vendor</SelectItem>
                         <SelectItem value="contractor">Contractor</SelectItem>
                         <SelectItem value="internal">Internal</SelectItem>
+                        <SelectItem value="state_govt">State Govt</SelectItem>
+                        <SelectItem value="federal_govt">Federal Govt</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -437,18 +439,19 @@ export default function OrganizationsPage() {
                           </TableCell>
                           <TableCell>
                             <Badge 
-                              variant={
-                                org.orgType === "customer" ? "default" :
-                                org.orgType === "vendor" ? "secondary" :
-                                org.orgType === "contractor" ? "outline" :
-                                "default"
-                              }
+                              variant="outline"
                               className={
-                                org.orgType === "internal" ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100" : ""
+                                org.orgType === "customer" ? "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700" :
+                                org.orgType === "vendor" ? "bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100 dark:border-green-700" :
+                                org.orgType === "contractor" ? "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900 dark:text-orange-100 dark:border-orange-700" :
+                                org.orgType === "internal" ? "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-100 dark:border-purple-700" :
+                                org.orgType === "state_govt" ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-100 dark:border-red-700" :
+                                org.orgType === "federal_govt" ? "bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-900 dark:text-indigo-100 dark:border-indigo-700" :
+                                "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                               }
                               data-testid={`badge-org-type-${org.id}`}
                             >
-                              {org.orgType ? org.orgType.charAt(0).toUpperCase() + org.orgType.slice(1) : "Customer"}
+                              {org.orgType ? org.orgType.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Customer"}
                             </Badge>
                           </TableCell>
                           <TableCell data-testid={`text-org-email-${org.id}`}>

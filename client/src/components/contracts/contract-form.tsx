@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -35,6 +36,30 @@ interface ContractFormProps {
   contract?: Contract;
   prefilledCustomerId?: string;
 }
+
+// Helper function to get organization type color classes
+const getOrgTypeColor = (orgType: string) => {
+  switch (orgType) {
+    case "customer":
+      return "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700";
+    case "vendor":
+      return "bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100 dark:border-green-700";
+    case "contractor":
+      return "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900 dark:text-orange-100 dark:border-orange-700";
+    case "internal":
+      return "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-100 dark:border-purple-700";
+    case "state_govt":
+      return "bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-100 dark:border-red-700";
+    case "federal_govt":
+      return "bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-900 dark:text-indigo-100 dark:border-indigo-700";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700";
+  }
+};
+
+const formatOrgType = (orgType: string) => {
+  return orgType.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
 
 export default function ContractForm({ onClose, onSuccess, contract, prefilledCustomerId }: ContractFormProps) {
   const { toast } = useToast();
@@ -124,7 +149,12 @@ export default function ContractForm({ onClose, onSuccess, contract, prefilledCu
                     <SelectContent>
                       {organizations?.map((org) => (
                         <SelectItem key={org.id} value={org.id}>
-                          {org.name}
+                          <div className="flex items-center justify-between gap-2 w-full">
+                            <span>{org.name}</span>
+                            <Badge variant="outline" className={cn("text-xs", getOrgTypeColor(org.orgType))}>
+                              {formatOrgType(org.orgType)}
+                            </Badge>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
