@@ -38,6 +38,7 @@ export interface IStorage {
   getContract(id: string): Promise<Contract | undefined>;
   createContract(contract: InsertContract): Promise<Contract>;
   updateContract(id: string, updates: Partial<InsertContract>): Promise<Contract>;
+  deleteContract(id: string): Promise<void>;
   
   // Compliance methods
   getComplianceItems(filters?: {
@@ -69,6 +70,7 @@ export interface IStorage {
   getBillableEvent(id: string): Promise<BillableEvent | undefined>;
   createBillableEvent(event: InsertBillableEvent): Promise<BillableEvent>;
   updateBillableEvent(id: string, updates: Partial<InsertBillableEvent>): Promise<BillableEvent>;
+  deleteBillableEvent(id: string): Promise<void>;
   
   // Evidence methods
   getEvidence(complianceItemId?: string, billableEventId?: string): Promise<Evidence[]>;
@@ -239,6 +241,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(contracts.id, id))
       .returning();
     return updatedContract;
+  }
+
+  async deleteContract(id: string): Promise<void> {
+    await db.delete(contracts).where(eq(contracts.id, id));
   }
 
   // Compliance methods
@@ -461,6 +467,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(billableEvents.id, id))
       .returning();
     return updatedEvent;
+  }
+
+  async deleteBillableEvent(id: string): Promise<void> {
+    await db.delete(billableEvents).where(eq(billableEvents.id, id));
   }
 
   // Evidence methods

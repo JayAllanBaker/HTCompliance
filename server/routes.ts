@@ -241,6 +241,35 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.delete("/api/contracts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const contract = await storage.getContract(id);
+      
+      if (!contract) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+      
+      // Audit log before deletion
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "contract",
+        entityId: id,
+        oldValues: JSON.stringify(contract),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      // Delete contract
+      await storage.deleteContract(id);
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete contract" });
+    }
+  });
+
   // Compliance item routes
   app.get("/api/compliance-items", async (req, res) => {
     try {
@@ -856,6 +885,69 @@ export function registerRoutes(app: Express): Server {
       } else {
         res.status(500).json({ error: "Failed to create billable event", message: error instanceof Error ? error.message : "Unknown error" });
       }
+    }
+  });
+
+  app.patch("/api/billable-events/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Convert date strings to Date objects if present
+      const data = {
+        ...req.body,
+        billingDate: req.body.billingDate ? new Date(req.body.billingDate) : undefined,
+      };
+      
+      const validatedData = insertBillableEventSchema.partial().parse(data);
+      const event = await storage.updateBillableEvent(id, validatedData);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entityType: "billable_event",
+        entityId: event.id,
+        newValues: JSON.stringify(event),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json(event);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update billable event" });
+      }
+    }
+  });
+
+  app.delete("/api/billable-events/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const event = await storage.getBillableEvent(id);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Billable event not found" });
+      }
+      
+      // Audit log before deletion
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "billable_event",
+        entityId: id,
+        oldValues: JSON.stringify(event),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      // Delete billable event
+      await storage.deleteBillableEvent(id);
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete billable event" });
     }
   });
 
