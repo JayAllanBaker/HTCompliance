@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import type { Organization, ComplianceItem, Evidence } from "@shared/schema";
+import type { Organization, ComplianceItem, Evidence, Contract } from "@shared/schema";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,7 @@ interface ComplianceTableProps {
   showCustomerColumn?: boolean;
 }
 
-type ColumnKey = 'dueDate' | 'commitment' | 'category' | 'organization' | 'responsible' | 'status';
+type ColumnKey = 'dueDate' | 'commitment' | 'type' | 'category' | 'organization' | 'contract' | 'responsible' | 'status';
 
 interface ColumnConfig {
   key: ColumnKey;
@@ -39,8 +39,10 @@ interface ColumnConfig {
 const COLUMNS: ColumnConfig[] = [
   { key: 'dueDate', label: 'Due Date', defaultVisible: true, alwaysVisible: true },
   { key: 'commitment', label: 'Commitment', defaultVisible: true, alwaysVisible: true },
+  { key: 'type', label: 'Type', defaultVisible: true },
   { key: 'category', label: 'Category', defaultVisible: true },
   { key: 'organization', label: 'Organization', defaultVisible: true },
+  { key: 'contract', label: 'Contract', defaultVisible: true },
   { key: 'responsible', label: 'Responsible', defaultVisible: true },
   { key: 'status', label: 'Status', defaultVisible: true },
 ];
@@ -91,6 +93,10 @@ export default function ComplianceTable({
     queryKey: ["/api/organizations"],
   });
 
+  const { data: contracts } = useQuery<Contract[]>({
+    queryKey: ["/api/contracts"],
+  });
+
   // Fetch evidence for expanded compliance item
   const { data: allEvidence = [] } = useQuery<Evidence[]>({
     queryKey: ["/api/evidence"],
@@ -137,6 +143,12 @@ export default function ComplianceTable({
   const getOrganizationName = (customerId: string) => {
     const organization = organizations?.find((org) => org.id === customerId);
     return organization?.name || "Unknown";
+  };
+
+  const getContractTitle = (contractId: string | null | undefined) => {
+    if (!contractId) return "—";
+    const contract = contracts?.find((c) => c.id === contractId);
+    return contract?.title || "Unknown";
   };
 
   const getStatusColor = (status: string) => {
@@ -278,8 +290,10 @@ export default function ComplianceTable({
             <TableHead className="w-12"></TableHead>
             {visibleColumns.dueDate && <TableHead>Due Date</TableHead>}
             {visibleColumns.commitment && <TableHead>Commitment</TableHead>}
+            {visibleColumns.type && <TableHead>Type</TableHead>}
             {visibleColumns.category && <TableHead>Category</TableHead>}
             {showCustomerColumn && visibleColumns.organization && <TableHead>Organization</TableHead>}
+            {visibleColumns.contract && <TableHead>Contract</TableHead>}
             {visibleColumns.responsible && <TableHead>Responsible</TableHead>}
             {visibleColumns.status && <TableHead>Status</TableHead>}
             <TableHead className="text-right">Actions</TableHead>
@@ -336,6 +350,13 @@ export default function ComplianceTable({
                   </button>
                 </TableCell>
               )}
+              {visibleColumns.type && (
+                <TableCell className="whitespace-nowrap">
+                  <span className="text-sm text-foreground">
+                    {item.type || "—"}
+                  </span>
+                </TableCell>
+              )}
               {visibleColumns.category && (
                 <TableCell className="whitespace-nowrap">
                   <Badge 
@@ -349,6 +370,11 @@ export default function ComplianceTable({
               {showCustomerColumn && visibleColumns.organization && (
                 <TableCell className="whitespace-nowrap text-sm text-foreground">
                   {getOrganizationName(item.customerId)}
+                </TableCell>
+              )}
+              {visibleColumns.contract && (
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                  {getContractTitle(item.contractId)}
                 </TableCell>
               )}
               {visibleColumns.responsible && (
@@ -393,7 +419,7 @@ export default function ComplianceTable({
 
             {expandedItemId === item.id && (
               <TableRow data-testid={`row-expanded-${item.id}`}>
-                <TableCell colSpan={8} className="bg-muted/50 p-6">
+                <TableCell colSpan={12} className="bg-muted/50 p-6">
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Shield className="h-5 w-5 text-primary" />
