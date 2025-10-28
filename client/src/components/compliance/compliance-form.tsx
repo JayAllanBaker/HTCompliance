@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Organization, ComplianceItem } from "@shared/schema";
+import type { Organization, ComplianceItem, Contract } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -90,11 +90,43 @@ export default function ComplianceForm({ onClose, onSuccess, item, prefilledCust
     queryKey: ["/api/organizations"],
   });
 
+  const { data: contracts } = useQuery<Contract[]>({
+    queryKey: ["/api/contracts"],
+  });
+
+  // Watch the selected organization to filter contracts
+  const selectedOrgId = form.watch("customerId");
+  const selectedContractId = form.watch("contractId");
+  
+  // Filter contracts by selected organization for better UX
+  // Always include the currently selected contract even if it's from a different org
+  const filteredContracts = useMemo(() => {
+    if (!contracts) return [];
+    if (!selectedOrgId) return contracts;
+    
+    // Filter by organization
+    const orgContracts = contracts.filter(contract => contract.customerId === selectedOrgId);
+    
+    // If there's a selected contract that's not in the filtered list, include it
+    if (selectedContractId) {
+      const isIncluded = orgContracts.some(c => c.id === selectedContractId);
+      if (!isIncluded) {
+        const selectedContract = contracts.find(c => c.id === selectedContractId);
+        if (selectedContract) {
+          return [selectedContract, ...orgContracts];
+        }
+      }
+    }
+    
+    return orgContracts;
+  }, [contracts, selectedOrgId, selectedContractId]);
+
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
       const payload = {
         ...data,
         dueDate: data.dueDate?.toISOString() || null,
+        contractId: data.contractId && data.contractId !== "" ? data.contractId : undefined,
       };
       
       try {
@@ -214,6 +246,31 @@ export default function ComplianceForm({ onClose, onSuccess, item, prefilledCust
                 )}
               />
             </div>
+            
+            <FormField
+              control={form.control}
+              name="contractId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contract (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-contract">
+                        <SelectValue placeholder="Select contract (optional)..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {filteredContracts?.map((contract) => (
+                        <SelectItem key={contract.id} value={contract.id}>
+                          {contract.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
