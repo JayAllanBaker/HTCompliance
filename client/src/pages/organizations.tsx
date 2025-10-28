@@ -40,7 +40,7 @@ export default function OrganizationsPage() {
     name: "",
     code: "",
     contactEmail: "",
-    orgType: "customer" as "customer" | "vendor" | "contractor" | "internal",
+    orgType: "customer" as "customer" | "vendor" | "contractor" | "internal" | "state_govt" | "federal_govt",
     isActive: true
   });
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
@@ -720,6 +720,8 @@ export default function OrganizationsPage() {
                     <SelectItem value="vendor">Vendor</SelectItem>
                     <SelectItem value="contractor">Contractor</SelectItem>
                     <SelectItem value="internal">Internal</SelectItem>
+                    <SelectItem value="state_govt">State Government</SelectItem>
+                    <SelectItem value="federal_govt">Federal Government</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -953,6 +955,8 @@ export default function OrganizationsPage() {
                     <SelectItem value="vendor">Vendor</SelectItem>
                     <SelectItem value="contractor">Contractor</SelectItem>
                     <SelectItem value="internal">Internal</SelectItem>
+                    <SelectItem value="state_govt">State Government</SelectItem>
+                    <SelectItem value="federal_govt">Federal Government</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

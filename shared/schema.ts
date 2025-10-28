@@ -9,7 +9,7 @@ export const statusEnum = pgEnum("status", ["pending", "complete", "overdue", "n
 export const categoryEnum = pgEnum("category", ["Marketing Agreement", "Billing", "Deliverable", "Compliance", "End-of-Term", "Accounts Payable"]);
 export const evidenceTypeEnum = pgEnum("evidence_type", ["document", "email", "screenshot", "report", "contract-and-amendment", "other"]);
 export const qbConnectionStatusEnum = pgEnum("qb_connection_status", ["connected", "disconnected", "error", "token_expired"]);
-export const orgTypeEnum = pgEnum("org_type", ["customer", "vendor", "contractor", "internal"]);
+export const orgTypeEnum = pgEnum("org_type", ["customer", "vendor", "contractor", "internal", "state_govt", "federal_govt"]);
 
 // Users table
 export const users = pgTable("users", {
