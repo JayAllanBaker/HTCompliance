@@ -529,7 +529,7 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/evidence/:id/comments", async (req, res) => {
     try {
       const { id } = req.params;
-      const comments = await db
+      const results = await db
         .select({
           id: evidenceComments.id,
           evidenceId: evidenceComments.evidenceId,
@@ -543,6 +543,20 @@ export function registerRoutes(app: Express): Server {
         .innerJoin(users, eq(evidenceComments.userId, users.id))
         .where(eq(evidenceComments.evidenceId, id))
         .orderBy(desc(evidenceComments.createdAt));
+      
+      // Transform to include user object
+      const comments = results.map(r => ({
+        id: r.id,
+        evidenceId: r.evidenceId,
+        userId: r.userId,
+        comment: r.comment,
+        createdAt: r.createdAt,
+        user: {
+          id: r.userId,
+          username: r.username,
+          fullName: r.userName,
+        },
+      }));
       
       res.json(comments);
     } catch (error) {
@@ -565,7 +579,7 @@ export function registerRoutes(app: Express): Server {
         .returning();
       
       // Fetch comment with user details
-      const [commentWithUser] = await db
+      const [result] = await db
         .select({
           id: evidenceComments.id,
           evidenceId: evidenceComments.evidenceId,
@@ -578,6 +592,20 @@ export function registerRoutes(app: Express): Server {
         .from(evidenceComments)
         .innerJoin(users, eq(evidenceComments.userId, users.id))
         .where(eq(evidenceComments.id, comment.id));
+      
+      // Transform to include user object
+      const commentWithUser = {
+        id: result.id,
+        evidenceId: result.evidenceId,
+        userId: result.userId,
+        comment: result.comment,
+        createdAt: result.createdAt,
+        user: {
+          id: result.userId,
+          username: result.username,
+          fullName: result.userName,
+        },
+      };
       
       // Audit log
       await storage.createAuditLog({
@@ -600,15 +628,15 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete("/api/evidence-comments/:id", async (req, res) => {
+  app.delete("/api/evidence/:id/comments/:commentId", async (req, res) => {
     try {
-      const { id } = req.params;
+      const { commentId } = req.params;
       
       // Get comment first to check ownership
       const [comment] = await db
         .select()
         .from(evidenceComments)
-        .where(eq(evidenceComments.id, id));
+        .where(eq(evidenceComments.id, commentId));
       
       if (!comment) {
         return res.status(404).json({ error: "Comment not found" });
@@ -619,14 +647,14 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ error: "Unauthorized" });
       }
       
-      await db.delete(evidenceComments).where(eq(evidenceComments.id, id));
+      await db.delete(evidenceComments).where(eq(evidenceComments.id, commentId));
       
       // Audit log
       await storage.createAuditLog({
         userId: req.user?.id,
         action: "DELETE",
         entityType: "evidence_comment",
-        entityId: id,
+        entityId: commentId,
         oldValues: JSON.stringify(comment),
         ipAddress: req.ip,
         userAgent: req.get("User-Agent"),
