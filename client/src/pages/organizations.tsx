@@ -548,29 +548,59 @@ export default function OrganizationsPage() {
                                   {expandedContracts.length === 0 ? (
                                     <p className="text-sm text-muted-foreground ml-7">No contracts found for this organization.</p>
                                   ) : (
-                                    <div className="ml-7 space-y-2">
+                                    <div className="ml-7 space-y-3">
                                       {expandedContracts.map((contract) => (
                                         <button
                                           key={contract.id}
                                           onClick={() => setDetailContract(contract)}
-                                          className="w-full flex items-center justify-between p-3 bg-background rounded-lg border hover:bg-accent hover:border-primary transition-colors text-left"
+                                          className="w-full p-4 bg-background rounded-lg border hover:bg-accent hover:border-primary transition-colors text-left"
                                           data-testid={`contract-item-${contract.id}`}
                                         >
-                                          <div className="flex-1">
-                                            <div className="font-medium">{contract.title}</div>
-                                            <div className="text-sm text-muted-foreground">
-                                              {new Date(contract.startDate).toLocaleDateString()} 
-                                              {contract.endDate && ` - ${new Date(contract.endDate).toLocaleDateString()}`}
+                                          <div className="space-y-3">
+                                            {/* Header with title and status */}
+                                            <div className="flex items-start justify-between gap-3">
+                                              <div className="flex-1">
+                                                <h4 className="font-semibold text-base">{contract.title}</h4>
+                                                {contract.description && (
+                                                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                                                    {contract.description}
+                                                  </p>
+                                                )}
+                                              </div>
+                                              <Badge variant={contract.isActive ? "default" : "secondary"}>
+                                                {contract.isActive ? "Active" : "Inactive"}
+                                              </Badge>
+                                            </div>
+                                            
+                                            {/* Contract details grid */}
+                                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                              <div>
+                                                <span className="text-muted-foreground">Start Date:</span>
+                                                <div className="font-medium">
+                                                  {new Date(contract.startDate).toLocaleDateString()}
+                                                </div>
+                                              </div>
+                                              <div>
+                                                <span className="text-muted-foreground">End Date:</span>
+                                                <div className="font-medium">
+                                                  {contract.endDate 
+                                                    ? new Date(contract.endDate).toLocaleDateString() 
+                                                    : 'Ongoing'}
+                                                </div>
+                                              </div>
+                                              {contract.maxAmount && (
+                                                <div className="col-span-2">
+                                                  <span className="text-muted-foreground">Max Amount:</span>
+                                                  <div className="font-medium text-base">
+                                                    ${parseFloat(contract.maxAmount).toLocaleString('en-US', {
+                                                      minimumFractionDigits: 2,
+                                                      maximumFractionDigits: 2
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
-                                          {contract.maxAmount && (
-                                            <div className="text-sm font-medium">
-                                              ${contract.maxAmount.toLocaleString()}
-                                            </div>
-                                          )}
-                                          <Badge variant={contract.isActive ? "default" : "secondary"} className="ml-3">
-                                            {contract.isActive ? "Active" : "Inactive"}
-                                          </Badge>
                                         </button>
                                       ))}
                                     </div>
