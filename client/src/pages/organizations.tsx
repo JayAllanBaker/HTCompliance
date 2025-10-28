@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Organization, QuickbooksConnection, Contract, ComplianceItem, Evidence } from "@shared/schema";
 import OrganizationNotes from "@/components/organizations/organization-notes";
 import EvidenceDetailDialog from "@/components/evidence/evidence-detail-dialog";
+import ContractDetailDialog from "@/components/contracts/contract-detail-dialog";
 
 interface QBCustomer {
   Id: string;
@@ -45,6 +46,7 @@ export default function OrganizationsPage() {
   const [orgTypeFilter, setOrgTypeFilter] = useState<string>("all");
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
   const [detailEvidence, setDetailEvidence] = useState<Evidence | null>(null);
+  const [detailContract, setDetailContract] = useState<Contract | null>(null);
 
   const { data: organizations, isLoading } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],
@@ -530,9 +532,10 @@ export default function OrganizationsPage() {
                                   ) : (
                                     <div className="ml-7 space-y-2">
                                       {expandedContracts.map((contract) => (
-                                        <div
+                                        <button
                                           key={contract.id}
-                                          className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                                          onClick={() => setDetailContract(contract)}
+                                          className="w-full flex items-center justify-between p-3 bg-background rounded-lg border hover:bg-accent hover:border-primary transition-colors text-left"
                                           data-testid={`contract-item-${contract.id}`}
                                         >
                                           <div className="flex-1">
@@ -550,7 +553,7 @@ export default function OrganizationsPage() {
                                           <Badge variant={contract.isActive ? "default" : "secondary"} className="ml-3">
                                             {contract.isActive ? "Active" : "Inactive"}
                                           </Badge>
-                                        </div>
+                                        </button>
                                       ))}
                                     </div>
                                   )}
@@ -992,6 +995,13 @@ export default function OrganizationsPage() {
             : undefined
         }
         organizationName={expandedOrgId ? organizations?.find((o) => o.id === expandedOrgId)?.name : undefined}
+      />
+
+      {/* Contract Detail Dialog */}
+      <ContractDetailDialog
+        contract={detailContract}
+        onClose={() => setDetailContract(null)}
+        organizationName={detailContract ? organizations?.find((o) => o.id === detailContract.customerId)?.name : undefined}
       />
     </div>
   );
