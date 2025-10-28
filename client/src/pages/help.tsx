@@ -780,9 +780,8 @@ export default function HelpPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 overflow-auto">
+      <Sidebar />
+      <main className="ml-64 overflow-auto min-h-screen">
           <div className="p-6 max-w-6xl mx-auto">
             {/* Header */}
             <div className="mb-8">
@@ -936,7 +935,6 @@ export default function HelpPage() {
             </div>
           </div>
         </main>
-      </div>
     </div>
   );
 }

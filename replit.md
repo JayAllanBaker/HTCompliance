@@ -14,6 +14,8 @@ Preferred communication style: Simple, everyday language.
 
 The frontend uses React with TypeScript, Vite, and Wouter for routing. UI is built with shadcn/ui components on Radix UI primitives and Tailwind CSS, adhering to the "new-york" style. State is managed by TanStack Query for server state and a custom AuthContext for authentication. React Hook Form with Zod handles form validation.
 
+**Navigation Layout**: The application uses a fixed left sidebar navigation (position: fixed, 256px width) that remains in place while page content scrolls independently. All pages have a consistent layout structure with Header, fixed Sidebar, and main content area with 256px left margin (ml-64). The sidebar contains links to all major sections: Dashboard, Organizations, Contracts, Compliance, Billable Events, Evidence Locker, Admin (admin-only), and Help.
+
 ### Technical Implementations
 
 **Frontend**: React with TypeScript, Vite, Wouter, shadcn/ui (Radix UI + Tailwind CSS), TanStack Query, React Hook Form, Zod.

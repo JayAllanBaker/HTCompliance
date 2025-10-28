@@ -71,7 +71,7 @@ export default function Sidebar() {
   };
 
   return (
-    <nav className="w-64 bg-card dark:bg-sidebar border-r border-border dark:border-sidebar-border flex flex-col h-screen">
+    <nav className="fixed left-0 top-0 w-64 bg-card dark:bg-sidebar border-r border-border dark:border-sidebar-border flex flex-col h-screen z-40">
       <div className="p-6 flex-1 overflow-y-auto">
         <ul className="space-y-2">
           {navigation.map((item) => {

@@ -56,9 +56,8 @@ export default function Contracts() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 overflow-auto bg-muted/30">
+      <Sidebar />
+      <main className="ml-64 overflow-auto bg-muted/30 min-h-screen">
           <div className="p-6">
             {/* Page Header */}
             <div className="flex items-center justify-between mb-6">
@@ -295,7 +294,6 @@ export default function Contracts() {
             </div>
           </div>
         </main>
-      </div>
       
       {showNewContractForm && (
         <ContractForm 

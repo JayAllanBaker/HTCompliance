@@ -336,9 +336,8 @@ export default function EvidenceLocker() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 overflow-auto bg-muted/30">
+      <Sidebar />
+      <main className="ml-64 overflow-auto bg-muted/30 min-h-screen">
           <div className="p-6">
             {/* Page Header */}
             <div className="flex items-center justify-between mb-6">
@@ -628,7 +627,6 @@ export default function EvidenceLocker() {
             </Card>
           </div>
         </main>
-      </div>
       
       {/* Upload Evidence Dialog */}
       <Dialog open={showUploadForm} onOpenChange={setShowUploadForm}>

@@ -343,9 +343,8 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 overflow-auto bg-muted/30">
+      <Sidebar />
+      <main className="ml-64 overflow-auto bg-muted/30 min-h-screen">
           <div className="p-6 max-w-6xl">
             {/* Page Header */}
             <div className="mb-6">
@@ -910,7 +909,6 @@ export default function AdminPage() {
             </Card>
           </div>
         </main>
-      </div>
 
       {/* Create User Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
