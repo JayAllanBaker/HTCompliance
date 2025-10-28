@@ -1407,6 +1407,224 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Unified Export/Import - Database + Evidence Files
+  app.get("/api/export/unified", async (req, res) => {
+    try {
+      const archiver = (await import("archiver")).default;
+      const path = await import("path");
+      const fs = await import("fs");
+      
+      // Get all database data
+      const dbExport = await storage.exportDatabase();
+      
+      // Get all evidence records
+      const evidenceList = await storage.getEvidence();
+      
+      // Create archive
+      const archive = archiver('zip', {
+        zlib: { level: 9 }
+      });
+      
+      // Set response headers
+      const timestamp = new Date().toISOString().split('T')[0];
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="bizgov-complete-export-${timestamp}.zip"`);
+      
+      // Pipe archive to response
+      archive.pipe(res);
+      
+      // Add database export as JSON
+      archive.append(JSON.stringify(dbExport, null, 2), { name: 'database.json' });
+      
+      // Add all evidence files
+      let filesAdded = 0;
+      for (const evidence of evidenceList) {
+        if (evidence.filePath) {
+          const absolutePath = path.resolve(evidence.filePath);
+          if (fs.existsSync(absolutePath)) {
+            // Use evidence ID as filename prefix to ensure uniqueness
+            const filename = evidence.originalFilename || 
+                           `${evidence.title.replace(/[^a-z0-9]/gi, '_')}.${evidence.evidenceType}`;
+            archive.file(absolutePath, { name: `evidence-files/${evidence.id}-${filename}` });
+            filesAdded++;
+          }
+        }
+      }
+      
+      console.log(`Unified export: ${evidenceList.length} evidence records, ${filesAdded} files added to archive`);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "EXPORT",
+        entityType: "unified",
+        entityId: "complete_export",
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      archive.finalize();
+    } catch (error) {
+      console.error("Error in unified export:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to create unified export" });
+      }
+    }
+  });
+
+  app.post("/api/import/unified", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      const AdmZip = (await import("adm-zip")).default;
+      const path = await import("path");
+      const fs = await import("fs");
+      
+      console.log("Starting unified import from file:", req.file.path);
+      
+      const zip = new AdmZip(req.file.path);
+      const zipEntries = zip.getEntries();
+      
+      // Find and parse database.json
+      const dbEntry = zipEntries.find((entry: any) => entry.entryName === 'database.json');
+      if (!dbEntry) {
+        return res.status(400).json({ error: "Invalid import file: database.json not found" });
+      }
+      
+      const dbData = JSON.parse(dbEntry.getData().toString('utf8'));
+      console.log("Parsed database export, version:", dbData.version);
+      
+      // Track old ID to new ID mappings
+      const idMappings: {
+        organizations: Map<string, string>;
+        contracts: Map<string, string>;
+        complianceItems: Map<string, string>;
+        billableEvents: Map<string, string>;
+      } = {
+        organizations: new Map(),
+        contracts: new Map(),
+        complianceItems: new Map(),
+        billableEvents: new Map(),
+      };
+      
+      // Import database with ID tracking
+      // We need to handle this specially to track ID changes
+      console.log("Importing database data...");
+      
+      // Import users first (no ID remapping needed for users)
+      let importedCounts = {
+        users: 0,
+        organizations: 0,
+        contracts: 0,
+        complianceItems: 0,
+        billableEvents: 0,
+        evidence: 0,
+      };
+      
+      // Import users
+      if (dbData.data?.users?.length) {
+        const result = await storage.importDatabase(dbData);
+        importedCounts = { ...importedCounts, ...result.imported };
+      }
+      
+      // Now restore evidence files and create evidence records with updated references
+      const evidenceFiles = zipEntries.filter((entry: any) => 
+        entry.entryName.startsWith('evidence-files/') && !entry.isDirectory
+      );
+      
+      console.log(`Found ${evidenceFiles.length} evidence files in archive`);
+      
+      let evidenceRestored = 0;
+      const evidenceErrors: string[] = [];
+      
+      // Get evidence data from dbData
+      const evidenceRecords = dbData.data?.evidence || [];
+      
+      for (const evidenceData of evidenceRecords) {
+        try {
+          // Find corresponding file in ZIP
+          const evidenceId = evidenceData.id;
+          const fileEntry = evidenceFiles.find((entry: any) => 
+            entry.entryName.startsWith(`evidence-files/${evidenceId}-`)
+          );
+          
+          let filePath: string | undefined;
+          
+          if (fileEntry) {
+            // Extract file to uploads directory
+            const timestamp = Date.now();
+            const filename = evidenceData.originalFilename || `restored-${timestamp}-${evidenceId}`;
+            filePath = path.join('uploads', `${timestamp}-${filename}`);
+            fs.writeFileSync(filePath, fileEntry.getData());
+            console.log(`Restored evidence file: ${filePath}`);
+          }
+          
+          // Remap foreign key references
+          let contractId = evidenceData.contractId;
+          let complianceItemId = evidenceData.complianceItemId;
+          let billableEventId = evidenceData.billableEventId;
+          
+          // Check if these IDs need remapping (if they changed during import)
+          // Since we're using onConflictDoNothing, IDs should be preserved
+          // But if there were conflicts, we'd need to remap
+          
+          // For now, preserve original IDs since import preserves them
+          const newEvidenceData = {
+            complianceItemId: complianceItemId,
+            billableEventId: billableEventId,
+            contractId: contractId,
+            title: evidenceData.title,
+            description: evidenceData.description,
+            evidenceType: evidenceData.evidenceType,
+            filePath: filePath,
+            fileHash: "restored",
+            originalFilename: evidenceData.originalFilename,
+            mimeType: evidenceData.mimeType,
+            uploadedBy: req.user?.id,
+          };
+          
+          const validatedData = insertEvidenceSchema.parse(newEvidenceData);
+          await storage.createEvidence(validatedData);
+          evidenceRestored++;
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : "Unknown error";
+          evidenceErrors.push(`${evidenceData.title}: ${errorMsg}`);
+          console.error(`Failed to restore evidence ${evidenceData.id}:`, error);
+        }
+      }
+      
+      // Clean up uploaded ZIP
+      fs.unlinkSync(req.file.path);
+      
+      // Audit log
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "IMPORT",
+        entityType: "unified",
+        entityId: "complete_import",
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      console.log("Unified import completed successfully");
+      res.json({ 
+        message: "Complete system restore successful",
+        imported: {
+          ...importedCounts,
+          evidenceRecords: evidenceRestored,
+          evidenceFiles: evidenceFiles.length,
+        },
+        evidenceErrors: evidenceErrors.length > 0 ? evidenceErrors : undefined,
+      });
+    } catch (error) {
+      console.error("Unified import error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to import data";
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
   // Admin routes - User management
   app.get("/api/users", requireAdmin, async (req, res) => {
     try {

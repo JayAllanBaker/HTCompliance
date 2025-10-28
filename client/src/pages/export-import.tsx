@@ -16,6 +16,7 @@ export default function ExportImport() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [unifiedFile, setUnifiedFile] = useState<File | null>(null);
 
   const exportMutation = useMutation({
     mutationFn: async () => {
@@ -103,6 +104,89 @@ export default function ExportImport() {
     },
   });
 
+  const unifiedExportMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("GET", "/api/export/unified");
+      return response;
+    },
+    onSuccess: async (response) => {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bizgov-complete-export-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Complete Export Successful",
+        description: "Database and evidence files exported successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export complete system.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unifiedImportMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiRequest("POST", "/api/import/unified", formData);
+      return response.json();
+    },
+    onSuccess: (result) => {
+      const importDetails = [];
+      if (result.imported) {
+        if (result.imported.organizations > 0) importDetails.push(`${result.imported.organizations} organizations`);
+        if (result.imported.contracts > 0) importDetails.push(`${result.imported.contracts} contracts`);
+        if (result.imported.complianceItems > 0) importDetails.push(`${result.imported.complianceItems} compliance items`);
+        if (result.imported.billableEvents > 0) importDetails.push(`${result.imported.billableEvents} billable events`);
+        if (result.imported.evidenceRecords > 0) importDetails.push(`${result.imported.evidenceRecords} evidence records`);
+        if (result.imported.evidenceFiles > 0) importDetails.push(`${result.imported.evidenceFiles} evidence files`);
+        if (result.imported.users > 0) importDetails.push(`${result.imported.users} users`);
+      }
+      
+      const description = importDetails.length > 0
+        ? `Successfully restored: ${importDetails.join(', ')}`
+        : "Complete system restore successful.";
+      
+      toast({
+        title: "Import Complete",
+        description,
+      });
+      setUnifiedFile(null);
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to import system data.";
+      if (error?.message) {
+        const match = error.message.match(/\d+:\s*({.*})/);
+        if (match) {
+          try {
+            const errorData = JSON.parse(match[1]);
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            errorMessage = error.message.replace(/^\d+:\s*/, '');
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Import Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
   const csvImportMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
@@ -154,6 +238,22 @@ export default function ExportImport() {
     csvImportMutation.mutate(csvFile);
   };
 
+  const handleUnifiedExport = () => {
+    unifiedExportMutation.mutate();
+  };
+
+  const handleUnifiedImport = () => {
+    if (!unifiedFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please select a complete backup ZIP file to restore.",
+        variant: "destructive",
+      });
+      return;
+    }
+    unifiedImportMutation.mutate(unifiedFile);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -170,6 +270,101 @@ export default function ExportImport() {
                 Backup and restore your compliance data, or import bulk compliance items
               </p>
             </div>
+
+            {/* Unified Complete System Export/Import */}
+            <Alert className="mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+              <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-900 dark:text-blue-100">
+                <strong>Recommended:</strong> Use Complete System Backup to export/import both database data AND evidence files together. This ensures all evidence files remain properly linked to their database records after restoration.
+              </AlertDescription>
+            </Alert>
+
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Database className="w-5 h-5 mr-2" />
+                  Complete System Backup & Restore
+                </CardTitle>
+                <CardDescription>
+                  Export and restore your entire system including database data and all evidence files
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Unified Export Section */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Export Complete System</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Download a complete backup including all database records AND evidence files as a ZIP archive. 
+                    This is the recommended backup method to ensure evidence files stay connected to their records.
+                  </p>
+                  <Button 
+                    onClick={handleUnifiedExport}
+                    disabled={unifiedExportMutation.isPending}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    data-testid="button-export-unified"
+                  >
+                    {unifiedExportMutation.isPending ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Exporting...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Export Complete System
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <Separator />
+
+                {/* Unified Import Section */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Restore Complete System</h3>
+                  <Alert className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Warning:</strong> This will restore database records and evidence files. 
+                      Make sure to export your current data first as a backup before restoring.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="unified-file">Select complete backup ZIP file</Label>
+                      <Input 
+                        id="unified-file"
+                        type="file"
+                        accept=".zip"
+                        onChange={(e) => setUnifiedFile(e.target.files?.[0] || null)}
+                        className="mt-1"
+                        data-testid="input-unified-file"
+                      />
+                    </div>
+                    
+                    <Button 
+                      onClick={handleUnifiedImport}
+                      disabled={unifiedImportMutation.isPending || !unifiedFile}
+                      variant="outline"
+                      data-testid="button-import-unified"
+                    >
+                      {unifiedImportMutation.isPending ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Restoring...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Restore Complete System
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Database Export/Import */}
             <Card className="mb-6">
