@@ -118,6 +118,15 @@ export const evidence = pgTable("evidence", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Evidence Comments table
+export const evidenceComments = pgTable("evidence_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  evidenceId: varchar("evidence_id").notNull().references(() => evidence.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Audit Log table (immutable)
 export const auditLog = pgTable("audit_log", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -274,7 +283,7 @@ export const billableEventsRelations = relations(billableEvents, ({ one, many })
   evidence: many(evidence),
 }));
 
-export const evidenceRelations = relations(evidence, ({ one }) => ({
+export const evidenceRelations = relations(evidence, ({ one, many }) => ({
   complianceItem: one(complianceItems, {
     fields: [evidence.complianceItemId],
     references: [complianceItems.id],
@@ -289,6 +298,18 @@ export const evidenceRelations = relations(evidence, ({ one }) => ({
   }),
   uploadedByUser: one(users, {
     fields: [evidence.uploadedBy],
+    references: [users.id],
+  }),
+  comments: many(evidenceComments),
+}));
+
+export const evidenceCommentsRelations = relations(evidenceComments, ({ one }) => ({
+  evidence: one(evidence, {
+    fields: [evidenceComments.evidenceId],
+    references: [evidence.id],
+  }),
+  user: one(users, {
+    fields: [evidenceComments.userId],
     references: [users.id],
   }),
 }));
@@ -400,6 +421,11 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit
   updatedAt: true,
 });
 
+export const insertEvidenceCommentSchema = createInsertSchema(evidenceComments).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -427,3 +453,5 @@ export type QuickbooksInvoice = typeof quickbooksInvoices.$inferSelect;
 export type InsertQuickbooksInvoice = z.infer<typeof insertQuickbooksInvoiceSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+export type EvidenceComment = typeof evidenceComments.$inferSelect;
+export type InsertEvidenceComment = z.infer<typeof insertEvidenceCommentSchema>;
