@@ -92,7 +92,7 @@ export default function ContractForm({ onClose, onSuccess, contract, prefilledCu
       };
       
       if (isEditing) {
-        const response = await apiRequest("PUT", `/api/contracts/${contract.id}`, payload);
+        const response = await apiRequest("PATCH", `/api/contracts/${contract.id}`, payload);
         return response.json();
       } else {
         const response = await apiRequest("POST", "/api/contracts", payload);
