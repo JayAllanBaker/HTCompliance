@@ -21,11 +21,24 @@ if (isNeon) {
   // Use Neon serverless driver with WebSocket
   neonConfig.webSocketConstructor = ws;
   pool = new NeonPool({ connectionString: process.env.DATABASE_URL });
+  
+  // Add error handler to prevent crashes from connection terminations
+  pool.on('error', (err: Error) => {
+    console.error('[Database Pool Error]', err.message);
+    // Don't crash the app - Neon will automatically reconnect on next query
+  });
+  
   db = neonDrizzle({ client: pool, schema });
 } else {
   // Use standard PostgreSQL driver for Docker/local PostgreSQL
   const { Pool: PgPool } = pg;
   pool = new PgPool({ connectionString: process.env.DATABASE_URL });
+  
+  // Add error handler to prevent crashes from connection errors
+  pool.on('error', (err: Error) => {
+    console.error('[Database Pool Error]', err.message);
+  });
+  
   db = pgDrizzle({ client: pool, schema });
 }
 
