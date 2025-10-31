@@ -51,23 +51,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
 COPY --from=builder /app/node_modules/.bin/drizzle-kit ./node_modules/.bin/drizzle-kit
 
-# Copy entrypoint script directly into runner
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+# Copy entrypoint script to standard Docker location
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# Ensure LF endings + shebang + executable
-RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
-    grep -qxF '#!/bin/sh' /docker-entrypoint.sh || sed -i '1i#!/bin/sh' /docker-entrypoint.sh && \
-    chmod +x /docker-entrypoint.sh && \
-    chown nextjs:nodejs /docker-entrypoint.sh
-
-# Ensure Unix LF line endings (fixes Windows CRLF issues)
-RUN sed -i 's/\r$//' /docker-entrypoint.sh
-
-# Ensure shebang is present
-RUN grep -qxF '#!/bin/sh' /docker-entrypoint.sh || sed -i '1i#!/bin/sh' /docker-entrypoint.sh
-
-# Ensure the script is executable and owned by our non-root user
-RUN chmod +x /docker-entrypoint.sh && chown nextjs:nodejs /docker-entrypoint.sh
+# Ensure Unix LF line endings (fixes Windows CRLF issues), add shebang if missing, and set permissions
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
+    grep -qxF '#!/bin/sh' /usr/local/bin/docker-entrypoint.sh || sed -i '1i#!/bin/sh' /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    chown nextjs:nodejs /usr/local/bin/docker-entrypoint.sh
 
 # Default Postgres connection envs (can be overridden by docker-compose or --env-file)
 ENV PGHOST=postgres
@@ -87,5 +78,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/api/user', (r) => {process.exit(r.statusCode === 401 || r.statusCode === 200 ? 0 : 1)})"
 
 # Run entrypoint then start the app
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "dist/index.js"]
