@@ -1,0 +1,39 @@
+(AutogenStudio) C:\Projects\HTCompliance\HTCompliance>docker-compose up -d
+time="2025-11-02T12:59:59-06:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:59:59-06:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:59:59-06:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+[+] Running 3/3
+ ✔ Network htcompliance_bizgov-network  Created                                                                                 0.0s
+ ✔ Container healthtrixss-db            Healthy                                                                                10.7s
+ ✔ Container healthtrixss-crm           Started                                                                                10.9s
+
+(AutogenStudio) C:\Projects\HTCompliance\HTCompliance>docker-compose logs -f app
+time="2025-11-02T13:00:27-06:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T13:00:27-06:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T13:00:27-06:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+healthtrixss-crm  | Starting BizGov application...
+healthtrixss-crm  | Waiting for PostgreSQL to be ready...
+healthtrixss-crm  | postgres:5432 - accepting connections
+healthtrixss-crm  | PostgreSQL is ready!
+healthtrixss-crm  | Initializing database schema...
+healthtrixss-crm  | No config path provided, using default 'drizzle.config.ts'
+healthtrixss-crm  | Reading config file '/app/drizzle.config.ts'
+healthtrixss-crm  | Using 'pg' driver for database querying
+healthtrixss-crm  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[⣟] Pulling schema from database...
+[✓] Pulling schema from database...
+healthtrixss-crm  | [✓] Changes applied
+healthtrixss-crm  | npm notice
+healthtrixss-crm  | npm notice New major version of npm available! 10.9.4 -> 11.6.2
+healthtrixss-crm  | npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+healthtrixss-crm  | npm notice To update run: npm install -g npm@11.6.2
+healthtrixss-crm  | npm notice
+healthtrixss-crm  | Initializing default admin user...
+healthtrixss-crm  | [Session] Using PostgreSQL session store for standard PostgreSQL
+healthtrixss-crm  | Checking for default admin user...
+healthtrixss-crm  | ✓ Admin user already exists, skipping creation
+healthtrixss-crm  | Starting application server...
+healthtrixss-crm  | [Session] Using PostgreSQL session store for standard PostgreSQL
+healthtrixss-crm  | 7:00:22 PM [express] serving on port 5001
+healthtrixss-crm  | 7:00:25 PM [express] GET /api/user 401 in 4ms
