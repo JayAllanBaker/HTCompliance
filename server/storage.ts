@@ -392,9 +392,12 @@ export class DatabaseStorage implements IStorage {
       .select({ count: count() })
       .from(complianceItems)
       .where(
-        and(
-          eq(complianceItems.status, "pending"),
-          lte(complianceItems.dueDate, now)
+        or(
+          eq(complianceItems.status, "overdue"),
+          and(
+            eq(complianceItems.status, "pending"),
+            lte(complianceItems.dueDate, now)
+          )
         )
       );
     const [upcoming] = await db
