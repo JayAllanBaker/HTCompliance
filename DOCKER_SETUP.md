@@ -38,7 +38,7 @@ docker-compose logs -f --timestamps
 
 ### 3. Access the Application
 
-Open your browser to: **http://localhost:5000**
+Open your browser to: **http://localhost:5001**
 
 Login with:
 - Username: `admin`
@@ -102,10 +102,12 @@ docker-compose logs -f postgres --timestamps
 Connect to the PostgreSQL database with:
 
 - **Host:** `localhost`
-- **Port:** `5432`
+- **Port:** `5433` (mapped from container's 5432 to avoid conflicts)
 - **Database:** `bizgov`
 - **Username:** `postgres`
 - **Password:** `postgres`
+
+**Note:** The database runs on port 5433 on your host machine to avoid conflicts with any existing PostgreSQL installations.
 
 ---
 
