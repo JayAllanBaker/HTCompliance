@@ -1,0 +1,189 @@
+(AutogenStudio) C:\Projects\HTCompliance\HTCompliance>git pull origin main
+remote: Enumerating objects: 603, done.
+remote: Counting objects: 100% (603/603), done.
+remote: Compressing objects: 100% (145/145), done.
+remote: Total 566 (delta 457), reused 519 (delta 410), pack-reused 0 (from 0)
+Receiving objects: 100% (566/566), 6.94 MiB | 22.63 MiB/s, done.
+Resolving deltas: 100% (457/457), completed with 32 local objects.
+From https://github.com/JayAllanBaker/HTCompliance
+ * branch            main       -> FETCH_HEAD
+   a767c45..a164be7  main       -> origin/main
+Updating a767c45..a164be7
+Fast-forward
+ .replit                                            |  28 +-
+ Dockerfile                                         |  25 +-
+ attached_assets/Compliance-Data_1761577171410.csv  | 147 ++++
+ ...no-cache-time-2-1761946248888_1761946248889.txt |  55 ++
+ ...evidence-export-1761581660852_1761581695726.zip | Bin 0 -> 1348134 bytes
+ attached_assets/image_1761573840025.png            | Bin 0 -> 280548 bytes
+ attached_assets/image_1761575733655.png            | Bin 0 -> 291710 bytes
+ attached_assets/image_1761578060375.png            | Bin 0 -> 24249 bytes
+ attached_assets/image_1761578513467.png            | Bin 0 -> 228449 bytes
+ attached_assets/image_1761579316381.png            | Bin 0 -> 168480 bytes
+ attached_assets/image_1761579447502.png            | Bin 0 -> 270960 bytes
+ attached_assets/image_1761579473193.png            | Bin 0 -> 270691 bytes
+ attached_assets/image_1761600586464.png            | Bin 0 -> 302823 bytes
+ attached_assets/image_1761666714435.png            | Bin 0 -> 258933 bytes
+ attached_assets/image_1761669768695.png            | Bin 0 -> 65736 bytes
+ attached_assets/image_1761672071490.png            | Bin 0 -> 279885 bytes
+ attached_assets/image_1761672617291.png            | Bin 0 -> 279885 bytes
+ attached_assets/image_1761676327082.png            | Bin 0 -> 276059 bytes
+ attached_assets/image_1761681018201.png            | Bin 0 -> 132901 bytes
+ attached_assets/image_1761684268846.png            | Bin 0 -> 295885 bytes
+ attached_assets/image_1761688420523.png            | Bin 0 -> 282182 bytes
+ attached_assets/image_1761834177046.png            | Bin 0 -> 306812 bytes
+ attached_assets/image_1761841169480.png            | Bin 0 -> 236741 bytes
+ attached_assets/image_1761945759469.png            | Bin 0 -> 3860 bytes
+ .../compliance/compliance-detail-dialog.tsx        | 195 ++++++
+ .../src/components/compliance/compliance-form.tsx  | 142 +++-
+ .../src/components/compliance/compliance-table.tsx | 143 +++-
+ .../contracts/contract-detail-dialog.tsx           | 402 +++++++++++
+ client/src/components/contracts/contract-form.tsx  |  41 +-
+ .../components/evidence/evidence-detail-dialog.tsx | 391 +++++++++++
+ client/src/components/layout/sidebar.tsx           |   2 +-
+ .../organizations/organization-notes.tsx           | 196 ++++++
+ client/src/pages/admin.tsx                         |   6 +-
+ client/src/pages/billable-events.tsx               |   6 +-
+ client/src/pages/compliance.tsx                    |  37 +-
+ client/src/pages/contracts.tsx                     | 197 ++++--
+ client/src/pages/dashboard.tsx                     |   6 +-
+ client/src/pages/evidence-locker.tsx               | 281 +++++++-
+ client/src/pages/export-import.tsx                 | 201 +++++-
+ client/src/pages/help.tsx                          |   6 +-
+ client/src/pages/organizations.tsx                 | 457 +++++++++++-
+ docker-compose.yml                                 |   4 +-
+ replit.md                                          |  14 +-
+ server/db.ts                                       |  13 +
+ server/routes.ts                                   | 775 ++++++++++++++++++++-
+ server/services/csv-import.ts                      |   9 +-
+ server/storage.ts                                  |  25 +
+ shared/schema.ts                                   |  77 +-
+ uploads/2e46b7949789477f7b8ed31afc7803ab           | 156 +++++
+ uploads/42b023f238f0072913845f1031faffcd           |   1 +
+ uploads/438da6f683b6f041c6d213fcece5453a           | 147 ++++
+ uploads/515c9a08f7ce810bedb3156298ac6473           | 147 ++++
+ uploads/5729e5ac143c5242db10a357012d0711           | 147 ++++
+ uploads/5976efd5c886c6c8024caca971e69f7a           |   1 +
+ uploads/6b90b43d9af4d1c9d49c30d5d1b9fc20           | Bin 0 -> 980403 bytes
+ uploads/8b2d1bb7d62adf55511400c82b48356c           | 147 ++++
+ uploads/a9c24f08420756502815aa683f399cfc           | 147 ++++
+ uploads/c341ff79e0ada968d171a1a583c94d21           | 147 ++++
+ uploads/e4262a69654676c31af2fe86c881fcb1           | 152 ++++
+ uploads/e9dbe6dab56a44a942ab9c7a1aef5a6c           | Bin 0 -> 1542133 bytes
+ uploads/edc9f821af19f2a577b4deb86014a11e           | 149 ++++
+ uploads/f1391b28088868b1cac05c5049702e51           | 147 ++++
+ uploads/fb243e79ed36ce21ce4257d41f3a9bb2           | 147 ++++
+ uploads/fb64d20b0caec91b4c97baa600397f90           | 147 ++++
+ 64 files changed, 5483 insertions(+), 180 deletions(-)
+ create mode 100644 attached_assets/Compliance-Data_1761577171410.csv
+ create mode 100644 attached_assets/Pasted--AutogenStudio-C-Projects-HTSalesManager-HTSalesManager-docker-compose-build-no-cache-time-2-1761946248888_1761946248889.txt
+ create mode 100644 attached_assets/evidence-export-1761581660852_1761581695726.zip
+ create mode 100644 attached_assets/image_1761573840025.png
+ create mode 100644 attached_assets/image_1761575733655.png
+ create mode 100644 attached_assets/image_1761578060375.png
+ create mode 100644 attached_assets/image_1761578513467.png
+ create mode 100644 attached_assets/image_1761579316381.png
+ create mode 100644 attached_assets/image_1761579447502.png
+ create mode 100644 attached_assets/image_1761579473193.png
+ create mode 100644 attached_assets/image_1761600586464.png
+ create mode 100644 attached_assets/image_1761666714435.png
+ create mode 100644 attached_assets/image_1761669768695.png
+ create mode 100644 attached_assets/image_1761672071490.png
+ create mode 100644 attached_assets/image_1761672617291.png
+ create mode 100644 attached_assets/image_1761676327082.png
+ create mode 100644 attached_assets/image_1761681018201.png
+ create mode 100644 attached_assets/image_1761684268846.png
+ create mode 100644 attached_assets/image_1761688420523.png
+ create mode 100644 attached_assets/image_1761834177046.png
+ create mode 100644 attached_assets/image_1761841169480.png
+ create mode 100644 attached_assets/image_1761945759469.png
+ create mode 100644 client/src/components/compliance/compliance-detail-dialog.tsx
+ create mode 100644 client/src/components/contracts/contract-detail-dialog.tsx
+ create mode 100644 client/src/components/evidence/evidence-detail-dialog.tsx
+ create mode 100644 client/src/components/organizations/organization-notes.tsx
+ create mode 100644 uploads/2e46b7949789477f7b8ed31afc7803ab
+ create mode 100644 uploads/42b023f238f0072913845f1031faffcd
+ create mode 100644 uploads/438da6f683b6f041c6d213fcece5453a
+ create mode 100644 uploads/515c9a08f7ce810bedb3156298ac6473
+ create mode 100644 uploads/5729e5ac143c5242db10a357012d0711
+ create mode 100644 uploads/5976efd5c886c6c8024caca971e69f7a
+ create mode 100644 uploads/6b90b43d9af4d1c9d49c30d5d1b9fc20
+ create mode 100644 uploads/8b2d1bb7d62adf55511400c82b48356c
+ create mode 100644 uploads/a9c24f08420756502815aa683f399cfc
+ create mode 100644 uploads/c341ff79e0ada968d171a1a583c94d21
+ create mode 100644 uploads/e4262a69654676c31af2fe86c881fcb1
+ create mode 100644 uploads/e9dbe6dab56a44a942ab9c7a1aef5a6c
+ create mode 100644 uploads/edc9f821af19f2a577b4deb86014a11e
+ create mode 100644 uploads/f1391b28088868b1cac05c5049702e51
+ create mode 100644 uploads/fb243e79ed36ce21ce4257d41f3a9bb2
+ create mode 100644 uploads/fb64d20b0caec91b4c97baa600397f90
+
+(AutogenStudio) C:\Projects\HTCompliance\HTCompliance>docker-compose build --no-cache
+time="2025-11-02T12:28:35-06:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:28:35-06:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:28:35-06:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:28:35-06:00" level=warning msg="C:\\Projects\\HTCompliance\\HTCompliance\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Building 23.7s (35/35) FINISHED
+ => [internal] load local bake definitions                                                                                      0.0s
+ => => reading from stdin 556B                                                                                                  0.0s
+ => [internal] load build definition from Dockerfile                                                                            0.0s
+ => => transferring dockerfile: 2.88kB                                                                                          0.0s
+ => [internal] load metadata for docker.io/library/node:22-alpine                                                               0.9s
+ => [auth] library/node:pull token for registry-1.docker.io                                                                     0.0s
+ => [internal] load .dockerignore                                                                                               0.0s
+ => => transferring context: 326B                                                                                               0.0s
+ => [internal] load build context                                                                                               0.1s
+ => => transferring context: 554.55kB                                                                                           0.1s
+ => [base 1/1] FROM docker.io/library/node:22-alpine@sha256:b2358485e3e33bc3a33114d2b1bdb18cdbe4df01bd2b257198eb51beb1f026c5    5.3s
+ => => resolve docker.io/library/node:22-alpine@sha256:b2358485e3e33bc3a33114d2b1bdb18cdbe4df01bd2b257198eb51beb1f026c5         0.0s
+ => => sha256:e1acb8d81a6ae3f5871ce734e5b9aabd5cdb01ccb4fe07ec71c33d75bb4eb04c 1.26MB / 1.26MB                                  0.3s
+ => => sha256:5ff8b913658cef54b13151d83455a1387472901b28d1f6a0adc49beb04b26ddc 445B / 445B                                      0.2s
+ => => sha256:b2358485e3e33bc3a33114d2b1bdb18cdbe4df01bd2b257198eb51beb1f026c5 6.41kB / 6.41kB                                  0.0s
+ => => sha256:ef30b897b4b924010aab656801cb44fe27589b5d0724ba080b191d75f1f81af0 1.72kB / 1.72kB                                  0.0s
+ => => sha256:d14f4a9e34c680024562fea6bc778ca0ce51df5e88cf12fe050870999573f5df 6.50kB / 6.50kB                                  0.0s
+ => => sha256:fc2cca81d0de31536e59c1e347c529041866e5f6e73effbcd570f0373d4fbaf7 51.57MB / 51.57MB                                4.1s
+ => => extracting sha256:fc2cca81d0de31536e59c1e347c529041866e5f6e73effbcd570f0373d4fbaf7                                       1.0s
+ => => extracting sha256:e1acb8d81a6ae3f5871ce734e5b9aabd5cdb01ccb4fe07ec71c33d75bb4eb04c                                       0.0s
+ => => extracting sha256:5ff8b913658cef54b13151d83455a1387472901b28d1f6a0adc49beb04b26ddc                                       0.0s
+ => [deps 1/4] RUN apk add --no-cache libc6-compat                                                                              1.4s
+ => [builder 1/9] WORKDIR /app                                                                                                  0.4s
+ => [builder 2/9] COPY package.json package-lock.json* ./                                                                       0.0s
+ => [runner  2/14] RUN apk add --no-cache postgresql-client                                                                     1.6s
+ => [builder 3/9] RUN npm ci                                                                                                    9.0s
+ => [deps 2/4] WORKDIR /app                                                                                                     0.0s
+ => [deps 3/4] COPY package.json package-lock.json* ./                                                                          0.0s
+ => [deps 4/4] RUN npm ci && npm cache clean --force                                                                            9.0s
+ => [runner  3/14] RUN addgroup --system --gid 1001 nodejs                                                                      0.9s
+ => [runner  4/14] RUN adduser --system --uid 1001 nextjs                                                                       0.7s
+ => [builder 4/9] COPY server ./server                                                                                          0.0s
+ => [builder 5/9] COPY client ./client                                                                                          0.0s
+ => [builder 6/9] COPY shared ./shared                                                                                          0.0s
+ => [builder 7/9] COPY vite.config.ts tsconfig.json drizzle.config.ts tailwind.config.ts postcss.config.js ./                   0.0s
+ => [builder 8/9] COPY docker-entrypoint.sh ./docker-entrypoint.sh                                                              0.0s
+ => [builder 9/9] RUN npm run build                                                                                             4.2s
+ => [runner  5/14] COPY --from=builder /app/dist ./dist                                                                         0.0s
+ => [runner  6/14] COPY --from=builder /app/package.json ./package.json                                                         0.0s
+ => [runner  7/14] COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts                                               0.0s
+ => [runner  8/14] COPY --from=builder /app/shared ./shared                                                                     0.0s
+ => [runner  9/14] COPY --from=builder /app/server ./server                                                                     0.0s
+ => [runner 10/14] COPY --from=deps /app/node_modules ./node_modules                                                            1.0s
+ => [runner 11/14] COPY --from=builder /app/node_modules/drizzle-kit ./node_modules/drizzle-kit                                 0.0s
+ => [runner 12/14] COPY --from=builder /app/node_modules/.bin/drizzle-kit ./node_modules/.bin/drizzle-kit                       0.0s
+ => [runner 13/14] COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh                                                0.0s
+ => [runner 14/14] RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh &&     grep -qxF '#!/bin/sh' /usr/local/bin/docker  0.2s
+ => exporting to image                                                                                                          1.8s
+ => => exporting layers                                                                                                         1.8s
+ => => writing image sha256:c4cc2797d4def5384533b38ac1f1683e976cc76f1b2fa358d36ae295d3ccca19                                    0.0s
+ => => naming to docker.io/library/htcompliance-app                                                                             0.0s
+ => resolving provenance for metadata file                                                                                      0.0s
+[+] Building 1/1
+ ✔ htcompliance-app  Built                                                                                                      0.0s
+
+(AutogenStudio) C:\Projects\HTCompliance\HTCompliance>docker-compose up -d
+time="2025-11-02T12:29:01-06:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:29:01-06:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:29:01-06:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:29:01-06:00" level=warning msg="C:\\Projects\\HTCompliance\\HTCompliance\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Running 1/1
+ ✘ Container bizgov-postgres  Error response from daemon: Error when allocating new name: Confli...                             0.1s
+Error response from daemon: Error when allocating new name: Conflict. The container name "/healthtrixss-db" is already in use by container "93710e1e544a61823d15a924162ddcbd723800f9a10deae2e8ce98698402df16". You have to remove (or rename) that container to be able to reuse that name.
