@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import type { Organization, ComplianceItem } from "@shared/schema";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
@@ -24,6 +25,7 @@ type DuplicateHandling = "skip" | "update";
 
 export default function Compliance() {
   const { toast } = useToast();
+  const [location] = useLocation();
   const [showNewItemForm, setShowNewItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
@@ -39,6 +41,37 @@ export default function Compliance() {
     limit: 50,
     offset: 0,
   });
+  const [urlFilter, setUrlFilter] = useState<string | null>(null);
+
+  // Read URL parameters and set initial filters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const filterParam = searchParams.get('filter');
+    
+    if (filterParam) {
+      setUrlFilter(filterParam);
+      switch (filterParam) {
+        case 'overdue':
+          setFilters(prev => ({ ...prev, status: 'overdue' }));
+          break;
+        case 'upcoming':
+          // For upcoming items, we'll filter client-side based on due date
+          setFilters(prev => ({ ...prev, status: '' }));
+          break;
+        case 'completed':
+          setFilters(prev => ({ ...prev, status: 'complete' }));
+          break;
+        case 'all':
+        default:
+          setFilters(prev => ({ ...prev, status: '' }));
+          break;
+      }
+    } else {
+      // Clear URL filter when no filter parameter is present
+      setUrlFilter(null);
+      setFilters(prev => ({ ...prev, status: '' }));
+    }
+  }, [location]);
 
   // Always fetch all items without status filter for calendar
   const allItemsFilters = useMemo(() => ({ 
@@ -54,14 +87,42 @@ export default function Compliance() {
     queryKey: ["/api/compliance-items", allItemsFilters],
   });
 
-  // Filter items client-side for table view when status filter is active
+  // Filter items client-side for table view when status filter is active or URL filter is set
   const complianceData = useMemo(() => {
-    if (!allItemsData || !filters.status) return allItemsData;
-    return {
-      items: allItemsData.items.filter(item => item.status === filters.status),
-      total: allItemsData.items.filter(item => item.status === filters.status).length
-    };
-  }, [allItemsData, filters.status]);
+    if (!allItemsData) return allItemsData;
+    
+    // Handle URL-based filters
+    if (urlFilter === 'upcoming') {
+      // Normalize dates to midnight for accurate comparison
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const nextWeek = new Date();
+      nextWeek.setDate(today.getDate() + 7);
+      nextWeek.setHours(23, 59, 59, 999);
+      
+      const upcomingItems = allItemsData.items.filter(item => {
+        if (!item.dueDate) return false;
+        const dueDate = new Date(item.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate >= today && dueDate <= nextWeek && item.status !== 'complete';
+      });
+      
+      return {
+        items: upcomingItems,
+        total: upcomingItems.length
+      };
+    }
+    
+    // Handle status filter
+    if (filters.status) {
+      return {
+        items: allItemsData.items.filter(item => item.status === filters.status),
+        total: allItemsData.items.filter(item => item.status === filters.status).length
+      };
+    }
+    
+    return allItemsData;
+  }, [allItemsData, filters.status, urlFilter]);
 
   const { data: organizations } = useQuery<Organization[]>({
     queryKey: ["/api/organizations"],

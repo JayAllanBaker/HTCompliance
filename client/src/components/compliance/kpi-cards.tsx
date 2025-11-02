@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardCheck, AlertTriangle, Calendar, ListChecks } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "wouter";
 
 interface KPICardsProps {
   metrics?: {
@@ -42,6 +43,7 @@ export default function KPICards({ metrics, isLoading }: KPICardsProps) {
       iconColor: "text-primary",
       bgColor: "bg-primary/10",
       testId: "kpi-compliance-rate",
+      filterUrl: "/compliance?filter=completed",
     },
     {
       title: "Overdue Items",
@@ -50,6 +52,7 @@ export default function KPICards({ metrics, isLoading }: KPICardsProps) {
       iconColor: "text-secondary",
       bgColor: "bg-secondary/10",
       testId: "kpi-overdue-items",
+      filterUrl: "/compliance?filter=overdue",
     },
     {
       title: "Due This Week",
@@ -58,6 +61,7 @@ export default function KPICards({ metrics, isLoading }: KPICardsProps) {
       iconColor: "text-accent",
       bgColor: "bg-accent/10",
       testId: "kpi-upcoming-items",
+      filterUrl: "/compliance?filter=upcoming",
     },
     {
       title: "Total Items",
@@ -66,6 +70,7 @@ export default function KPICards({ metrics, isLoading }: KPICardsProps) {
       iconColor: "text-green-600",
       bgColor: "bg-green-100",
       testId: "kpi-total-items",
+      filterUrl: "/compliance?filter=all",
     },
   ];
 
@@ -74,24 +79,26 @@ export default function KPICards({ metrics, isLoading }: KPICardsProps) {
       {kpiData.map((kpi) => {
         const Icon = kpi.icon;
         return (
-          <Card key={kpi.title} className="border border-border shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className={`p-3 rounded-lg ${kpi.bgColor}`}>
-                  <Icon className={`h-6 w-6 ${kpi.iconColor}`} />
+          <Link key={kpi.title} href={kpi.filterUrl}>
+            <Card className="border border-border shadow-sm cursor-pointer hover:shadow-md hover:border-primary/50 transition-all duration-200">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className={`p-3 rounded-lg ${kpi.bgColor}`}>
+                    <Icon className={`h-6 w-6 ${kpi.iconColor}`} />
+                  </div>
+                  <div className="ml-4">
+                    <p 
+                      className="text-2xl font-bold text-foreground"
+                      data-testid={kpi.testId}
+                    >
+                      {kpi.value}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{kpi.title}</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p 
-                    className="text-2xl font-bold text-foreground"
-                    data-testid={kpi.testId}
-                  >
-                    {kpi.value}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{kpi.title}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         );
       })}
     </div>
