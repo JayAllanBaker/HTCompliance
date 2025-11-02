@@ -1,0 +1,160 @@
+
+(AutogenStudio) C:\Projects\HTCompliance\HTCompliance>docker-compose up -d
+time="2025-11-02T12:34:31-06:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:34:31-06:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:34:31-06:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:34:31-06:00" level=warning msg="C:\\Projects\\HTCompliance\\HTCompliance\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Running 2/2
+ ✔ Container healthtrixss-db   Healthy                                                                                         10.7s
+ ✔ Container healthtrixss-crm  Started                                                                                          0.2s
+
+(AutogenStudio) C:\Projects\HTCompliance\HTCompliance>docker-compose logs -f app
+time="2025-11-02T12:38:51-06:00" level=warning msg="The \"AZURE_CLIENT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:38:51-06:00" level=warning msg="The \"AZURE_CLIENT_SECRET\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:38:51-06:00" level=warning msg="The \"AZURE_TENANT_ID\" variable is not set. Defaulting to a blank string."
+time="2025-11-02T12:38:51-06:00" level=warning msg="C:\\Projects\\HTCompliance\\HTCompliance\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+healthtrixss-crm  | Starting BizGov application...
+healthtrixss-crm  | Waiting for PostgreSQL to be ready...
+healthtrixss-crm  | postgres:5432 - accepting connections
+healthtrixss-crm  | PostgreSQL is ready!
+healthtrixss-crm  | Initializing database schema...
+healthtrixss-crm  | No config path provided, using default 'drizzle.config.ts'
+healthtrixss-crm  | Reading config file '/app/drizzle.config.ts'
+healthtrixss-crm  | Using 'pg' driver for database querying
+healthtrixss-crm  | [⣷] Pulling schema from database...
+[✓] Pulling schema from database...
+healthtrixss-crm  | [✓] Changes applied
+healthtrixss-crm  | npm notice
+healthtrixss-crm  | npm notice New major version of npm available! 10.9.4 -> 11.6.2
+healthtrixss-crm  | npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+healthtrixss-crm  | npm notice To update run: npm install -g npm@11.6.2
+healthtrixss-crm  | npm notice
+healthtrixss-crm  | Initializing default admin user...
+healthtrixss-crm  | [Session] Using PostgreSQL session store for standard PostgreSQL
+healthtrixss-crm  | Checking for default admin user...
+healthtrixss-crm  | Creating default admin user...
+healthtrixss-crm  | ✓ Default admin user created successfully
+healthtrixss-crm  |   Username: admin
+healthtrixss-crm  |   Password: admin123
+healthtrixss-crm  |   ⚠️  IMPORTANT: Please change this password after first login!
+healthtrixss-crm  | Starting application server...
+healthtrixss-crm  | [Session] Using PostgreSQL session store for standard PostgreSQL
+healthtrixss-crm  | 6:33:34 PM [express] serving on port 5001
+healthtrixss-crm  | 6:33:37 PM [express] GET /api/user 401 in 4ms
+healthtrixss-crm  | 6:34:07 PM [express] GET /api/user 401 in 1ms
+healthtrixss-crm  | Starting BizGov application...
+healthtrixss-crm  | Waiting for PostgreSQL to be ready...
+healthtrixss-crm  | postgres:5432 - accepting connections
+healthtrixss-crm  | PostgreSQL is ready!
+healthtrixss-crm  | Initializing database schema...
+healthtrixss-crm  | No config path provided, using default 'drizzle.config.ts'
+healthtrixss-crm  | Reading config file '/app/drizzle.config.ts'
+healthtrixss-crm  | Using 'pg' driver for database querying
+healthtrixss-crm  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[⣟] Pulling schema from database...
+[✓] Pulling schema from database...
+healthtrixss-crm  | [i] No changes detected
+healthtrixss-crm  | Initializing default admin user...
+healthtrixss-crm  | [Session] Using PostgreSQL session store for standard PostgreSQL
+healthtrixss-crm  | Checking for default admin user...
+healthtrixss-crm  | ✓ Admin user already exists, skipping creation
+healthtrixss-crm  | Starting application server...
+healthtrixss-crm  | [Session] Using PostgreSQL session store for standard PostgreSQL
+healthtrixss-crm  | 6:34:54 PM [express] serving on port 5001
+healthtrixss-crm  | 6:34:57 PM [express] GET /api/user 401 in 3ms
+healthtrixss-crm  | 6:35:09 PM [express] GET /api/user 401 in 0ms
+healthtrixss-crm  | 6:35:14 PM [express] POST /api/login 401 in 18ms
+healthtrixss-crm  | 6:35:22 PM [express] POST /api/login 401 in 3ms
+healthtrixss-crm  | 6:35:27 PM [express] GET /api/user 401 in 1ms
+healthtrixss-crm  | 6:35:29 PM [express] POST /api/login 401 in 33ms
+healthtrixss-crm  | 6:35:57 PM [express] GET /api/user 401 in 0ms
+healthtrixss-crm  | 6:36:27 PM [express] GET /api/user 401 in 0ms
+healthtrixss-crm  | 6:36:33 PM [express] POST /api/login 200 in 55ms :: {"id":"2e8eee22-2e05-4b2f-90a9-fff1764482a1","us…
+healthtrixss-crm  | 6:36:33 PM [express] GET /api/organizations 200 in 9ms :: []
+healthtrixss-crm  | 6:36:33 PM [express] GET /api/contracts 200 in 18ms :: []
+healthtrixss-crm  | 6:36:33 PM [express] GET /api/compliance-items 200 in 21ms :: {"items":[],"total":0}
+healthtrixss-crm  | 6:36:33 PM [express] GET /api/dashboard/metrics 200 in 22ms :: {"totalItems":0,"completedItems":0,"o…
+healthtrixss-crm  | [requireAdmin] Checking admin access: {
+healthtrixss-crm  |   hasUser: true,
+healthtrixss-crm  |   userId: '2e8eee22-2e05-4b2f-90a9-fff1764482a1',
+healthtrixss-crm  |   username: 'admin',
+healthtrixss-crm  |   role: 'admin',
+healthtrixss-crm  |   isAuthenticated: true,
+healthtrixss-crm  |   path: '/api/admin/audit-logs'
+healthtrixss-crm  | }
+healthtrixss-crm  | [requireAdmin] Checking admin access: {
+healthtrixss-crm  |   hasUser: true,
+healthtrixss-crm  |   userId: '2e8eee22-2e05-4b2f-90a9-fff1764482a1',
+healthtrixss-crm  |   username: 'admin',
+healthtrixss-crm  |   role: 'admin',
+healthtrixss-crm  |   isAuthenticated: true,
+healthtrixss-crm  |   path: '/api/users'
+healthtrixss-crm  | }
+healthtrixss-crm  | [requireAdmin] Checking admin access: {
+healthtrixss-crm  |   hasUser: true,
+healthtrixss-crm  |   userId: '2e8eee22-2e05-4b2f-90a9-fff1764482a1',
+healthtrixss-crm  |   username: 'admin',
+healthtrixss-crm  |   role: 'admin',
+healthtrixss-crm  |   isAuthenticated: true,
+healthtrixss-crm  |   path: '/api/admin/qb-settings'
+healthtrixss-crm  | }
+healthtrixss-crm  | [requireAdmin] Checking admin access: {
+healthtrixss-crm  |   hasUser: true,
+healthtrixss-crm  |   userId: '2e8eee22-2e05-4b2f-90a9-fff1764482a1',
+healthtrixss-crm  |   username: 'admin',
+healthtrixss-crm  |   role: 'admin',
+healthtrixss-crm  |   isAuthenticated: true,
+healthtrixss-crm  |   path: '/api/admin/qb-health'
+healthtrixss-crm  | }
+healthtrixss-crm  | 6:36:39 PM [express] GET /api/admin/audit-logs 200 in 9ms :: {"logs":[{"id":"db140622-e648-475b-b000…
+healthtrixss-crm  | 6:36:39 PM [express] GET /api/users 200 in 11ms :: [{"id":"2e8eee22-2e05-4b2f-90a9-fff1764482a1","us…
+healthtrixss-crm  | 6:36:39 PM [express] GET /api/admin/qb-settings 200 in 9ms :: {}
+healthtrixss-crm  | 6:36:39 PM [express] GET /api/admin/qb-health 200 in 11ms :: {"credentialsConfigured":false,"clientI…
+healthtrixss-crm  | [requireAdmin] Checking admin access: {
+healthtrixss-crm  |   hasUser: true,
+healthtrixss-crm  |   userId: '2e8eee22-2e05-4b2f-90a9-fff1764482a1',
+healthtrixss-crm  |   username: 'admin',
+healthtrixss-crm  |   role: 'admin',
+healthtrixss-crm  |   isAuthenticated: true,
+healthtrixss-crm  |   path: '/api/admin/azure-settings'
+healthtrixss-crm  | }
+healthtrixss-crm  | [requireAdmin] Checking admin access: {
+healthtrixss-crm  |   hasUser: true,
+healthtrixss-crm  |   userId: '2e8eee22-2e05-4b2f-90a9-fff1764482a1',
+healthtrixss-crm  |   username: 'admin',
+healthtrixss-crm  |   role: 'admin',
+healthtrixss-crm  |   isAuthenticated: true,
+healthtrixss-crm  |   path: '/api/admin/qb-detected-redirect'
+healthtrixss-crm  | }
+healthtrixss-crm  | 6:36:39 PM [express] GET /api/admin/qb-detected-redirect 200 in 18ms :: {"detectedRedirectUri":"http…
+healthtrixss-crm  | 6:36:39 PM [express] GET /api/admin/azure-settings 200 in 16ms :: {}
+healthtrixss-crm  | 6:36:57 PM [express] GET /api/user 401 in 0ms
+healthtrixss-crm  | [requireAdmin] Checking admin access: {
+healthtrixss-crm  |   hasUser: true,
+healthtrixss-crm  |   userId: '2e8eee22-2e05-4b2f-90a9-fff1764482a1',
+healthtrixss-crm  |   username: 'admin',
+healthtrixss-crm  |   role: 'admin',
+healthtrixss-crm  |   isAuthenticated: true,
+healthtrixss-crm  |   path: '/api/users'
+healthtrixss-crm  | }
+healthtrixss-crm  | 6:37:05 PM [express] POST /api/users 201 in 45ms :: {"id":"d605b796-bcbb-425e-a589-2bbf061e67a9","us…
+healthtrixss-crm  | [requireAdmin] Checking admin access: {
+healthtrixss-crm  |   hasUser: true,
+healthtrixss-crm  |   userId: '2e8eee22-2e05-4b2f-90a9-fff1764482a1',
+healthtrixss-crm  |   username: 'admin',
+healthtrixss-crm  |   role: 'admin',
+healthtrixss-crm  |   isAuthenticated: true,
+healthtrixss-crm  |   path: '/api/users'
+healthtrixss-crm  | }
+healthtrixss-crm  | 6:37:05 PM [express] GET /api/users 200 in 4ms :: [{"id":"2e8eee22-2e05-4b2f-90a9-fff1764482a1","use…
+healthtrixss-crm  | 6:37:10 PM [express] POST /api/logout 200 in 7ms
+healthtrixss-crm  | 6:37:16 PM [express] POST /api/login 200 in 37ms :: {"id":"d605b796-bcbb-425e-a589-2bbf061e67a9","us…
+healthtrixss-crm  | 6:37:27 PM [express] GET /api/user 401 in 1ms
+healthtrixss-crm  | 6:37:39 PM [express] GET /api/compliance-items 200 in 6ms :: {"items":[],"total":0}
+healthtrixss-crm  | 6:37:39 PM [express] GET /api/billable-events 200 in 5ms :: []
+healthtrixss-crm  | 6:37:39 PM [express] GET /api/customers 200 in 11ms
+healthtrixss-crm  | 6:37:57 PM [express] GET /api/user 401 in 0ms
+healthtrixss-crm  | Error: EACCES: permission denied, open 'uploads/809a0ea50ca80a7c6098a4d0b499693c'
+healthtrixss-crm  | 6:38:27 PM [express] GET /api/user 401 in 0ms
+healthtrixss-crm  | Error: EACCES: permission denied, open 'uploads/fc376a21c984fdbe54fb10e7ae4412fa'
