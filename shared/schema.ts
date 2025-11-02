@@ -104,9 +104,9 @@ export const billableEvents = pgTable("billable_events", {
 // Evidence table for audit trail
 export const evidence = pgTable("evidence", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  complianceItemId: varchar("compliance_item_id").references(() => complianceItems.id),
-  billableEventId: varchar("billable_event_id").references(() => billableEvents.id),
-  contractId: varchar("contract_id").references(() => contracts.id),
+  complianceItemId: varchar("compliance_item_id").references(() => complianceItems.id, { onDelete: "cascade" }),
+  billableEventId: varchar("billable_event_id").references(() => billableEvents.id, { onDelete: "cascade" }),
+  contractId: varchar("contract_id").references(() => contracts.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description"),
   evidenceType: evidenceTypeEnum("evidence_type").notNull(),

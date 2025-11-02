@@ -1666,6 +1666,13 @@ export function registerRoutes(app: Express): Server {
       
       for (const evidenceData of evidenceRecords) {
         try {
+          // Check if evidence already exists (duplicate check)
+          const existingEvidence = await storage.getEvidenceById(evidenceData.id);
+          if (existingEvidence) {
+            console.log(`Skipping duplicate evidence: ${evidenceData.title} (ID: ${evidenceData.id})`);
+            continue; // Skip if already exists
+          }
+          
           // Find corresponding file in ZIP
           const evidenceId = evidenceData.id;
           const fileEntry = evidenceFiles.find((entry: any) => 

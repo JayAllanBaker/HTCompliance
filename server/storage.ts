@@ -74,6 +74,7 @@ export interface IStorage {
   
   // Evidence methods
   getEvidence(complianceItemId?: string, billableEventId?: string): Promise<Evidence[]>;
+  getEvidenceById(id: string): Promise<Evidence | undefined>;
   createEvidence(evidence: InsertEvidence): Promise<Evidence>;
   updateEvidence(id: string, updates: Partial<InsertEvidence>): Promise<Evidence>;
   deleteEvidence(id: string): Promise<void>;
@@ -491,6 +492,11 @@ export class DatabaseStorage implements IStorage {
       .from(evidence)
       .where(whereClause)
       .orderBy(desc(evidence.createdAt));
+  }
+
+  async getEvidenceById(id: string): Promise<Evidence | undefined> {
+    const [result] = await db.select().from(evidence).where(eq(evidence.id, id));
+    return result;
   }
 
   async createEvidence(evidenceData: InsertEvidence): Promise<Evidence> {
