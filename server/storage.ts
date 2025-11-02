@@ -405,7 +405,7 @@ export class DatabaseStorage implements IStorage {
       .from(complianceItems)
       .where(
         and(
-          eq(complianceItems.status, "pending"),
+          sql`${complianceItems.status} != 'complete'`,
           gte(complianceItems.dueDate, now),
           lte(complianceItems.dueDate, nextWeek)
         )
