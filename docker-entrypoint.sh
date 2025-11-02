@@ -3,6 +3,10 @@ set -e
 
 echo "Starting BizGov application..."
 
+# Ensure uploads directory exists with proper permissions
+mkdir -p /app/uploads
+chmod 755 /app/uploads
+
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to be ready..."
 until pg_isready -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" 2>/dev/null; do

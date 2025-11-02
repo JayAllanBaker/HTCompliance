@@ -60,6 +60,11 @@ RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/docker-entrypoint.sh && \
     chown nextjs:nodejs /usr/local/bin/docker-entrypoint.sh
 
+# Create uploads directory with proper ownership
+RUN mkdir -p /app/uploads && \
+    chown -R nextjs:nodejs /app/uploads && \
+    chmod -R 755 /app/uploads
+
 # Default Postgres connection envs (can be overridden by docker-compose or --env-file)
 ENV PGHOST=postgres
 ENV PGUSER=postgres
