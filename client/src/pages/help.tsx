@@ -21,7 +21,8 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Target
 } from "lucide-react";
 
 export default function HelpPage() {
@@ -53,14 +54,156 @@ export default function HelpPage() {
         {
           question: "What does the Dashboard show?",
           answer: (
-            <div className="space-y-2">
-              <p>The dashboard displays key compliance metrics:</p>
+            <div className="space-y-3">
+              <p>The dashboard displays key compliance metrics with clickable KPI cards:</p>
               <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Total Items</strong> - All compliance obligations tracked</li>
-                <li><strong>Completed</strong> - Items marked as complete</li>
-                <li><strong>Pending</strong> - Items awaiting action</li>
-                <li><strong>Overdue</strong> - Items past their due date</li>
+                <li><strong>Compliance Rate</strong> - Percentage of items completed on time (click to view all items)</li>
+                <li><strong>Overdue Items</strong> - Items past their due date (click to filter overdue)</li>
+                <li><strong>Due This Week</strong> - Items due within 7 days (click to filter upcoming)</li>
+                <li><strong>Total Items</strong> - All compliance obligations tracked (click to view all)</li>
               </ul>
+              
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md mt-2">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">Click any KPI card to navigate to the Compliance page with the relevant filter applied.</p>
+              </div>
+            </div>
+          )
+        }
+      ]
+    },
+    {
+      id: "okr-dashboard",
+      title: "OKR Dashboard (Measure What Matters)",
+      icon: Target,
+      description: "Track strategic objectives and key results",
+      content: [
+        {
+          question: "What is the OKR Dashboard?",
+          answer: (
+            <div className="space-y-3">
+              <p>The OKR (Objectives and Key Results) Dashboard connects compliance activities to strategic business outcomes. It helps track progress toward organizational goals using a proven framework.</p>
+              
+              <div className="bg-muted p-4 rounded-md space-y-2">
+                <p className="font-semibold">Key Features:</p>
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  <li><strong>Auto-Calculated Metrics</strong> - Four key metrics automatically derived from compliance and contract data</li>
+                  <li><strong>Objective Tracking</strong> - Monitor strategic objectives with progress bars and confidence indicators</li>
+                  <li><strong>Key Results</strong> - Track measurable outcomes with scoring (0-1.0 scale)</li>
+                  <li><strong>Weekly Check-Ins</strong> - Record progress updates with confidence ratings</li>
+                  <li><strong>Timeframe Filtering</strong> - View objectives by quarter (Q1-Q4 FY26, etc.)</li>
+                </ul>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "How do I create an objective?",
+          answer: (
+            <div className="space-y-3">
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Click <strong>"OKR Dashboard"</strong> in the sidebar</li>
+                <li>Click <strong>"Create Objective"</strong> button (top right)</li>
+                <li>Enter objective details:
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li><strong>Title</strong> - Your strategic objective (e.g., "Eliminate missed filings")</li>
+                    <li><strong>Description</strong> - What success looks like</li>
+                    <li><strong>Timeframe</strong> - Quarter (auto-filled with current selection)</li>
+                    <li><strong>Owner</strong> - Team member responsible (optional)</li>
+                  </ul>
+                </li>
+                <li>Click <strong>"Create Objective"</strong></li>
+              </ol>
+              
+              <div className="bg-muted p-4 rounded-md space-y-2 mt-3">
+                <p className="font-semibold">Example:</p>
+                <div className="text-sm space-y-1">
+                  <div>Title: <span className="font-mono">Make payroll compliance fully reliable</span></div>
+                  <div>Description: <span className="font-mono">Complete 100% of payroll cycles on time with zero penalties</span></div>
+                  <div>Timeframe: <span className="font-mono">Q1 FY26</span></div>
+                  <div>Owner: <span className="font-mono">Finance Team Lead</span></div>
+                </div>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "What are Auto-Calculated Metrics?",
+          answer: (
+            <div className="space-y-3">
+              <p>The OKR Dashboard automatically calculates four key metrics from your existing compliance and contract data:</p>
+              
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>On-Time Rate (%)</strong> - Percentage of compliance items completed before due date</li>
+                <li><strong>Late Fees ($)</strong> - Total penalties from missed deadlines</li>
+                <li><strong>Lead Time (days)</strong> - Average time from alert to completion</li>
+                <li><strong>Contract Coverage (%)</strong> - Percentage of contracts with structured metadata</li>
+              </ul>
+              
+              <div className="flex items-start gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-3 rounded-md mt-2">
+                <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">These metrics update in real-time as you complete compliance tasks and add contracts - no manual entry required!</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "How do I record a weekly check-in?",
+          answer: (
+            <div className="space-y-3">
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Find your objective on the OKR Dashboard</li>
+                <li>Click <strong>"Add Check-In"</strong> button</li>
+                <li>Fill in the check-in form:
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li><strong>Week Of</strong> - Date picker (defaults to current Monday)</li>
+                    <li><strong>Confidence</strong> - Green (on track), Yellow (at risk), Red (off track)</li>
+                    <li><strong>Progress Notes</strong> - What you accomplished this week</li>
+                    <li><strong>Risks and Blockers</strong> - Current challenges</li>
+                    <li><strong>Next Week Plan</strong> - What you'll work on</li>
+                  </ul>
+                </li>
+                <li>Click <strong>"Create Check-In"</strong></li>
+              </ol>
+              
+              <div className="bg-muted p-4 rounded-md space-y-2 mt-3">
+                <p className="font-semibold">Confidence Indicators:</p>
+                <ul className="space-y-1 text-sm">
+                  <li><span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span><strong>Green</strong> - Everything is going according to plan</li>
+                  <li><span className="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-2"></span><strong>Yellow</strong> - Some challenges, but manageable</li>
+                  <li><span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span><strong>Red</strong> - Significant blockers or delays</li>
+                </ul>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "What is the scoring system for Key Results?",
+          answer: (
+            <div className="space-y-3">
+              <p>Key Results use a 0-1.0 scoring scale with color-coded performance indicators:</p>
+              
+              <div className="bg-muted p-4 rounded-md space-y-2">
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-red-600">0.0 - 0.3</span>
+                    <span>RED - Off track: Significant gaps or blockers preventing progress</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-yellow-600">0.3 - 0.7</span>
+                    <span>YELLOW - At risk: Making progress but may not hit target</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-green-600">0.7 - 1.0</span>
+                    <span>GREEN - On track: Strong progress toward target</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md mt-2">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">Scoring of 0.7-0.8 is considered excellent - OKRs should be ambitious and stretch your capabilities!</p>
+              </div>
             </div>
           )
         }
@@ -105,6 +248,69 @@ export default function HelpPage() {
             <div className="flex items-start gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
               <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
               <p>You cannot delete organizations that have linked compliance items or contracts. Remove all linked data first, then try deleting again.</p>
+            </div>
+          )
+        },
+        {
+          question: "What are Organization Types and how are they color-coded?",
+          answer: (
+            <div className="space-y-3">
+              <p>Organizations can be classified by type to help you quickly identify their relationship to your business. Each type has a distinctive color code displayed throughout the application:</p>
+              
+              <div className="bg-muted p-4 rounded-md space-y-3">
+                <div className="grid gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-block w-3 h-3 bg-blue-500 rounded-full"></span>
+                    <div>
+                      <strong>Customer</strong> - Organizations that purchase your services or products
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-block w-3 h-3 bg-purple-500 rounded-full"></span>
+                    <div>
+                      <strong>Vendor</strong> - External suppliers or service providers
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-block w-3 h-3 bg-green-500 rounded-full"></span>
+                    <div>
+                      <strong>Contractor</strong> - Independent contractors or consultants
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-block w-3 h-3 bg-gray-500 rounded-full"></span>
+                    <div>
+                      <strong>Internal</strong> - Your own organization or departments
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-block w-3 h-3 bg-yellow-500 rounded-full"></span>
+                    <div>
+                      <strong>State Government</strong> - State-level government agencies
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-block w-3 h-3 bg-red-500 rounded-full"></span>
+                    <div>
+                      <strong>Federal Government</strong> - Federal agencies or departments
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold mb-1">Color Coding Benefits:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Quickly identify organization types at a glance</li>
+                    <li>Colors appear consistently across all pages (Organizations, Contracts, Compliance, etc.)</li>
+                    <li>Helps you organize and filter by relationship type</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <p className="text-sm text-muted-foreground mt-2">Set the organization type when creating or editing an organization. The color badge will appear next to the organization name throughout the application.</p>
             </div>
           )
         }
@@ -230,6 +436,84 @@ export default function HelpPage() {
                 <li>Change status if applicable</li>
                 <li>Click <strong>"Update"</strong></li>
               </ol>
+              
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md mt-2">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">Items automatically change to "overdue" status when the due date passes and they're not marked complete.</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "What are Compliance Types and how do I use them?",
+          answer: (
+            <div className="space-y-3">
+              <p>When creating a compliance item, you can select from 11 predefined compliance types for consistent categorization:</p>
+              
+              <div className="bg-muted p-4 rounded-md">
+                <ul className="grid grid-cols-2 gap-2 text-sm">
+                  <li>• Regulatory Filing</li>
+                  <li>• Audit</li>
+                  <li>• Certification</li>
+                  <li>• License Renewal</li>
+                  <li>• Training</li>
+                  <li>• Report Submission</li>
+                  <li>• Inspection</li>
+                  <li>• Review</li>
+                  <li>• Assessment</li>
+                  <li>• Documentation</li>
+                  <li>• Other</li>
+                </ul>
+              </div>
+              
+              <p className="text-sm text-muted-foreground">This type field helps you organize and filter compliance items by the nature of the obligation.</p>
+            </div>
+          )
+        },
+        {
+          question: "How do I link a compliance item to a contract?",
+          answer: (
+            <div className="space-y-3">
+              <p>Linking compliance items to contracts helps track contractual obligations and provides better visibility:</p>
+              
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>When creating/editing a compliance item, select an <strong>Organization</strong> first</li>
+                <li>The <strong>Contract</strong> dropdown will automatically show contracts for that organization</li>
+                <li>Select the relevant contract (optional)</li>
+                <li>The link is maintained even if you change the organization</li>
+              </ol>
+              
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md mt-2">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm"><strong>Smart Filtering:</strong> The contract dropdown intelligently filters based on your selected organization while preserving any already-linked contract.</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "How do I customize table columns?",
+          answer: (
+            <div className="space-y-3">
+              <p>You can show or hide columns in the compliance table to customize your view:</p>
+              
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Click the <strong>"Columns"</strong> button (top right of table)</li>
+                <li>Toggle columns on/off:
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li>Due Date (always visible)</li>
+                    <li>Commitment (always visible)</li>
+                    <li>Type</li>
+                    <li>Category</li>
+                    <li>Organization</li>
+                    <li>Contract</li>
+                    <li>Responsible</li>
+                    <li>Status</li>
+                  </ul>
+                </li>
+                <li>Your preferences are saved automatically</li>
+              </ol>
+              
+              <p className="text-sm text-muted-foreground">The Due Date and Commitment columns are always visible as they're required fields.</p>
             </div>
           )
         }
@@ -320,33 +604,77 @@ export default function HelpPage() {
       description: "Backup and restore data",
       content: [
         {
-          question: "How do I export all data?",
+          question: "How do I export all data (Unified ZIP Export)?",
           answer: (
             <div className="space-y-3">
+              <p><strong>Recommended Method - Unified ZIP Export:</strong></p>
               <ol className="list-decimal pl-5 space-y-2">
-                <li>Click <strong>"Settings"</strong> → <strong>"Export Database"</strong></li>
-                <li>A JSON file downloads with all your data</li>
-                <li>Store this file securely as a backup</li>
+                <li>Navigate to <strong>Export/Import</strong> page</li>
+                <li>Click <strong>"Export Complete Backup (ZIP)"</strong></li>
+                <li>A ZIP file downloads containing BOTH database data AND evidence files</li>
+                <li>Store this file securely as your complete backup</li>
               </ol>
               
-              <p className="text-sm text-muted-foreground">The export includes: organizations, contracts, compliance items, billable events, evidence metadata, audit logs, and email alert history.</p>
+              <div className="flex items-start gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-3 rounded-md">
+                <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold mb-1">Complete Backup Solution:</p>
+                  <p>The ZIP export packages database data AND evidence files together, ensuring evidence files remain properly linked after restoration. This solves the orphaned records issue from separate exports.</p>
+                </div>
+              </div>
+              
+              <p className="text-sm text-muted-foreground mt-2">The export includes: organizations, contracts, compliance items, billable events, evidence files and metadata, audit logs, OKR data, and system settings.</p>
+              
+              <div className="bg-muted p-3 rounded-md mt-2">
+                <p className="text-sm font-semibold mb-1">Legacy JSON Export:</p>
+                <p className="text-sm">Database-only JSON export is still available but not recommended for complete system backups.</p>
+              </div>
             </div>
           )
         },
         {
-          question: "How do I import data?",
+          question: "How do I restore from a backup?",
           answer: (
             <div className="space-y-3">
+              <p><strong>Restoring from Unified ZIP Backup:</strong></p>
               <ol className="list-decimal pl-5 space-y-2">
-                <li>Click <strong>"Settings"</strong> → <strong>"Import Database"</strong></li>
-                <li>Select your exported JSON file</li>
-                <li>Review the import summary</li>
+                <li>Navigate to <strong>Export/Import</strong> page</li>
+                <li>Click <strong>"Import Complete Backup (ZIP)"</strong></li>
+                <li>Select your backup ZIP file</li>
+                <li>Review the import summary showing what will be restored</li>
                 <li>Click <strong>"Confirm Import"</strong></li>
               </ol>
               
-              <div className="flex items-start gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
+              <div className="flex items-start gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md">
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold mb-1">Smart Duplicate Detection:</p>
+                  <p>The restore process includes duplicate detection to prevent re-importing evidence that already exists in the database.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md mt-2">
                 <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                <p className="text-sm">Import merges data - existing records are skipped, only new records are added.</p>
+                <p className="text-sm">Import merges data - existing records are skipped, only new records are added. Evidence files with the same hash are not re-uploaded.</p>
+              </div>
+            </div>
+          )
+        },
+        {
+          question: "What about Cascade Delete Protection?",
+          answer: (
+            <div className="space-y-3">
+              <p>The system includes automatic cascade delete protection to prevent orphaned evidence records:</p>
+              
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Evidence items are automatically deleted when their parent <strong>compliance items</strong> are deleted</li>
+                <li>Evidence items are automatically deleted when their parent <strong>contracts</strong> are deleted</li>
+                <li>Evidence items are automatically deleted when their parent <strong>billable events</strong> are deleted</li>
+              </ul>
+              
+              <div className="flex items-start gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-3 rounded-md mt-2">
+                <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">This ensures your database stays clean without orphaned evidence records.</p>
               </div>
             </div>
           )
