@@ -7,10 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
-import { Target, TrendingUp, Plus, ChevronDown, ChevronUp, Circle, AlertCircle } from "lucide-react";
+import CheckInDialog from "@/components/okr/check-in-dialog";
+import { Target, TrendingUp, Plus, ChevronDown, ChevronUp, Circle, AlertCircle, Calendar } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { format } from "date-fns";
 
 // Extended types for OKR data with relations
 interface ObjectiveWithRelations extends Objective {
@@ -265,6 +268,7 @@ export default function OKRDashboard() {
                   key={objective.id}
                   objective={objective}
                   keyResults={allKeyResults?.filter((kr) => kr.objectiveId === objective.id) || []}
+                  checkIns={allCheckIns?.filter((ci) => ci.objectiveId === objective.id) || []}
                   latestCheckIn={getLatestCheckIn(objective.id)}
                   ownerName={getOwnerName(objective.ownerId)}
                   averageScore={calculateAverageScore(objective.id)}
@@ -300,6 +304,7 @@ export default function OKRDashboard() {
 interface ObjectiveCardProps {
   objective: Objective;
   keyResults: KeyResult[];
+  checkIns: CheckIn[];
   latestCheckIn: CheckIn | null;
   ownerName: string;
   averageScore: number;
@@ -312,6 +317,7 @@ interface ObjectiveCardProps {
 function ObjectiveCard({
   objective,
   keyResults,
+  checkIns,
   latestCheckIn,
   ownerName,
   averageScore,
@@ -321,51 +327,70 @@ function ObjectiveCard({
   calculateProgress,
 }: ObjectiveCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isCheckInDialogOpen, setIsCheckInDialogOpen] = useState(false);
+  const [showCheckInHistory, setShowCheckInHistory] = useState(false);
+
+  // Sort check-ins by date descending
+  const sortedCheckIns = [...checkIns].sort(
+    (a, b) => new Date(b.weekOf).getTime() - new Date(a.weekOf).getTime()
+  );
 
   return (
-    <Card className="hover:shadow-lg transition-shadow" data-testid={`objective-card-${objective.id}`}>
-      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <CardTitle className="text-xl">{objective.title}</CardTitle>
-                <Badge variant="outline" data-testid={`timeframe-badge-${objective.id}`}>
-                  {objective.timeframe}
-                </Badge>
-                {latestCheckIn && (
-                  <div className="flex items-center gap-2">
-                    <Circle
-                      className={`w-3 h-3 ${getConfidenceColor(latestCheckIn.confidence)} rounded-full fill-current`}
-                      data-testid={`confidence-indicator-${objective.id}`}
-                    />
-                    <span className="text-sm text-muted-foreground capitalize">
-                      {latestCheckIn.confidence}
-                    </span>
-                  </div>
+    <>
+      <Card className="hover:shadow-lg transition-shadow" data-testid={`objective-card-${objective.id}`}>
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <CardTitle className="text-xl">{objective.title}</CardTitle>
+                  <Badge variant="outline" data-testid={`timeframe-badge-${objective.id}`}>
+                    {objective.timeframe}
+                  </Badge>
+                  {latestCheckIn && (
+                    <div className="flex items-center gap-2">
+                      <Circle
+                        className={`w-3 h-3 ${getConfidenceColor(latestCheckIn.confidence)} rounded-full fill-current`}
+                        data-testid={`confidence-indicator-${objective.id}`}
+                      />
+                      <span className="text-sm text-muted-foreground capitalize">
+                        {latestCheckIn.confidence}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {objective.description && (
+                  <CardDescription className="mt-2">{objective.description}</CardDescription>
                 )}
+                <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                  <span data-testid={`owner-name-${objective.id}`}>Owner: {ownerName}</span>
+                  <span className={`font-semibold ${getScoringColor(averageScore)}`} data-testid={`avg-score-${objective.id}`}>
+                    Score: {(averageScore * 100).toFixed(0)}%
+                  </span>
+                </div>
               </div>
-              {objective.description && (
-                <CardDescription className="mt-2">{objective.description}</CardDescription>
-              )}
-              <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                <span data-testid={`owner-name-${objective.id}`}>Owner: {ownerName}</span>
-                <span className={`font-semibold ${getScoringColor(averageScore)}`} data-testid={`avg-score-${objective.id}`}>
-                  Score: {(averageScore * 100).toFixed(0)}%
-                </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCheckInDialogOpen(true)}
+                  data-testid={`button-add-check-in-${objective.id}`}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Add Check-In
+                </Button>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" data-testid={`expand-button-${objective.id}`}>
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
               </div>
             </div>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" data-testid={`expand-button-${objective.id}`}>
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </Button>
-            </CollapsibleTrigger>
-          </div>
-        </CardHeader>
+          </CardHeader>
 
         <CardContent>
           {/* Overall Progress */}
@@ -406,9 +431,106 @@ function ObjectiveCard({
               )}
             </div>
           </CollapsibleContent>
+
+          {/* Latest Check-In Display */}
+          {latestCheckIn && (
+            <div className="mt-6 pt-6 border-t">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold">Latest Check-In</h4>
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(latestCheckIn.weekOf), "MMM d, yyyy")}
+                </span>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                {latestCheckIn.progressNotes && (
+                  <div>
+                    <p className="text-sm font-medium mb-1">Progress:</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {latestCheckIn.progressNotes}
+                    </p>
+                  </div>
+                )}
+                {checkIns.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCheckInHistory(!showCheckInHistory)}
+                    className="w-full mt-2"
+                    data-testid={`button-toggle-check-in-history-${objective.id}`}
+                  >
+                    {showCheckInHistory ? "Hide" : "Show"} Full History ({checkIns.length} check-ins)
+                    {showCheckInHistory ? (
+                      <ChevronUp className="w-4 h-4 ml-2" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 ml-2" />
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              {/* Check-In History */}
+              {showCheckInHistory && checkIns.length > 1 && (
+                <div className="mt-4 space-y-3">
+                  <Separator />
+                  <h4 className="text-sm font-semibold">Check-In History</h4>
+                  {sortedCheckIns.slice(1).map((checkIn, index) => (
+                    <div
+                      key={checkIn.id}
+                      className="bg-muted/30 rounded-lg p-3 space-y-2"
+                      data-testid={`check-in-history-${checkIn.id}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Circle
+                            className={`w-3 h-3 ${getConfidenceColor(checkIn.confidence)} rounded-full fill-current`}
+                          />
+                          <span className="text-xs font-medium capitalize">
+                            {checkIn.confidence}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(checkIn.weekOf), "MMM d, yyyy")}
+                        </span>
+                      </div>
+                      {checkIn.progressNotes && (
+                        <p className="text-xs text-muted-foreground">
+                          {checkIn.progressNotes}
+                        </p>
+                      )}
+                      {checkIn.risks && (
+                        <div className="text-xs">
+                          <span className="font-medium text-yellow-600 dark:text-yellow-400">
+                            Risks:
+                          </span>{" "}
+                          {checkIn.risks}
+                        </div>
+                      )}
+                      {checkIn.nextWeekPlan && (
+                        <div className="text-xs">
+                          <span className="font-medium">Plan:</span> {checkIn.nextWeekPlan}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Collapsible>
     </Card>
+
+    {/* Check-In Dialog */}
+    <CheckInDialog
+      objectiveId={objective.id}
+      objectiveTitle={objective.title}
+      open={isCheckInDialogOpen}
+      onOpenChange={setIsCheckInDialogOpen}
+      onSuccess={() => {
+        // Dialog will handle cache invalidation
+      }}
+    />
+    </>
   );
 }
 
