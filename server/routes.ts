@@ -13,6 +13,9 @@ import {
   insertBillableEventSchema, 
   insertEvidenceSchema, 
   insertUserSchema,
+  insertObjectiveSchema,
+  insertKeyResultSchema,
+  insertCheckInSchema,
   complianceComments,
   evidenceComments,
   organizationNotes,
@@ -2577,6 +2580,233 @@ export function registerRoutes(app: Express): Server {
       res.json(logs);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
+  // OKR Routes
+  app.get("/api/objectives", async (req, res) => {
+    try {
+      const timeframe = req.query.timeframe as string;
+      const isActive = req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined;
+      const objectives = await storage.getObjectives({ timeframe, isActive });
+      res.json(objectives);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch objectives" });
+    }
+  });
+
+  app.get("/api/objectives/:id", async (req, res) => {
+    try {
+      const objective = await storage.getObjective(req.params.id);
+      if (!objective) {
+        return res.status(404).json({ error: "Objective not found" });
+      }
+      res.json(objective);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch objective" });
+    }
+  });
+
+  app.post("/api/objectives", async (req, res) => {
+    try {
+      const validatedData = insertObjectiveSchema.parse(req.body);
+      const objective = await storage.createObjective(validatedData);
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "objective",
+        entityId: objective.id,
+        newValues: JSON.stringify(objective),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(201).json(objective);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create objective" });
+      }
+    }
+  });
+
+  app.patch("/api/objectives/:id", async (req, res) => {
+    try {
+      const validatedData = insertObjectiveSchema.partial().parse(req.body);
+      const objective = await storage.updateObjective(req.params.id, validatedData);
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entityType: "objective",
+        entityId: objective.id,
+        newValues: JSON.stringify(objective),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json(objective);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update objective" });
+      }
+    }
+  });
+
+  app.delete("/api/objectives/:id", async (req, res) => {
+    try {
+      await storage.deleteObjective(req.params.id);
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "objective",
+        entityId: req.params.id,
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete objective" });
+    }
+  });
+
+  app.get("/api/key-results", async (req, res) => {
+    try {
+      const objectiveId = req.query.objectiveId as string;
+      const keyResults = await storage.getKeyResults(objectiveId);
+      res.json(keyResults);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch key results" });
+    }
+  });
+
+  app.get("/api/key-results/:id", async (req, res) => {
+    try {
+      const kr = await storage.getKeyResult(req.params.id);
+      if (!kr) {
+        return res.status(404).json({ error: "Key result not found" });
+      }
+      res.json(kr);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch key result" });
+    }
+  });
+
+  app.post("/api/key-results", async (req, res) => {
+    try {
+      const validatedData = insertKeyResultSchema.parse(req.body);
+      const kr = await storage.createKeyResult(validatedData);
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "key_result",
+        entityId: kr.id,
+        newValues: JSON.stringify(kr),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(201).json(kr);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create key result" });
+      }
+    }
+  });
+
+  app.patch("/api/key-results/:id", async (req, res) => {
+    try {
+      const validatedData = insertKeyResultSchema.partial().parse(req.body);
+      const kr = await storage.updateKeyResult(req.params.id, validatedData);
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entityType: "key_result",
+        entityId: kr.id,
+        newValues: JSON.stringify(kr),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.json(kr);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update key result" });
+      }
+    }
+  });
+
+  app.delete("/api/key-results/:id", async (req, res) => {
+    try {
+      await storage.deleteKeyResult(req.params.id);
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entityType: "key_result",
+        entityId: req.params.id,
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete key result" });
+    }
+  });
+
+  app.get("/api/objectives/:id/check-ins", async (req, res) => {
+    try {
+      const checkIns = await storage.getCheckIns(req.params.id);
+      res.json(checkIns);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch check-ins" });
+    }
+  });
+
+  app.post("/api/check-ins", async (req, res) => {
+    try {
+      const validatedData = insertCheckInSchema.parse(req.body);
+      const checkIn = await storage.createCheckIn(validatedData);
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "check_in",
+        entityId: checkIn.id,
+        newValues: JSON.stringify(checkIn),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+      
+      res.status(201).json(checkIn);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid input", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create check-in" });
+      }
+    }
+  });
+
+  app.get("/api/okr/auto-metrics", async (req, res) => {
+    try {
+      const metrics = await storage.calculateAutoMetrics();
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate auto metrics" });
     }
   });
 

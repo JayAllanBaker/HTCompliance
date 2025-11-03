@@ -1,13 +1,17 @@
 import { 
   users, organizations, contracts, complianceItems, billableEvents, evidence, auditLog, emailAlerts,
   quickbooksConnections, quickbooksInvoices, systemSettings,
+  objectives, keyResults, checkIns,
   type User, type InsertUser, type Organization, type InsertOrganization, type Contract, type InsertContract,
   type ComplianceItem, type InsertComplianceItem, type BillableEvent, type InsertBillableEvent,
   type Evidence, type InsertEvidence, type AuditLog, type InsertAuditLog,
   type EmailAlert, type InsertEmailAlert,
   type QuickbooksConnection, type InsertQuickbooksConnection,
   type QuickbooksInvoice, type InsertQuickbooksInvoice,
-  type SystemSetting, type InsertSystemSetting
+  type SystemSetting, type InsertSystemSetting,
+  type Objective, type InsertObjective,
+  type KeyResult, type InsertKeyResult,
+  type CheckIn, type InsertCheckIn
 } from "../shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, gte, lte, like, count, sql } from "drizzle-orm";
@@ -915,6 +919,9 @@ export class DatabaseStorage implements IStorage {
   async resetDatabase(): Promise<void> {
     // Delete all data from all tables except users
     // Order matters due to foreign key constraints - delete in reverse order of dependencies
+    await db.delete(checkIns);
+    await db.delete(keyResults);
+    await db.delete(objectives);
     await db.delete(emailAlerts);
     await db.delete(auditLog);
     await db.delete(evidence);
@@ -923,6 +930,163 @@ export class DatabaseStorage implements IStorage {
     await db.delete(contracts);
     await db.delete(organizations);
     // Users table is NOT deleted to preserve admin access
+  }
+
+  // OKR Methods
+  async getObjectives(filters?: { timeframe?: string; isActive?: boolean }): Promise<Objective[]> {
+    let query = db.select().from(objectives);
+    const conditions = [];
+    
+    if (filters?.timeframe) {
+      conditions.push(eq(objectives.timeframe, filters.timeframe));
+    }
+    if (filters?.isActive !== undefined) {
+      conditions.push(eq(objectives.isActive, filters.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    return await query.orderBy(desc(objectives.createdAt));
+  }
+
+  async getObjective(id: string): Promise<Objective | undefined> {
+    const [objective] = await db.select().from(objectives).where(eq(objectives.id, id));
+    return objective;
+  }
+
+  async createObjective(objective: InsertObjective): Promise<Objective> {
+    const [newObjective] = await db.insert(objectives).values(objective).returning();
+    return newObjective;
+  }
+
+  async updateObjective(id: string, updates: Partial<InsertObjective>): Promise<Objective> {
+    const [updated] = await db.update(objectives).set({ ...updates, updatedAt: new Date() }).where(eq(objectives.id, id)).returning();
+    return updated;
+  }
+
+  async deleteObjective(id: string): Promise<void> {
+    await db.delete(objectives).where(eq(objectives.id, id));
+  }
+
+  async getKeyResults(objectiveId?: string): Promise<KeyResult[]> {
+    if (objectiveId) {
+      return await db.select().from(keyResults).where(eq(keyResults.objectiveId, objectiveId)).orderBy(asc(keyResults.createdAt));
+    }
+    return await db.select().from(keyResults).orderBy(asc(keyResults.createdAt));
+  }
+
+  async getKeyResult(id: string): Promise<KeyResult | undefined> {
+    const [kr] = await db.select().from(keyResults).where(eq(keyResults.id, id));
+    return kr;
+  }
+
+  async createKeyResult(keyResult: InsertKeyResult): Promise<KeyResult> {
+    const [newKR] = await db.insert(keyResults).values(keyResult).returning();
+    return newKR;
+  }
+
+  async updateKeyResult(id: string, updates: Partial<InsertKeyResult>): Promise<KeyResult> {
+    const [updated] = await db.update(keyResults).set({ ...updates, updatedAt: new Date() }).where(eq(keyResults.id, id)).returning();
+    return updated;
+  }
+
+  async deleteKeyResult(id: string): Promise<void> {
+    await db.delete(keyResults).where(eq(keyResults.id, id));
+  }
+
+  async getCheckIns(objectiveId: string): Promise<CheckIn[]> {
+    return await db.select().from(checkIns).where(eq(checkIns.objectiveId, objectiveId)).orderBy(desc(checkIns.weekOf));
+  }
+
+  async createCheckIn(checkIn: InsertCheckIn): Promise<CheckIn> {
+    const [newCheckIn] = await db.insert(checkIns).values(checkIn).returning();
+    return newCheckIn;
+  }
+
+  async calculateAutoMetrics(): Promise<{
+    onTimeRate: number;
+    lateFees: number;
+    leadTime: number;
+    contractCoverage: number;
+  }> {
+    const now = new Date();
+    
+    // On-time rate: completed items on or before due date / total items with due dates
+    const [completedOnTime] = await db.select({ count: count() })
+      .from(complianceItems)
+      .where(
+        and(
+          eq(complianceItems.status, "complete"),
+          lte(complianceItems.completedAt, complianceItems.dueDate)
+        )
+      );
+    
+    const [totalWithDueDates] = await db.select({ count: count() })
+      .from(complianceItems)
+      .where(sql`${complianceItems.dueDate} IS NOT NULL`);
+    
+    const onTimeRate = totalWithDueDates.count > 0 
+      ? (completedOnTime.count / totalWithDueDates.count) * 100 
+      : 0;
+    
+    // Late fees: sum of billable events where description contains "late fee" or "penalty"
+    const lateFeeEvents = await db.select()
+      .from(billableEvents)
+      .where(
+        or(
+          like(billableEvents.description, '%late fee%'),
+          like(billableEvents.description, '%penalty%'),
+          like(billableEvents.description, '%interest%')
+        )
+      );
+    
+    const lateFees = lateFeeEvents.reduce((sum: number, event: any) => 
+      sum + parseFloat(event.totalAmount?.toString() || '0'), 0
+    );
+    
+    // Lead time: average days from creation to completion for completed items this quarter
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(now.getMonth() - 3);
+    
+    const recentCompleted = await db.select()
+      .from(complianceItems)
+      .where(
+        and(
+          eq(complianceItems.status, "complete"),
+          gte(complianceItems.completedAt, threeMonthsAgo)
+        )
+      );
+    
+    let totalDays = 0;
+    recentCompleted.forEach((item: any) => {
+      if (item.completedAt && item.createdAt) {
+        const days = Math.ceil((item.completedAt.getTime() - item.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        totalDays += days;
+      }
+    });
+    
+    const leadTime = recentCompleted.length > 0 
+      ? totalDays / recentCompleted.length 
+      : 0;
+    
+    // Contract coverage: percentage of contracts with at least one compliance item
+    const [totalContracts] = await db.select({ count: count() }).from(contracts);
+    const [contractsWithCompliance] = await db.select({ count: sql`COUNT(DISTINCT ${complianceItems.contractId})` })
+      .from(complianceItems)
+      .where(sql`${complianceItems.contractId} IS NOT NULL`);
+    
+    const contractCoverage = totalContracts.count > 0
+      ? (Number(contractsWithCompliance.count) / totalContracts.count) * 100
+      : 0;
+    
+    return {
+      onTimeRate: Math.round(onTimeRate * 10) / 10,
+      lateFees: Math.round(lateFees * 100) / 100,
+      leadTime: Math.round(leadTime * 10) / 10,
+      contractCoverage: Math.round(contractCoverage * 10) / 10
+    };
   }
 }
 

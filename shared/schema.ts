@@ -10,6 +10,7 @@ export const categoryEnum = pgEnum("category", ["Marketing Agreement", "Billing"
 export const evidenceTypeEnum = pgEnum("evidence_type", ["document", "email", "screenshot", "report", "contract-and-amendment", "other"]);
 export const qbConnectionStatusEnum = pgEnum("qb_connection_status", ["connected", "disconnected", "error", "token_expired"]);
 export const orgTypeEnum = pgEnum("org_type", ["customer", "vendor", "contractor", "internal", "state_govt", "federal_govt"]);
+export const confidenceEnum = pgEnum("confidence", ["green", "yellow", "red"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -426,6 +427,67 @@ export const insertEvidenceCommentSchema = createInsertSchema(evidenceComments).
   createdAt: true,
 });
 
+// OKR Tables
+export const objectives = pgTable("objectives", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  timeframe: text("timeframe").notNull(), // e.g., "Q1 FY26"
+  ownerId: varchar("owner_id").references(() => users.id),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const keyResults = pgTable("key_results", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  objectiveId: varchar("objective_id").notNull().references(() => objectives.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  target: decimal("target", { precision: 10, scale: 2 }).notNull(),
+  current: decimal("current", { precision: 10, scale: 2 }).notNull().default("0"),
+  baseline: decimal("baseline", { precision: 10, scale: 2 }),
+  unit: text("unit").notNull(), // e.g., "percent", "dollars", "days", "count"
+  scoring: decimal("scoring", { precision: 3, scale: 2 }).default("0.0"), // 0.0 to 1.0
+  isAutoCalculated: boolean("is_auto_calculated").notNull().default(false),
+  autoMetricType: text("auto_metric_type"), // e.g., "on_time_rate", "late_fees", "lead_time"
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const checkIns = pgTable("check_ins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  objectiveId: varchar("objective_id").notNull().references(() => objectives.id, { onDelete: "cascade" }),
+  weekOf: timestamp("week_of").notNull(),
+  confidence: confidenceEnum("confidence").notNull(),
+  progressNotes: text("progress_notes"),
+  risks: text("risks"),
+  nextWeekPlan: text("next_week_plan"),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertObjectiveSchema = createInsertSchema(objectives).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertKeyResultSchema = createInsertSchema(keyResults).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  target: z.coerce.string(),
+  current: z.coerce.string(),
+  baseline: z.coerce.string().optional(),
+  scoring: z.coerce.string().optional(),
+});
+
+export const insertCheckInSchema = createInsertSchema(checkIns).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -455,3 +517,9 @@ export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type EvidenceComment = typeof evidenceComments.$inferSelect;
 export type InsertEvidenceComment = z.infer<typeof insertEvidenceCommentSchema>;
+export type Objective = typeof objectives.$inferSelect;
+export type InsertObjective = z.infer<typeof insertObjectiveSchema>;
+export type KeyResult = typeof keyResults.$inferSelect;
+export type InsertKeyResult = z.infer<typeof insertKeyResultSchema>;
+export type CheckIn = typeof checkIns.$inferSelect;
+export type InsertCheckIn = z.infer<typeof insertCheckInSchema>;
