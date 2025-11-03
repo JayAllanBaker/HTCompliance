@@ -362,6 +362,101 @@ export default function OrganizationsPage() {
               </Button>
             </div>
 
+            {/* Summary Cards */}
+            {organizations && organizations.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Total Organizations */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Total Organizations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-3xl font-bold" data-testid="text-total-organizations">
+                        {organizations.length}
+                      </div>
+                      <Building2 className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Active Organizations */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Active Organizations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="text-active-organizations">
+                        {organizations.filter(org => org.isActive).length}
+                      </div>
+                      <Building2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {organizations.filter(org => !org.isActive).length} inactive
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* By Type Breakdown */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      By Type
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Customers:</span>
+                        <span className="font-semibold" data-testid="text-customer-count">{organizations.filter(o => o.orgType === "customer").length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Vendors:</span>
+                        <span className="font-semibold" data-testid="text-vendor-count">{organizations.filter(o => o.orgType === "vendor").length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Contractors:</span>
+                        <span className="font-semibold" data-testid="text-contractor-count">{organizations.filter(o => o.orgType === "contractor").length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Internal:</span>
+                        <span className="font-semibold" data-testid="text-internal-count">{organizations.filter(o => o.orgType === "internal").length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Government:</span>
+                        <span className="font-semibold" data-testid="text-government-count">{organizations.filter(o => o.orgType === "state_govt" || o.orgType === "federal_govt").length}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* QuickBooks Connections */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      QuickBooks Connected
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-3xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-qb-connected">
+                        {Object.values(qbConnections).filter(conn => conn.status === 'connected').length}
+                      </div>
+                      <LinkIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      of {organizations.length} organizations
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">

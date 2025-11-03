@@ -279,6 +279,33 @@ export default function Compliance() {
     overdue: complianceData?.items?.filter((item: ComplianceItem) => isOverdue(item)).length || 0,
   };
 
+  // Calculate additional metrics for summary cards
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const nextWeek = new Date();
+  nextWeek.setDate(today.getDate() + 7);
+  nextWeek.setHours(23, 59, 59, 999);
+
+  const dueThisWeek = allItemsData?.items.filter(item => {
+    if (!item.dueDate || item.status === 'complete') return false;
+    const dueDate = new Date(item.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate >= today && dueDate <= nextWeek;
+  }).length || 0;
+
+  // Calculate compliance rate (completed items with due date today or earlier / all items with due date today or earlier)
+  const itemsDueToday = allItemsData?.items.filter(item => {
+    if (!item.dueDate) return false;
+    const dueDate = new Date(item.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate <= today;
+  }) || [];
+
+  const completedDueToday = itemsDueToday.filter(item => item.status === 'complete').length;
+  const complianceRate = itemsDueToday.length > 0 
+    ? Math.round((completedDueToday / itemsDueToday.length) * 100)
+    : 100;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -332,6 +359,91 @@ export default function Compliance() {
                 </Button>
               </div>
             </div>
+
+            {/* Summary Cards */}
+            {allItemsData && allItemsData.items.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {/* Compliance Rate */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Compliance Rate
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className={`text-3xl font-bold ${complianceRate >= 90 ? 'text-green-600 dark:text-green-400' : complianceRate >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`} data-testid="text-compliance-rate">
+                        {complianceRate}%
+                      </div>
+                      <BarChart3 className={`h-8 w-8 ${complianceRate >= 90 ? 'text-green-600 dark:text-green-400' : complianceRate >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`} />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {completedDueToday} of {itemsDueToday.length} items on time
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Overdue Items */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Overdue Items
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className={`text-3xl font-bold ${stats.overdue > 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} data-testid="text-overdue-count">
+                        {stats.overdue}
+                      </div>
+                      <FileWarning className={`h-8 w-8 ${stats.overdue > 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Past due date
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Due This Week */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Due This Week
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className={`text-3xl font-bold ${dueThisWeek > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`} data-testid="text-due-this-week">
+                        {dueThisWeek}
+                      </div>
+                      <Calendar className={`h-8 w-8 ${dueThisWeek > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`} />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Next 7 days
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Total Items */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Total Items
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-3xl font-bold" data-testid="text-total-compliance">
+                        {allItemsData.total}
+                      </div>
+                      <List className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {stats.complete} completed
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Filters and Search */}
             <Card className="mb-6">

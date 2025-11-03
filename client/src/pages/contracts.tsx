@@ -53,6 +53,22 @@ export default function Contracts() {
     }).format(parseFloat(amount));
   };
 
+  // Calculate summary metrics
+  const totalContracts = contracts?.length || 0;
+  const activeContracts = contracts?.filter(c => c.isActive).length || 0;
+  const totalValue = contracts?.reduce((sum, c) => {
+    return sum + (c.maxAmount ? parseFloat(c.maxAmount) : 0);
+  }, 0) || 0;
+  
+  // Expiring soon (within 30 days)
+  const thirtyDaysFromNow = new Date();
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+  const expiringSoon = contracts?.filter(c => {
+    if (!c.endDate || !c.isActive) return false;
+    const endDate = new Date(c.endDate);
+    return endDate <= thirtyDaysFromNow && endDate >= new Date();
+  }).length || 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -79,6 +95,92 @@ export default function Contracts() {
                 New Contract
               </Button>
             </div>
+
+            {/* Summary Cards */}
+            {contracts && contracts.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {/* Total Contracts */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Total Contracts
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-3xl font-bold" data-testid="text-total-contracts">
+                        {totalContracts}
+                      </div>
+                      <FileText className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Active Contracts */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Active Contracts
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="text-active-contracts">
+                        {activeContracts}
+                      </div>
+                      <FileText className="h-8 w-8 text-green-600 dark:text-green-400" />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {totalContracts - activeContracts} inactive
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Total Contract Value */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Total Value
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-3xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-total-value">
+                        {new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }).format(totalValue)}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Combined contract value
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Expiring Soon */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Expiring Soon
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className={`text-3xl font-bold ${expiringSoon > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`} data-testid="text-expiring-soon">
+                        {expiringSoon}
+                      </div>
+                      <FileText className={`h-8 w-8 ${expiringSoon > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`} />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Within 30 days
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Contracts Table */}
             <Card>
