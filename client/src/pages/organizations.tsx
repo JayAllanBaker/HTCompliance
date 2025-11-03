@@ -341,9 +341,9 @@ export default function OrganizationsPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <Sidebar />
-      <main className="ml-64 overflow-auto bg-muted/30 min-h-screen p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
+      <main className="ml-64 overflow-auto bg-muted/30 min-h-screen">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
                   <Building2 className="h-8 w-8" />
@@ -364,7 +364,7 @@ export default function OrganizationsPage() {
 
             {/* Summary Cards */}
             {organizations && organizations.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {/* Total Organizations */}
                 <Card>
                   <CardHeader className="pb-3">
@@ -457,6 +457,7 @@ export default function OrganizationsPage() {
               </div>
             )}
 
+            {/* Organizations Table */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
