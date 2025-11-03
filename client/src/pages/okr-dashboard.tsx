@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import CheckInDialog from "@/components/okr/check-in-dialog";
+import ObjectiveDialog from "@/components/okr/objective-dialog";
 import { Target, TrendingUp, Plus, ChevronDown, ChevronUp, Circle, AlertCircle, Calendar } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
@@ -42,6 +43,7 @@ const TIMEFRAMES = [
 
 export default function OKRDashboard() {
   const [selectedTimeframe, setSelectedTimeframe] = useState("Q1 FY26");
+  const [isObjectiveDialogOpen, setIsObjectiveDialogOpen] = useState(false);
 
   // Fetch auto-calculated metrics
   const { data: autoMetrics, isLoading: metricsLoading } = useQuery<AutoMetrics>({
@@ -163,6 +165,7 @@ export default function OKRDashboard() {
               </Select>
 
               <Button
+                onClick={() => setIsObjectiveDialogOpen(true)}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
                 data-testid="button-create-objective"
               >
@@ -288,7 +291,10 @@ export default function OKRDashboard() {
                   <p className="text-muted-foreground mb-4">
                     Create your first objective for {selectedTimeframe} to get started
                   </p>
-                  <Button data-testid="button-create-first-objective">
+                  <Button 
+                    onClick={() => setIsObjectiveDialogOpen(true)}
+                    data-testid="button-create-first-objective"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Create Objective
                   </Button>
@@ -298,6 +304,16 @@ export default function OKRDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Objective Creation Dialog */}
+      <ObjectiveDialog
+        open={isObjectiveDialogOpen}
+        onOpenChange={setIsObjectiveDialogOpen}
+        defaultTimeframe={selectedTimeframe}
+        onSuccess={() => {
+          // Dialog will handle cache invalidation
+        }}
+      />
     </div>
   );
 }
