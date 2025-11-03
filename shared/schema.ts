@@ -486,6 +486,8 @@ export const insertKeyResultSchema = createInsertSchema(keyResults).omit({
 export const insertCheckInSchema = createInsertSchema(checkIns).omit({
   id: true,
   createdAt: true,
+}).extend({
+  weekOf: z.coerce.date(),
 });
 
 // Types
