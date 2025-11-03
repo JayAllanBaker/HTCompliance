@@ -52,7 +52,9 @@ export default function OKRDashboard() {
   const { data: objectives, isLoading: objectivesLoading } = useQuery<ObjectiveWithRelations[]>({
     queryKey: ["/api/objectives", selectedTimeframe],
     queryFn: async () => {
-      const response = await fetch(`/api/objectives?timeframe=${encodeURIComponent(selectedTimeframe)}&isActive=true`);
+      const response = await fetch(`/api/objectives?timeframe=${encodeURIComponent(selectedTimeframe)}&isActive=true`, {
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Failed to fetch objectives");
       return response.json();
     },
