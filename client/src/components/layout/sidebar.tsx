@@ -12,7 +12,8 @@ import {
   Activity,
   Settings,
   Building2,
-  HelpCircle
+  HelpCircle,
+  Target
 } from "lucide-react";
 
 const navigation = [
@@ -20,6 +21,11 @@ const navigation = [
     name: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
+  },
+  {
+    name: "OKR Dashboard",
+    href: "/okr-dashboard",
+    icon: Target,
   },
   {
     name: "Organization Mgt",

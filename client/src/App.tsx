@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
+import OKRDashboard from "@/pages/okr-dashboard";
 import Organizations from "@/pages/organizations";
 import Contracts from "@/pages/contracts";
 import Compliance from "@/pages/compliance";
@@ -21,6 +22,7 @@ function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/okr-dashboard" component={OKRDashboard} />
       <ProtectedRoute path="/organizations" component={Organizations} />
       <ProtectedRoute path="/contracts" component={Contracts} />
       <ProtectedRoute path="/compliance" component={Compliance} />
