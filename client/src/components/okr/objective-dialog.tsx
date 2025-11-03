@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -63,6 +64,19 @@ export default function ObjectiveDialog({
       isActive: true,
     },
   });
+
+  // Reset form when dialog opens or timeframe changes
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        title: "",
+        description: "",
+        timeframe: defaultTimeframe,
+        ownerId: null,
+        isActive: true,
+      });
+    }
+  }, [open, defaultTimeframe, form]);
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -194,8 +208,8 @@ export default function ObjectiveDialog({
                 <FormItem>
                   <FormLabel>Owner (Optional)</FormLabel>
                   <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value || undefined}
+                    onValueChange={(value) => field.onChange(value === "unassigned" ? null : value)}
+                    value={field.value || "unassigned"}
                   >
                     <FormControl>
                       <SelectTrigger data-testid="select-objective-owner">
