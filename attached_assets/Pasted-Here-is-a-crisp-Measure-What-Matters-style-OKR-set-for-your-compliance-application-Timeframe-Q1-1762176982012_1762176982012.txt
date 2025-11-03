@@ -1,0 +1,93 @@
+Here is a crisp, “Measure What Matters” style OKR set for your compliance application. Timeframe: Q1 FY26. North Star metric: Percent of obligations met on time.
+
+Objective 1: Eliminate missed filings and payments across states
+
+Key Results:
+
+Raise On-Time Compliance Rate across state filings and payments from baseline to 99 percent
+
+Cut late fees to zero dollars for the quarter
+
+Auto schedule at least 95 percent of recurring filings and remittances with owner and due date set
+
+Reduce average lead time from first alert to completion from baseline to three days
+
+Primary initiatives (not scored): build deadline calendar with jurisdiction rules, SLA timers, and retries. Add exception queue and one click remediation.
+
+Objective 2: Make payroll compliance fully reliable
+
+Key Results:
+
+Complete 100 percent of payroll cycles on the planned date with proof of transmission
+
+Achieve zero payroll tax penalties and zero interest assessments
+
+Reach 100 percent reconciliation of payroll tax liabilities to payments within two business days
+
+Reduce manual steps per payroll run to three or fewer for the operator of record
+
+Primary initiatives: connectors to payroll provider and bank, automated payment files, return file ingestion, variance flags.
+
+Objective 3: Turn contracts into executable obligations
+
+Key Results:
+
+Ingest 100 percent of active contracts with structured metadata for term, renewals, deliverables, and payment triggers
+
+Ensure 100 percent of upcoming obligations have an owner, due date, and linked evidence location
+
+Reduce missed contractual deliverables to zero
+
+Link obligations to invoices or accrual entries for 90 percent of items due this quarter
+
+Primary initiatives: contract parser, obligation template library, reminder ladder at 30, 14, and 3 days, billing linkage.
+
+Objective 4: Be audit ready at any time
+
+Key Results:
+
+Generate a complete evidence pack for a quarterly audit in under two hours from push button start
+
+Close evidence gaps to fewer than five items in the quarter
+
+Pass quarterly backup and full restore test in under four hours with zero data loss
+
+Reduce P0 compliance defects in production to zero
+
+Primary initiatives: immutable audit trail, evidence registry, automated screenshots and exports, backup and restore drillbook.
+
+Objective 5: Prove adoption and value
+
+Key Results:
+
+Reach five active tenants with at least three compliance domains turned on per tenant
+
+Lift Weekly Active Users among operators to twenty across all pilots
+
+Hit a Net Promoter Score of 40 or higher from operator users
+
+Demonstrate a 50 percent reduction in manual tracking time for one pilot customer as measured by time study
+
+Primary initiatives: onboarding playbooks, tenant templates, in app guides, value calculator.
+
+Scoring rubric (per KR)
+
+0.0: no progress
+0.3: some progress toward baseline plus
+0.7: substantial progress but short of target
+1.0: target achieved or exceeded
+
+Metric definitions
+
+On-Time Compliance Rate: number of filings and obligations completed on or before due date divided by total due in period.
+Lead Time: days from first system alert to completed evidence.
+Evidence Pack: export of audit trail, approvals, artifacts, and reconciliations for the selected scope.
+Manual Steps per Run: distinct human actions required to complete the cycle.
+
+Weekly check-in template
+
+Confidence: green or yellow or red
+Progress this week: brief notes per objective
+KR updates: current value vs target with quick comment
+Risks and asks: blockers and decisions needed
+Next week plan: top three moves
